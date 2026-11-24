@@ -1,0 +1,100 @@
+{
+ "stage": "s1_bird",
+ "passed": false,
+ "verified": false,
+ "fragile": false,
+ "headline": {
+  "echo_level_db_re_direct": -43.5714055662015,
+  "echo_level_db_re_direct_raw3d": -43.5714055662015,
+  "echo_spl_db": 66.88616933940526,
+  "depth_m": 13.596989217316336,
+  "post_count": 1136,
+  "fill_fraction": 0.014972266475160667,
+  "tier_gap_db": null,
+  "likely_inaudible_on_site": false
+ },
+ "metrics": [
+  {
+   "id": "pitch_err_pct",
+   "label": "Pitch error along the note, worst frame",
+   "value": 3.4655908912959665,
+   "unit": "%",
+   "threshold": 3.0,
+   "comparator": "<=",
+   "pass": false,
+   "tier": "tier0",
+   "gating": false
+  },
+  {
+   "id": "pitch_err_mean_pct",
+   "label": "Pitch error along the note, mean",
+   "value": 1.1392705520477497,
+   "unit": "%",
+   "threshold": null,
+   "comparator": null,
+   "pass": null,
+   "tier": "tier0",
+   "gating": false
+  },
+  {
+   "id": "spec_corr",
+   "label": "Spectrogram correlation, log-mel",
+   "value": 0.6959164190732404,
+   "unit": "",
+   "threshold": 0.8,
+   "comparator": ">=",
+   "pass": false,
+   "tier": "tier0",
+   "gating": false
+  }
+ ],
+ "per_clap": [
+  {
+   "clap": 0,
+   "tier": "tier0",
+   "metrics": {
+    "pitch_err_pct": 1.8611515100773524,
+    "pitch_err_mean_pct": 0.8976850979280827,
+    "spec_corr": 0.7052070133762914
+   }
+  },
+  {
+   "clap": 1,
+   "tier": "tier0",
+   "metrics": {
+    "pitch_err_pct": 1.8611515100773524,
+    "pitch_err_mean_pct": 0.8650726072961192,
+    "spec_corr": 0.7309029394989924
+   }
+  },
+  {
+   "clap": 2,
+   "tier": "tier0",
+   "metrics": {
+    "pitch_err_pct": 3.718626385609225,
+    "pitch_err_mean_pct": 0.991304723013373,
+    "spec_corr": 0.6884549481407233
+   }
+  },
+  {
+   "clap": 3,
+   "tier": "tier0",
+   "metrics": {
+    "pitch_err_pct": 5.062512767376592,
+    "pitch_err_mean_pct": 1.4511816183701596,
+    "spec_corr": 0.6977914666646735
+   }
+  },
+  {
+   "clap": 4,
+   "tier": "tier0",
+   "metrics": {
+    "pitch_err_pct": 4.824512283339311,
+    "pitch_err_mean_pct": 1.4911087136310135,
+    "spec_corr": 0.6572257276855215
+   }
+  }
+ ],
+ "robustness": [],
+ "failure_cause": null
+}

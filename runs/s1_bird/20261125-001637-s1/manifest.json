@@ -1,0 +1,89 @@
+{
+ "run_id": "20261125-001637-s1",
+ "stage": "s1_bird",
+ "title": "Bird note, 3.5 to 2.0 kHz whistle, 80 ms",
+ "created": "2026-11-25T00:16:37+02:00",
+ "seed": 0,
+ "git_commit": "ae2460b",
+ "status": "tier0_only",
+ "verified": false,
+ "passed": false,
+ "fs": 16000,
+ "c": 343.0,
+ "duration_s": 0.12,
+ "t_direct_s": 0.0008746355685131195,
+ "command": "uv run python -m stages.s1_bird --tier0-only",
+ "solver": {
+  "tier1": "none",
+  "device": "cpu",
+  "dx": null,
+  "dt": null,
+  "grid": null,
+  "f_lo": null,
+  "f_max": null,
+  "ppw": null,
+  "wall_s": null
+ },
+ "field": null,
+ "audio": {
+  "echo_gain_db": {
+   "tier0": 28.11552369052963,
+   "tier1": null
+  },
+  "target_gain_db": -0.9999999999999997,
+  "as_heard_echo_level_db": -42.59990125727895,
+  "clap_variant": 0
+ },
+ "notes": "Exported audio uses clap variant 0; metrics average 5 clap variants. Echoes band-limited to the loss band 898-4000 Hz (clap band within the design band). Profile solve: 10.2 s, 300 Adam steps, loss 2.491 -> 1.519. Realization: 1136 posts, 0 shadow violations, 0 dropped, post-vs-profile echo mismatch -12.2 dB.",
+ "design": {
+  "config": {
+   "stage": "s1_bird",
+   "title": "Bird note, 3.5 to 2.0 kHz whistle, 80 ms",
+   "tag": "s1",
+   "duration_s": 0.12,
+   "n_claps": 5,
+   "seed": 0,
+   "r0": 3.06,
+   "dr": 0.01,
+   "a_ref": 0.02,
+   "target_fill": 0.015,
+   "steps": 300,
+   "lr": 0.02,
+   "w_mel": 1.0,
+   "shadow_depth": 0.5,
+   "notes": ""
+  },
+  "loss_band_hz": [
+   898.4375,
+   4000.0
+  ],
+  "t_echo0_s": 0.0178125,
+  "realization": {
+   "n_posts": 1136,
+   "by_radius": {
+    "0.01": 0,
+    "0.02": 1136,
+    "0.04": 0,
+    "0.08": 0
+   },
+   "weights": {
+    "0.01": 0.5414687861330686,
+    "0.02": 1.0,
+    "0.04": 1.5649311740866008,
+    "0.08": 2.216631672777042
+   },
+   "requested_mass": 1135.7016666666675,
+   "realized_mass": 1136.0,
+   "dropped": 0,
+   "shadow_violations": 0,
+   "shadow_depth_m": 0.5,
+   "min_gap_m": 0.20317429465260184,
+   "profile_rel_err": 0.02519330538489247,
+   "post_vs_profile_mismatch_db": -12.220582428430928,
+   "post_vs_profile_level_db": 0.376107138781591
+  },
+  "solve_wall_s": 10.15632939338684,
+  "realize_wall_s": 0.5168814659118652,
+  "total_wall_s": 13.399380683898926
+ }
+}
