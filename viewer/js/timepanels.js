@@ -112,11 +112,13 @@ export class GroovePanel extends TimePanel {
       ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
       ctx.strokeStyle = C.line; ctx.beginPath(); ctx.moveTo(0, base + 0.5); ctx.lineTo(w, base + 0.5); ctx.stroke();
     }
+    if (!tg && !P?.reflectivity?.length) { ctx.fillStyle = C.dim; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = `12px ${font}`;
+      ctx.fillText("No target audio or reflectivity profile in this run", w / 2, mid); }
     // in-panel labels
     ctx.font = `11px ${font}`; ctx.textBaseline = "top"; ctx.textAlign = "left";
     const tag = (s, x, y, col) => { const tw = ctx.measureText(s).width; ctx.fillStyle = C.panel; ctx.globalAlpha = 0.85; ctx.fillRect(x - 3, y - 1, tw + 6, 14); ctx.globalAlpha = 1; ctx.fillStyle = col; ctx.fillText(s, x, y); };
-    if (tA[1] - tA[0] > 40) { tag("target waveform", 4, tA[0], C.dim); tag("reflectivity along range", 4, pA[0], C.dim); }
-    if (pA[1] - pA[0] > 70) tag("dashed: slowly varying positive bias", 4, pA[0] + 14, C.faint);
+    if ((tg || P?.reflectivity?.length) && tA[1] - tA[0] > 40) { tag("target waveform", 4, tA[0], C.dim); tag("reflectivity along range", 4, pA[0], C.dim); }
+    if (P?.reflectivity?.length && pA[1] - pA[0] > 70) tag("dashed: slowly varying positive bias", 4, pA[0] + 14, C.faint);
     ctx.strokeStyle = C.line; ctx.beginPath(); ctx.moveTo(0, mid + 0.5); ctx.lineTo(w, mid + 0.5); ctx.stroke();
     this.drawCursorAndMarker(ctx, w, bottom, C, top);
     this.markerLabel(ctx, w, top + 2, C);

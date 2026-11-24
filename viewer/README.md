@@ -46,6 +46,10 @@ may keep serving the old JavaScript modules.
 - Scene: wheel zooms about the cursor, drag pans, Fit or double-click resets. Posts keep a 0.9 px minimum size
   when zoomed out and are true to scale when zoomed in. Hovering a post shows its range, echo delay and radius
   and marks that delay in the Groove and Echo panels.
+- Field controls: Gain cycles x1/x2/x4/x8, stretching the drawn frame about its zero colour (taken from the
+  frame corners) so faint scattering shows beside the direct front; Follow keeps the outgoing front centred while
+  zoomed in, which is how a 140 m strip is best watched. Outside the video's time span the nearest frame is
+  shown dimmed with a note.
 - Groove and Echo share one time window: wheel zooms it, double-click resets.
 - History: phase tabs; click a saved iteration chip (or its marker on the curve) to load its scene, profile,
   echo and metrics; "Final" goes back.
@@ -98,6 +102,8 @@ about 4 minutes, most of it the synthetic field video):
 - `s1_bird/...-fx-tier0`: Tier 0 only, no field, no Tier 1.
 - `s2_motif/...-fx-failed`: Tier 1, failed with a cause, fragile.
 - `s3_melody/...-fx-tier0`: 137 m deep, 20,000 posts, for performance.
+- `sample_field/real-tier1-sample`: written by `fixtures/wrap_sample.mjs`, which wraps the real full-wave sample in
+  `runs/_samples/` (field video, its manifest block and scene) as a minimal run folder.
 
 The physics is simplified (posts realized without the minimum-gap rule, field rings from a 160-post sample)
 and every fixture says so in its manifest notes. They exist to exercise the viewer, not as results.

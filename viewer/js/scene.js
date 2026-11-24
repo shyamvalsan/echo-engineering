@@ -15,7 +15,11 @@ export class ScenePanel {
     this.fieldBtn = el("button", { class: "tool toggle on", "aria-pressed": "true", title: "Show the Tier 1 pressure field", onclick: () => this.toggle("field") }, "Field");
     this.ringBtn = el("button", { class: "tool toggle on", "aria-pressed": "true", title: "Show equal-delay range rings", onclick: () => this.toggle("rings") }, "Rings");
     this.title = el("span", { class: "sub" }, "plan view, to scale");
-    this.root.append(el("header", {}, el("h2", {}, "Scene"), this.title, el("div", { class: "tools" }, this.fieldBtn, this.ringBtn, this.fitBtn)));
+    // field gain: stretches the frame about its zero colour so faint scattering shows next to the direct front
+    this.gain = 1;
+    this.gainBtn = el("button", { class: "tool", title: "Field gain: amplify faint pressure (stretch about zero)", onclick: () => this.cycleGain() }, "Gain \u00d71");
+    this.followBtn = el("button", { class: "tool toggle", "aria-pressed": "false", title: "Keep the outgoing front centred while zoomed in", onclick: () => this.toggleFollow() }, "Follow");
+    this.root.append(el("header", {}, el("h2", {}, "Scene"), this.title, el("div", { class: "tools" }, this.fieldBtn, this.gainBtn, this.ringBtn, this.followBtn, this.fitBtn)));
     this.stage = el("div", { class: "stage" });
     this.canvas = el("canvas", { "aria-label": "Plan view of the source, listener and posts" });
     this.tip = el("div", { class: "tip", hidden: true });
@@ -69,6 +73,7 @@ export class ScenePanel {
       this.video.removeAttribute("src");
       // python -m http.server ignores Range requests, and Chrome cannot seek a video served
       // without them, so the whole file is fetched once and played from a blob URL.
+      this.zero = null; this.gainKey = null;
       if (run.fieldUrl) { const url = run.fieldUrl;
         fetch(url).then((r) => { if (!r.ok) throw new Error(`${r.status} ${url}`); return r.blob(); }).then((b) => {
           if (this.fieldUrl !== url) return;
@@ -76,12 +81,39 @@ export class ScenePanel {
         }).catch((e) => { console.warn("field video unavailable:", e.message); this.fieldError = true; this.ac.request(); }); }
     }
     this.field = f || null;
-    this.fieldBtn.disabled = !f; this.fieldBtn.title = f ? "Show the Tier 1 pressure field" : "No pressure field in this run";
+    this.fieldBtn.disabled = !f; this.gainBtn.hidden = !f; this.fieldBtn.title = f ? "Show the Tier 1 pressure field" : "No pressure field in this run";
     if (!keepView) { this.view = null; this.userView = false; }
     this.hover = null; this.tip.hidden = true; this.staticDirty = true; this.ac.request();
   }
 
-  setTime(t) { this.t = t; this._seekFor(t); this.ac.request(); }
+  setTime(t) { this.t = t; this._seekFor(t); if (this.follow) this._follow(); this.ac.request(); }
+
+  cycleGain() { this.gain = { 1: 2, 2: 4, 4: 8, 8: 1 }[this.gain]; this.gainBtn.textContent = `Gain \u00d7${this.gain}`;
+    this.gainBtn.classList.toggle("on", this.gain > 1); this.gainKey = null; this.ac.request(); }
+  toggleFollow() { this.follow = !this.follow; this.followBtn.classList.toggle("on", this.follow); this.followBtn.setAttribute("aria-pressed", String(this.follow));
+    if (this.follow) this._follow(); this.ac.request(); }
+  // centre the view on the outgoing front (clamped to the structure), keeping the zoom
+  _follow() {
+    if (!this.view || !this.scene) return; const wd = this.scene.wedge ?? { r_min: 3, r_max: 15 };
+    const x = Math.max(0, Math.min(wd.r_max, this.c * this.t));
+    this.view.ox = this.ac.w / 2 - x * this.view.s; this.userView = true; this.staticDirty = true;
+  }
+  // frame with gain applied: out = zero + g (in - zero), zero = the frame's background colour
+  _gainFrame() {
+    const f = this.field, key = `${this.shownFrame}|${this.gain}`;
+    if (this.gainKey === key) return this.gainCanvas;
+    const W = this.video.videoWidth, H = this.video.videoHeight; if (!W || !H) return this.video;
+    const cv = this.gainCanvas ?? (this.gainCanvas = document.createElement("canvas")); cv.width = W; cv.height = H;
+    const x = cv.getContext("2d", { willReadFrequently: true }); x.drawImage(this.video, 0, 0, W, H);
+    const im = x.getImageData(0, 0, W, H), d = im.data;
+    if (!this.zero) { // median of the four corners and the top/bottom centres, taken once per video
+      const px = [[0, 0], [W - 1, 0], [0, H - 1], [W - 1, H - 1], [W >> 1, 0], [W >> 1, H - 1]].map(([a, b]) => (b * W + a) * 4);
+      this.zero = [0, 1, 2].map((c) => px.map((o) => d[o + c]).sort((p, q) => p - q)[2]);
+    }
+    const [z0, z1, z2] = this.zero, g = this.gain;
+    for (let i = 0; i < d.length; i += 4) { d[i] = z0 + g * (d[i] - z0); d[i + 1] = z1 + g * (d[i + 1] - z1); d[i + 2] = z2 + g * (d[i + 2] - z2); }
+    x.putImageData(im, 0, 0); this.gainKey = key; return cv;
+  }
 
   // ---- video sync: frame = (t - t0) / sim_seconds_per_frame, currentTime = frame / fps
   frameFor(t) { const f = this.field; return Math.max(0, Math.min(f.n_frames - 1, Math.floor((t - f.t0_s) / f.sim_seconds_per_frame + 1e-6))); }
@@ -169,15 +201,26 @@ export class ScenePanel {
     const f = this.field, showField = f && this.layers.field && this.videoReady && this.shownFrame != null;
     if (showField) {
       const [x0, x1, y0, y1] = f.extent_m, [sx, sy] = this.toScreen(x0, y1);
-      ctx.imageSmoothingEnabled = true; ctx.drawImage(this.video, sx, sy, (x1 - x0) * this.view.s, (y1 - y0) * this.view.s);
+      // plain source-over, full opacity: nothing dims the frame except outside the video's time span
+      const tEnd = f.t0_s + f.n_frames * f.sim_seconds_per_frame, outside = this.t < f.t0_s || this.t > tEnd;
+      ctx.imageSmoothingEnabled = true; ctx.globalAlpha = outside ? 0.35 : 1;
+      ctx.drawImage(this.gain > 1 ? this._gainFrame() : this.video, sx, sy, (x1 - x0) * this.view.s, (y1 - y0) * this.view.s);
+      ctx.globalAlpha = 1;
     }
     // 2. static geometry
     ctx.drawImage(this.off, 0, 0, w, h);
     // 3. live overlay
     this._drawLive(ctx, w, h, showField);
-    this.fieldNote.textContent = f ? (this.layers.field ? (showField ? `Tier 1 pressure, frame ${this.shownFrame + 1} of ${f.n_frames}` : this.fieldError ? "Pressure field video could not be loaded" : "Loading pressure field") : "Pressure field hidden")
+    this.fieldNote.textContent = f ? (this.layers.field ? (showField ? this._fieldLabel(f) : this.fieldError ? "Pressure field video could not be loaded" : "Loading pressure field") : "Pressure field hidden")
       : "No pressure field in this run: geometric wavefront shown";
     this._readout();
+  }
+
+  _fieldLabel(f) {
+    const tEnd = f.t0_s + f.n_frames * f.sim_seconds_per_frame;
+    if (this.t > tEnd) return `Tier 1 pressure ends at ${num(tEnd * 1000, 1)} ms: last frame shown dimmed`;
+    if (this.t < f.t0_s) return `Tier 1 pressure starts at ${num(f.t0_s * 1000, 1)} ms: first frame shown dimmed`;
+    return `Tier 1 pressure, frame ${this.shownFrame + 1} of ${f.n_frames}${this.gain > 1 ? `, gain \u00d7${this.gain}` : ""}`;
   }
 
   _drawStatic(w, h) {
@@ -250,10 +293,11 @@ export class ScenePanel {
       const r = (4 * rho * rho - 4 * fc * fc) / (4 * rho - 2 * ud); return this.toScreen(this.S[0] + r * Math.cos(th), this.S[1] + r * Math.sin(th)); };
     const ok = ([x, y]) => x >= -20 && x <= w - 40 && y >= 24 && y <= h - 4;
     for (const rho of labels) {
-      let [lx, ly] = at(rho, ha + 0.012);
+      const dth = 6 / (this.view.s * rho); // about 6 px outside the wedge edge at any zoom
+      let [lx, ly] = at(rho, ha + dth);
       if (!ok([lx, ly])) {
         // zoomed in: the wedge edge is off screen, so label where the ring crosses the top of the view
-        let lo = -ha, hi = ha; const yTop = 44;
+        let lo = -ha - dth, hi = ha + dth; const yTop = 44;
         if ((at(rho, lo)[1] - yTop) * (at(rho, hi)[1] - yTop) > 0) continue;
         for (let k = 0; k < 40; k++) { const mid = (lo + hi) / 2; if ((at(rho, mid)[1] - yTop) * (at(rho, lo)[1] - yTop) <= 0) hi = mid; else lo = mid; }
         [lx, ly] = at(rho, (lo + hi) / 2); lx += 4; ly += 14;
