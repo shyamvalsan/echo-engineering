@@ -198,9 +198,20 @@ def tier_gap_db(echo_t1_2d, echo_t0_2d):
 
 
 # ------------------------------------------------------------------------------------------------- per-stage judges
+def pitch_error_median_pct(echo_seg, f_track, fs=FS, edge_s=0.012):
+    """Median over the same interior frames as pitch_error_pct (informational, never gating)."""
+    tt, ff = f_track
+    t, f0, _ = pitch_track(echo_seg, fs, f_range=(np.min(ff), np.max(ff)))
+    dur = tt[-1] + (tt[1] - tt[0])
+    m = (t >= edge_s) & (t <= dur - edge_s)
+    return float(np.median(np.abs(f0[m] / np.interp(t[m], tt, ff) - 1.0) * 100.0))
+
+
 def _m_bird(seg, target, fs, band):
     pmax, pmean = pitch_error_pct(seg, target.f_track, fs)
-    return {"pitch_err_pct": pmax, "pitch_err_mean_pct": pmean, "spec_corr": spec_corr(seg, target.audio, fs, band)}
+    return {"pitch_err_pct": pmax, "pitch_err_mean_pct": pmean,
+            "pitch_err_median_pct": pitch_error_median_pct(seg, target.f_track, fs),
+            "spec_corr": spec_corr(seg, target.audio, fs, band)}
 
 
 def _m_notes(seg, target, fs, band):
@@ -213,6 +224,7 @@ def _m_notes(seg, target, fs, band):
 METRIC_INFO = {
     "pitch_err_pct": ("Pitch error along the note, worst frame", "%", "<="),
     "pitch_err_mean_pct": ("Pitch error along the note, mean", "%", "<="),
+    "pitch_err_median_pct": ("Pitch error along the note, median (info)", "%", "<="),
     "spec_corr": ("Spectrogram correlation, log-mel", "", ">="),
     "notes_in_order": ("Notes detected in order (fraction of claps)", "", ">="),
     "note_cents_max": ("Worst note pitch error", "cents", "<="),
@@ -255,8 +267,30 @@ def _entries(stage, per_clap, tier, gating):
     return out
 
 
+# stage -> aggregator(stage, per_clap: list[dict], tier, gating) -> list of metric entries. Default: per-clap mean vs
+# threshold (_entries). Stage-level judgements that are not a mean (e.g. "hello" for >= 3 of 5 claps, a closed-set
+# test across targets) register their own aggregator here (echo/metrics_speech.py).
+STAGE_AGGREGATORS: dict = {}
+
+
+def aggregate(stage, per_clap, tier, gating):
+    return STAGE_AGGREGATORS.get(stage, _entries)(stage, per_clap, tier, gating)
+
+
+def judge_floor(stage, target, claps, fs=FS, band=(500.0, 4000.0)):
+    """The stage's metrics on a physically perfect echo: target convolved with each clap, band-limited. Separates
+    judge/clap limits from design error (reporting only)."""
+    from echo.clap import band_limit
+
+    segs = [band_limit(np.convolve(target.audio, c)[: len(target.audio)], band[0], band[1]) for c in np.atleast_2d(claps)]
+    pc = [STAGE_METRICS[stage](s, target, fs, band) for s in segs]
+    return {"per_clap": [{"clap": k, "metrics": {i: _clean(x) for i, x in v.items()}} for k, v in enumerate(pc)],
+            "mean": {i: _clean(np.mean([v[i] for v in pc])) for i in pc[0]},
+            "note": "metrics of target * clap (band-limited): the floor set by the judge and the clap, not the design"}
+
+
 def score_stage(stage, target, t0_s, tier0_2d, tier0_3d, tier1_2d=None, *, fs=FS, band=(500.0, 4000.0),
-                depth_m=None, post_count=None, fill_fraction=None, robustness=None, failure_cause=None):
+                depth_m=None, post_count=None, fill_fraction=None, robustness=None, failure_cause=None, claps=None):
     """Assemble the metrics.json structure (data contract).
 
     Gating metrics are computed on Tier 1 when present (tier "tier1"); Tier 0 metrics are always reported and are
@@ -269,10 +303,10 @@ def score_stage(stage, target, t0_s, tier0_2d, tier0_3d, tier1_2d=None, *, fs=FS
     verified = tier1_2d is not None
     if verified:
         pc1 = stage_values(stage, tier1_2d, target, t0_s, fs, band)
-        metrics += _entries(stage, pc1, "tier1", True)
+        metrics += aggregate(stage, pc1, "tier1", True)
         for k, v in enumerate(pc1):
             per_clap.append({"clap": k, "tier": "tier1", "metrics": {i: _clean(x) for i, x in v.items()}})
-    metrics += _entries(stage, pc0, "tier0", False)
+    metrics += aggregate(stage, pc0, "tier0", False)
     for k, v in enumerate(pc0):
         per_clap.append({"clap": k, "tier": "tier0", "metrics": {i: _clean(x) for i, x in v.items()}})
     raw3d = float(np.mean(echo_level_db(tier0_3d)))
@@ -287,4 +321,5 @@ def score_stage(stage, target, t0_s, tier0_2d, tier0_3d, tier1_2d=None, *, fs=FS
                 "likely_inaudible_on_site": bool(spl < INAUDIBLE_SPL_DB)}
     return {"stage": stage, "passed": passed, "verified": verified, "fragile": False, "headline": headline,
             "metrics": metrics, "per_clap": per_clap, "robustness": list(robustness or []),
-            "failure_cause": failure_cause}
+            "failure_cause": failure_cause,
+            "judge_floor": judge_floor(stage, target, claps, fs, band) if claps is not None else None}

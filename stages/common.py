@@ -132,7 +132,7 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
     sc = des.scene
     st = des.realize_stats
     metrics = score_stage(cfg.stage, target, t_echo0, des.echo_t0_2d, des.echo_t0_3d, des.echo_t1_2d, band=band,
-                          depth_m=sc.depth_m, post_count=int(len(des.posts)), fill_fraction=fill_fraction(sc))
+                          depth_m=sc.depth_m, post_count=int(len(des.posts)), fill_fraction=fill_fraction(sc), claps=claps)
     des.metrics = metrics
     lvl0 = float(echo_level_db(des.echo_t0_3d)[0]) + (metrics["headline"]["tier_gap_db"] or 0.0)
     notes = (f"{cfg.notes} Exported audio uses clap variant 0; metrics average {cfg.n_claps} clap variants. "

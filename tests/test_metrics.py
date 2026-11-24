@@ -131,3 +131,40 @@ def test_wrong_sequences_fail_per_clap(k):
     assert not _stage_pass("s2_motif", note_sequence_score(_perfect(_variant(mo, det40).audio, k), mo.notes))
     missing = _variant(mo, g[:2] + g[3:])
     assert not _stage_pass("s2_motif", note_sequence_score(_perfect(missing.audio, k), mo.notes))
+
+
+def test_stage_aggregator_hook_with_dummy_stage():
+    from echo import metrics as M
+
+    def judge(seg, target, fs, band):
+        return {"hit": float(np.max(np.abs(seg)) > 0.005)}
+
+    def count_hits(stage, per_clap, tier, gating):
+        n = sum(pc["hit"] for pc in per_clap)
+        return [{"id": "hits", "label": "claps judged a hit", "value": n, "unit": "", "threshold": 3,
+                 "comparator": ">=", "pass": bool(n >= 3), "tier": tier, "gating": gating}]
+
+    M.STAGE_METRICS["dummy"], M.STAGE_AGGREGATORS["dummy"] = judge, count_hits
+    try:
+        b = bird_note()
+        e = _as_echo(b.audio)
+        e[3:] = 0.0  # 3 of 5 claps carry the echo
+        m = score_stage("dummy", b, T0, e, e, tier1_2d=e)
+        t1 = [x for x in m["metrics"] if x["tier"] == "tier1"][0]
+        assert t1["value"] == 3 and t1["pass"] and m["passed"]
+        e[2:] = 0.0
+        assert not score_stage("dummy", b, T0, e, e, tier1_2d=e)["passed"]
+    finally:
+        del M.STAGE_METRICS["dummy"], M.STAGE_AGGREGATORS["dummy"]
+
+
+def test_judge_floor_and_info_metrics():
+    b = bird_note()
+    e = _as_echo(b.audio)
+    m = score_stage("s1_bird", b, T0, e, e, claps=CLAPS)
+    jf = m["judge_floor"]
+    assert len(jf["per_clap"]) == 5 and set(jf["mean"]) >= {"pitch_err_pct", "pitch_err_median_pct", "spec_corr"}
+    assert 1.0 < jf["mean"]["pitch_err_pct"] < 3.0  # the judge's own floor on a perfect echo
+    med = [x for x in m["metrics"] if x["id"] == "pitch_err_median_pct"][0]
+    assert med["threshold"] is None and med["gating"] is False and med["pass"] is None
+    assert all(x["tier"] == "tier0" and x["gating"] is False for x in m["metrics"])
