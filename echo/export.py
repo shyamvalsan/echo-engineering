@@ -21,6 +21,7 @@ from echo.scene import C0, FS, T_DIRECT, Scene
 ROOT = Path(__file__).resolve().parents[1]
 RUNS = ROOT / "runs"
 PEAK_DBFS = -1.0
+EXPORT_DIRS_SKIPPED = ("validation", "_tmp")  # stage-level folders update_index ignores (plus any "_*")
 SPEC_N_FFT, SPEC_HOP, SPEC_FMAX, SPEC_FLOOR = 256, 32, 5000.0, -60.0
 
 
@@ -204,7 +205,7 @@ def update_index(runs_root=RUNS):
     runs = []
     for mf in sorted(root.glob("*/*/manifest.json")):
         stage_dir, run_dir = mf.parent.parent.name, mf.parent.name
-        if stage_dir.startswith("_") or run_dir.startswith("_") or stage_dir == "validation":
+        if stage_dir.startswith("_") or run_dir.startswith("_") or stage_dir in EXPORT_DIRS_SKIPPED:
             continue
         try:
             m = json.loads(mf.read_text())

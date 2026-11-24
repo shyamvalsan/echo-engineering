@@ -60,7 +60,7 @@ def _arc_len(rho, half_angle_deg):
 
 
 def realize(profile, scene_cfg: Scene | None = None, seed=0, *, r0, dr=DR_PROFILE, a_ref=0.02, radii=RADII,
-            band=BAND, gap=MIN_GAP, shadow_depth=0.5, n_try=48, smooth_m=0.10):
+            band=BAND, gap=MIN_GAP, shadow_depth=0.5, n_try=48, smooth_m=0.10, claps=None, refine_steps=0):
     """Turn a profile into posts. Returns (posts ndarray[N, 3] (x, y, radius), stats dict).
 
     stats: n_posts, by_radius, requested_mass, realized_mass, dropped (posts), shadow_violations, min_gap_m,
@@ -94,20 +94,35 @@ def realize(profile, scene_cfg: Scene | None = None, seed=0, *, r0, dr=DR_PROFIL
                 return a
         return order[-1]
 
-    placed_rho, placed = [], []  # sorted by rho (posts are produced in increasing rho)
-    shadow_viol = dropped = 0
-    g = rng.random()
+    # Phase A: ranges and radii by error diffusion on the continuous cumulative mass.
+    rhos, rads = [], []
     m_next = 0.0
-    a_max = max(radii)
     while True:
         rho_guess = float(np.interp(min(m_next, total), M, edges))
         a = pick_radius(rho_guess)
-        wa = w[a]
-        m_mid = m_next + 0.5 * wa
+        m_mid = m_next + 0.5 * w[a]
         if m_mid > total:
             break
-        rho = float(np.interp(m_mid, M, edges))
-        m_next += wa
+        rhos.append(float(np.interp(m_mid, M, edges)))
+        rads.append(a)
+        m_next += w[a]
+    rhos, rads = np.asarray(rhos), np.asarray(rads)
+    refine_db = None
+    if refine_steps and len(rhos):
+        rhos, refine_db = refine_ranges(rhos, rads, p, scene, r0=r0, dr=dr, a_ref=a_ref, band=band,
+                                        claps=claps, steps=refine_steps)
+        keep = rhos >= r0 - dr / 2
+        rhos, rads = rhos[keep], rads[keep]
+        o = np.argsort(rhos)
+        rhos, rads = rhos[o], rads[o]
+
+    # Phase C: angular placement along each equal-delay ellipse.
+    placed_rho, placed = [], []  # sorted by rho
+    shadow_viol = dropped = 0
+    g = rng.random()
+    a_max = max(radii)
+    for rho, a in zip(rhos, rads):
+        rho, a = float(rho), float(a)
         u = (g + GOLDEN * np.arange(1, n_try + 1)) % 1.0
         th = (2.0 * u - 1.0) * th_max
         xy = ellipse_point(rho, th, scene.source, scene.listener)
@@ -172,5 +187,50 @@ def realize(profile, scene_cfg: Scene | None = None, seed=0, *, r0, dr=DR_PROFIL
         "min_gap_m": float(check_gaps(posts)),
         "profile_rel_err": float(np.linalg.norm(rs - ps) / (np.linalg.norm(ps) + 1e-30)),
         "realized_profile": real,
+        "refine_steps": int(refine_steps),
+        "refine_transfer_err_db": refine_db,
     }
     return posts, stats
+
+
+def refine_ranges(rhos, rads, profile, scene: Scene, *, r0, dr=DR_PROFILE, a_ref=0.02, band=BAND, claps=None,
+                  steps=100, lr=5e-4, n_fft=2048):
+    """Polish post ranges so the posts' Tier 0 transfer matches the profile's transfer in band.
+
+    Minimizes sum_f W(f) |H_posts(f) - H_profile(f)|^2 / sum_f W(f) |H_profile(f)|^2 (2D, posts on the wedge axis,
+    which differs from their final off-axis placement by < -80 dB), W = family-mean clap power spectrum. This is a
+    realization-fidelity objective against the solved profile (not against the target). Returns (rhos, (err_db
+    before, err_db after)).
+    """
+    import torch
+
+    from echo.tier0 import post_transfer, profile_transfer
+
+    s, l = scene.source, scene.listener
+    if not (np.allclose(s, 0) and np.isclose(l[0], 0)):
+        raise NotImplementedError("refine_ranges assumes S = (0,0) and L on the y axis")
+    d2 = float(l[1] ** 2)
+    cl = np.atleast_2d(np.asarray(claps)) if claps is not None else None
+    W = (torch.as_tensor(np.mean(np.abs(np.fft.rfft(cl, n_fft, axis=-1)) ** 2, axis=0)) if cl is not None
+         else torch.ones(n_fft // 2 + 1, dtype=torch.float64))
+    sc0 = Scene(source=s, listener=l, c=scene.c)
+    Hp = profile_transfer(torch.as_tensor(profile), sc0, n_fft=n_fft, a_ref=a_ref, r0=r0, dr=dr, band=band).detach()
+    den = float((W * Hp.abs() ** 2).sum())
+    rho = torch.tensor(np.asarray(rhos, dtype=float), requires_grad=True)
+    rad = torch.as_tensor(np.asarray(rads, dtype=float))
+    opt = torch.optim.Adam([rho], lr=lr)
+    best = (np.inf, rho.detach().clone())
+    first = None
+    for _ in range(steps + 1):
+        x = (4 * rho**2 - d2) / (4 * rho)  # on-axis point of the ellipse |P-S| + |P-L| = 2 rho
+        P = torch.stack([x, torch.zeros_like(x), rad], 1)
+        H = post_transfer(P, sc0, n_fft=n_fft, band=band)
+        L = (W * (H - Hp).abs() ** 2).sum() / den
+        lv = float(L.detach())
+        first = lv if first is None else first
+        if lv < best[0]:
+            best = (lv, rho.detach().clone())
+        opt.zero_grad()
+        L.backward()
+        opt.step()
+    return best[1].numpy(), (10 * math.log10(first), 10 * math.log10(best[0]))

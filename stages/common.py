@@ -38,12 +38,13 @@ class StageConfig:
     seed: int = 0
     r0: float = R0_PROFILE
     dr: float = DR_PROFILE
-    a_ref: float = 0.02
-    target_fill: float = 0.015  # post area / wedge area: the profile's free overall scale (density vs multiple scattering)
+    a_ref: float = 0.01  # reference (and preferred) post radius: small posts (spec), realized 1:1 with the model
+    target_fill: float = 0.01  # post area / wedge area: the profile's free overall scale (density vs multiple scattering)
     steps: int = 300
     lr: float = 0.02
     w_mel: float = 1.0
     shadow_depth: float = 0.5
+    refine_steps: int = 100  # post-range polish against the profile transfer (realize.refine_ranges)
     notes: str = ""
 
 
@@ -85,7 +86,8 @@ def build_design(cfg: StageConfig, profile, claps, band, n_out, seed=None) -> De
     """Realize a physical-scale profile and evaluate Tier 0 (2D post echo, 3D post echo, 2D profile echo)."""
     sc = Scene()
     posts, st = realize(profile, sc, cfg.seed if seed is None else seed, r0=cfg.r0, dr=cfg.dr, a_ref=cfg.a_ref,
-                        band=band, shadow_depth=cfg.shadow_depth)
+                        band=band, shadow_depth=cfg.shadow_depth, claps=claps,
+                        refine_steps=cfg.refine_steps)
     sc = Scene(posts=posts)
     cl = torch.as_tensor(claps)
     e2 = post_echo(posts, cl, sc, mode="2d", n_out=n_out, band=band).numpy()

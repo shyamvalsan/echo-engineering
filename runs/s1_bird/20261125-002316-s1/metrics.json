@@ -4,12 +4,12 @@
  "verified": false,
  "fragile": false,
  "headline": {
-  "echo_level_db_re_direct": -43.5714055662015,
-  "echo_level_db_re_direct_raw3d": -43.5714055662015,
-  "echo_spl_db": 66.88616933940526,
-  "depth_m": 13.596989217316336,
-  "post_count": 1136,
-  "fill_fraction": 0.014972266475160667,
+  "echo_level_db_re_direct": -43.10471670253562,
+  "echo_level_db_re_direct_raw3d": -43.10471670253562,
+  "echo_spl_db": 67.35285820307112,
+  "depth_m": 13.649828143985026,
+  "post_count": 3029,
+  "fill_fraction": 0.009984523257844439,
   "tier_gap_db": null,
   "likely_inaudible_on_site": false
  },
@@ -17,18 +17,18 @@
   {
    "id": "pitch_err_pct",
    "label": "Pitch error along the note, worst frame",
-   "value": 3.4655908912959665,
+   "value": 2.562699803888362,
    "unit": "%",
    "threshold": 3.0,
    "comparator": "<=",
-   "pass": false,
+   "pass": true,
    "tier": "tier0",
    "gating": false
   },
   {
    "id": "pitch_err_mean_pct",
    "label": "Pitch error along the note, mean",
-   "value": 1.1392705520477497,
+   "value": 0.9930853084245953,
    "unit": "%",
    "threshold": null,
    "comparator": null,
@@ -39,11 +39,11 @@
   {
    "id": "spec_corr",
    "label": "Spectrogram correlation, log-mel",
-   "value": 0.6959164190732404,
+   "value": 0.9589063943283536,
    "unit": "",
    "threshold": 0.8,
    "comparator": ">=",
-   "pass": false,
+   "pass": true,
    "tier": "tier0",
    "gating": false
   }
@@ -53,45 +53,45 @@
    "clap": 0,
    "tier": "tier0",
    "metrics": {
-    "pitch_err_pct": 1.8611515100773524,
-    "pitch_err_mean_pct": 0.8976850979280827,
-    "spec_corr": 0.7052070133762914
+    "pitch_err_pct": 2.2017612553176136,
+    "pitch_err_mean_pct": 0.7783762269980822,
+    "spec_corr": 0.9635059083969439
    }
   },
   {
    "clap": 1,
    "tier": "tier0",
    "metrics": {
-    "pitch_err_pct": 1.8611515100773524,
-    "pitch_err_mean_pct": 0.8650726072961192,
-    "spec_corr": 0.7309029394989924
+    "pitch_err_pct": 2.109786012900816,
+    "pitch_err_mean_pct": 0.8686092278948297,
+    "spec_corr": 0.9665350050267412
    }
   },
   {
    "clap": 2,
    "tier": "tier0",
    "metrics": {
-    "pitch_err_pct": 3.718626385609225,
-    "pitch_err_mean_pct": 0.991304723013373,
-    "spec_corr": 0.6884549481407233
+    "pitch_err_pct": 1.7597834557979364,
+    "pitch_err_mean_pct": 0.7342779688051725,
+    "spec_corr": 0.955977746981067
    }
   },
   {
    "clap": 3,
    "tier": "tier0",
    "metrics": {
-    "pitch_err_pct": 5.062512767376592,
-    "pitch_err_mean_pct": 1.4511816183701596,
-    "spec_corr": 0.6977914666646735
+    "pitch_err_pct": 3.8557668840569326,
+    "pitch_err_mean_pct": 1.385241569094025,
+    "spec_corr": 0.9694547882263284
    }
   },
   {
    "clap": 4,
    "tier": "tier0",
    "metrics": {
-    "pitch_err_pct": 4.824512283339311,
-    "pitch_err_mean_pct": 1.4911087136310135,
-    "spec_corr": 0.6572257276855215
+    "pitch_err_pct": 2.886401411368511,
+    "pitch_err_mean_pct": 1.1989215493308674,
+    "spec_corr": 0.9390585230106875
    }
   }
  ],
