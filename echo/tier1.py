@@ -38,7 +38,8 @@ from echo.scene import C0, FS, Scene, alpha_db_per_m
 
 RHO0 = 1.2  # kg/m^3; only ratios matter for the echo
 K_MAX = 3.0  # cap on the sub-cell bulk-modulus contrast
-PPW_DEFAULT = 5.0  # grid points per wavelength at f_max
+FIELD_DTYPE = np.float32  # field precision
+PPW_DEFAULT = 8.0  # grid points per wavelength at f_max (validated, see DECISIONS.md)
 CFL_DEFAULT = 0.45  # c dt / dx (2D 8th-order staggered stability limit is 0.55)
 CACHE_DIR = Path(__file__).resolve().parent.parent / ".cache" / "tier1"
 SENSOR_HALF = 8  # windowed-sinc sensor interpolation half width (16 x 16 taps)
@@ -164,7 +165,12 @@ def medium(posts, grid: Grid, kmax=K_MAX):
     bx = (1 - phi_x) / (1 + phi_x)
     by = (1 - phi_y) / (1 + phi_y)
     ks = np.minimum(1.0 / np.maximum(1.0 - phi_p, 1e-9), kmax)
-    ks[phi_p >= 0.999] = 0.0
+    solid = phi_p >= 0.999
+    ks[solid] = 0.0
+    # Faces touching a solid node are closed, so the solid node is isolated. Otherwise its p = 0 would act as a
+    # pressure-release sink.
+    bx[solid | np.roll(solid, -1, 0)] = 0.0
+    by[solid | np.roll(solid, -1, 1)] = 0.0
     return ks.astype(np.float32), bx.astype(np.float32), by.astype(np.float32)
 
 
@@ -292,7 +298,7 @@ def simulate(grid: Grid, c, dt, n_steps, src_xy, src_signal, sensors_xy, posts=N
     t_setup = time.time()
     nb.set_num_threads(threads or nb.config.NUMBA_NUM_THREADS)
     nx, ny, d = grid.nx, grid.ny, grid.dx
-    f32 = np.float32
+    f32 = FIELD_DTYPE
     K0 = RHO0 * c * c
     posts = np.zeros((0, 3)) if posts is None else np.asarray(posts, float).reshape(-1, 3)
     if len(posts):
