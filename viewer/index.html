@@ -21,6 +21,8 @@
     <select id="runB" aria-label="Compare run"></select>
   </div>
   <span id="source" class="source"></span>
+  <div class="cmd" id="cmdBox" hidden><code id="cmd" title="Command that reproduces this run"></code><button id="copy" class="tool" title="Copy the reproduce command">Copy</button></div>
+  <nav class="links"><a href="../explainer/">Explainer</a><a href="../BUILD.md">Build path</a></nav>
 </header>
 
 <main id="main"><p id="loading" class="loading">Loading runs</p></main>
@@ -32,7 +34,7 @@
   <div class="group"><span class="glabel">Sound</span><div class="segs">
     <button id="pitch" class="seg" title="Audio slows with the picture, so pitch drops">Pitch follows</button>
     <button id="mute" class="seg" title="Silence while the picture plays">Muted</button></div></div>
-  <div class="group"><span class="glabel">Listen</span><div id="kinds" class="segs"></div></div>
+  <div class="group"><span class="glabel">Listen <span id="truelevel" class="truelevel"></span></span><div id="kinds" class="segs"></div></div>
   <div class="group" id="sides" hidden><span class="glabel">From</span><div class="segs">
     <button class="seg" data-s="0">Left</button><button class="seg" data-s="1">Right</button></div></div>
   <div class="scrub"><div id="overview" class="overview" title="Click or drag to move the timeline"></div><canvas id="ticks" class="ticks"></canvas></div>

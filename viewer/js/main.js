@@ -7,8 +7,20 @@ import { AutoCanvas, colors, el, niceStep, ticks, num } from "./util.js";
 
 const params = new URLSearchParams(location.search);
 const SPEEDS = [{ v: 1, label: "Real time" }, { v: 0.1, label: "10× slower" }, { v: 0.02, label: "50× slower" }];
-const STAGE_NAMES = { s1_bird: "1 Bird note", s2_motif: "2 Motif", s3_melody: "3 Melody", s4a_vowel: "4a Vowel", s4b_syllables: "4b Syllables", s4c_word: "4c Word" };
-const stageName = (s) => STAGE_NAMES[s] ?? s;
+const STAGE_NAMES = { s1_bird: "1 Bird note", s2_motif: "2 Motif", s3_melody: "3 Melody", s4_speech: "4 Speech",
+  s4a_vowel: "4a Vowel", s4b_syllables: "4b Syllables", s4c_word: "4c Word" };
+const words = (s) => s.replace(/[_-]+/g, " ").trim().replace(/^./, (c) => c.toUpperCase());
+function stageName(s) {
+  if (STAGE_NAMES[s]) return STAGE_NAMES[s];
+  if (s.startsWith("build_")) return `Build pilot: ${words(s.slice(6)) || "unnamed"}`;
+  const m = /^s(\d+)([a-z]?)_(.+)$/.exec(s); if (m) return `${m[1]}${m[2]} ${words(m[3])}`;
+  return words(s);
+}
+// stages in run order, then build pilots, then anything else
+const stageRank = (s) => { const m = /^s(\d+)([a-z]?)_/.exec(s); return m ? +m[1] * 10 + (m[2] ? m[2].charCodeAt(0) - 96 : 0) : s.startsWith("build_") ? 1000 : 2000; };
+// default run of a stage: the newest final run, else the newest run (index is newest first)
+const defaultRun = (runs) => runs.find((r) => r.status === "final") ?? runs[0];
+const hhmm = (iso) => { const m = /T(\d\d:\d\d)/.exec(iso ?? ""); return m ? m[1] : ""; };
 
 const state = { base: null, runs: [], a: null, b: null, views: [], kind: "as_heard", side: 0, cache: new Map() };
 const clock = new Clock();
@@ -21,13 +33,13 @@ async function getRun(entry) {
 
 // ---------- header: stage and run switchers
 function fillSwitcher(stageSel, runSel, current, onPick) {
-  const stages = [...new Set(state.runs.map((r) => r.stage))];
+  const stages = [...new Set(state.runs.map((r) => r.stage))].sort((a, b) => stageRank(a) - stageRank(b) || a.localeCompare(b));
   stageSel.replaceChildren(...stages.map((s) => el("option", { value: s, selected: s === current.stage }, stageName(s))));
   const runsOf = (s) => state.runs.filter((r) => r.stage === s);
-  const fillRuns = (s, sel) => runSel.replaceChildren(...runsOf(s).map((r) => el("option", { value: r.path, selected: r.path === sel },
-    `${r.title ?? r.run_id}${r.verified ? "" : " (unverified)"}${r.passed ? ", passed" : r.verified ? ", failed" : ""}`)));
+  const fillRuns = (s, sel) => runSel.replaceChildren(...runsOf(s).map((r) => el("option", { value: r.path, selected: r.path === sel, title: r.path },
+    `${r.title ?? r.run_id}, ${r.status === "intermediate" ? "intermediate" : !r.verified ? "unverified" : r.passed ? "passed" : "failed"}${hhmm(r.created) ? `, ${hhmm(r.created)}` : ""}`)));
   fillRuns(current.stage, current.path);
-  stageSel.onchange = () => { const r = runsOf(stageSel.value)[0]; fillRuns(stageSel.value, r.path); onPick(r); };
+  stageSel.onchange = () => { const r = defaultRun(runsOf(stageSel.value)); fillRuns(stageSel.value, r.path); onPick(r); };
   runSel.onchange = () => onPick(state.runs.find((r) => r.path === runSel.value));
 }
 
@@ -107,13 +119,20 @@ async function show() {
     if (state.side >= runs.length) state.side = 0;
     state.views = runs.map((r, i) => new RunView(main, r, { clock, compact: runs.length > 1, side: runs.length > 1 ? (i ? "Right" : "Left") : null, onTrackChange: setTrack }));
     document.title = `${runs.map((r) => r.manifest.title ?? r.entry.run_id).join(" vs ")} — Composed Echo`;
-    setTrack(); transport.ticks.request(); onTime();
+    setTrack(); transport.ticks.request(); onTime(); runInfo();
     const u = new URL(location.href); u.searchParams.set("run", state.a.path);
     if (state.b) u.searchParams.set("compare", state.b.path); else u.searchParams.delete("compare");
     history.replaceState(null, "", u);
   } catch (e) {
     main.append(el("p", { class: "fatal" }, `Could not load the run: ${e.message}. Check that the folder holds manifest.json.`)); console.warn(e);
   } finally { $("loading").hidden = true; }
+}
+
+function runInfo() {
+  const v = state.views[state.side] ?? state.views[0], m = v?.run.manifest;
+  $("cmdBox").hidden = !m?.command; $("cmd").textContent = m?.command ?? "";
+  const lv = m?.audio?.as_heard_echo_level_db;
+  $("truelevel").textContent = lv == null ? "" : `as heard at true level: echo ${num(-lv, 0)} dB below the clap`;
 }
 
 function onTime() { const t = clock.t; for (const v of state.views) v.setTime(t); transport.time(t); }
@@ -130,7 +149,13 @@ function setupCompare() {
     sync(); show();
   };
   sync();
-  for (const b of $("sides").querySelectorAll("button")) b.onclick = () => { state.side = +b.dataset.s; setTrack(); transport.ticks.request(); };
+  for (const b of $("sides").querySelectorAll("button")) b.onclick = () => { state.side = +b.dataset.s; setTrack(); transport.ticks.request(); runInfo(); };
+  $("copy").onclick = async () => {
+    const txt = $("cmd").textContent;
+    try { await navigator.clipboard.writeText(txt); $("copy").textContent = "Copied"; }
+    catch { const r = document.createRange(); r.selectNodeContents($("cmd")); getSelection().removeAllRanges(); getSelection().addRange(r); $("copy").textContent = "Selected"; }
+    setTimeout(() => { $("copy").textContent = "Copy"; }, 1500);
+  };
 }
 
 function keys() {
@@ -150,11 +175,12 @@ async function boot() {
   const sp = +params.get("speed"); clock.speed = SPEEDS.some((s) => s.v === sp) ? sp : 0.1; transport.sync();
   const idx = await loadIndex(params.get("runs") ?? "../runs");
   state.base = idx.base; state.runs = idx.runs;
-  $("source").textContent = idx.fallback ? `Fixture data: no runs in ${idx.requested}/index.json yet` : idx.base === "fixtures/runs" ? "Fixture data" : `Runs from ${idx.base}`;
+  $("source").textContent = idx.fallback ? `Fixture data: no runs in ${idx.requested}/index.json yet` : idx.base === "fixtures/runs" ? "Fixture data" : "";
+  $("source").title = `Runs read from ${idx.base}/index.json`;
   $("source").classList.toggle("warn", idx.base === "fixtures/runs");
   if (!state.runs.length) { $("loading").hidden = true; $("main").append(el("p", { class: "fatal" }, `No runs found. Run a stage (for example uv run python -m stages.s1_bird) to write ${idx.base}/index.json, or open ?runs=fixtures/runs.`)); return; }
   const find = (p) => state.runs.find((r) => r.path === p);
-  state.a = find(params.get("run")) ?? state.runs[0];
+  state.a = find(params.get("run")) ?? defaultRun(state.runs);
   state.b = params.get("compare") ? find(params.get("compare")) ?? null : null;
   fillSwitcher($("stage"), $("run"), state.a, (r) => { state.a = r; show(); });
   if (state.b) { fillSwitcher($("stageB"), $("runB"), state.b, (r) => { state.b = r; show(); }); }

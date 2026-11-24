@@ -6,6 +6,13 @@ const CMP = { "<=": "≤", ">=": "≥", "==": "=" };
 const dec = (v) => (v == null ? 0 : Number.isInteger(v) ? 0 : Math.abs(v) < 1 ? 2 : Math.abs(v) < 100 ? 1 : 0);
 const withUnit = (v, u) => (v == null ? "—" : `${num(v, dec(v))}${u ? (u === "%" ? " %" : ` ${u}`) : ""}`);
 
+// Tier 1 results say pass/fail in colour; Tier 0 or unverified results only "meets"/"misses".
+function markFor(pass, provisional) {
+  if (pass == null) return el("span", { class: "info" }, "info");
+  if (provisional) return el("span", { class: "prov", title: "Tier 0 result, not a pass" }, pass ? "meets" : "misses");
+  return el("span", { class: pass ? "pass" : "fail" }, pass ? "pass" : "fail");
+}
+
 export function verdictOf(run, metrics = run.metrics) {
   const m = run.manifest, verified = (metrics?.verified ?? m.verified) && m.status !== "tier0_only";
   if (!verified) return { cls: "unverified", text: "UNVERIFIED — Tier 0 only" };
@@ -25,9 +32,12 @@ export class ScorePanel {
     const v = verdictOf(run, metrics); this.verdict.className = `verdict ${v.cls}`; this.verdict.textContent = v.text;
     const b = this.body; b.replaceChildren();
     if (note) b.append(el("p", { class: "iternote" }, note));
+    // Unverified runs never show a pass: Tier 0 results read "meets" / "misses", in neutral colours.
+    const unverified = v.cls === "unverified";
+    if (unverified) b.append(el("p", { class: "unvnote" }, "Tier 0 only: numbers from the fast single-scattering model. A stage passes only on the full-wave Tier 1 solver, which has not run on this design."));
     if (!metrics) { b.append(el("p", { class: "empty" }, "This run has no metrics.json yet.")); return; }
     const H = metrics.headline ?? {};
-    const spl = H.echo_spl_db, quiet = spl != null && spl < 35;
+    const spl = H.echo_spl_db, quiet = H.likely_inaudible_on_site ?? (spl != null && spl < 35);
     b.append(el("div", { class: "headline" },
       el("div", { class: "big" }, el("div", { class: "num" }, num(H.echo_level_db_re_direct, 1), el("small", {}, "dB")),
         el("div", { class: "lbl" }, "echo re direct clap"),
@@ -41,7 +51,7 @@ export class ScorePanel {
       el("dt", {}, "Wedge filled"), el("dd", {}, H.fill_fraction == null ? "—" : `${num(H.fill_fraction * 100, 2)} %`)));
     if (metrics.failure_cause) b.append(el("p", { class: "cause" }, metrics.failure_cause));
     const rows = (metrics.metrics ?? []).map((m) => el("tr", { class: m.gating ? "gating" : "" },
-      el("td", { class: "mark" }, el("span", { class: m.pass == null ? "info" : m.pass ? "pass" : "fail" }, m.pass == null ? "info" : m.pass ? "pass" : "fail")),
+      el("td", { class: "mark" }, markFor(m.pass, unverified || m.tier !== "tier1")),
       el("td", { class: "label" }, m.label ?? m.id, el("span", { class: "tier" }, m.tier === "tier1" ? "T1" : "T0")),
       el("td", { class: "val" }, withUnit(m.value, m.unit)),
       el("td", { class: "thr" }, m.comparator ? `${CMP[m.comparator] ?? m.comparator} ${withUnit(m.threshold, m.unit)}` : "")));
@@ -52,7 +62,7 @@ export class ScorePanel {
     if (!rob.length) { b.append(el("p", { class: "empty" }, "No robustness sweep in this run.")); return; }
     b.append(el("table", { class: "robust" }, el("tbody", {}, rob.map((r) => {
       const ds = Object.entries(r.delta ?? {}).map(([k, d]) => `${k} ${d >= 0 ? "+" : ""}${num(d, dec(d) || 2)}`).join(", ");
-      return el("tr", {}, el("td", { class: "mark" }, el("span", { class: r.pass ? "pass" : "fail" }, r.pass ? "pass" : "fail")),
+      return el("tr", {}, el("td", { class: "mark" }, markFor(r.pass, unverified)),
         el("td", { class: "label" }, r.label ?? r.case), el("td", { class: "val" }, ds));
     }))));
   }

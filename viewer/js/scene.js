@@ -245,12 +245,20 @@ export class ScenePanel {
     ctx.restore(); ctx.globalAlpha = 1;
     // labels just outside the upper wedge edge, metres over ms of echo
     ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+    // point at bearing th from S on the ellipse: r = (4 rho^2 - |SL|^2) / (4 rho - 2 u.SL)
+    const at = (rho, th) => { const ud = Math.cos(th) * (this.L[0] - this.S[0]) + Math.sin(th) * (this.L[1] - this.S[1]);
+      const r = (4 * rho * rho - 4 * fc * fc) / (4 * rho - 2 * ud); return this.toScreen(this.S[0] + r * Math.cos(th), this.S[1] + r * Math.sin(th)); };
+    const ok = ([x, y]) => x >= -20 && x <= w - 40 && y >= 24 && y <= h - 4;
     for (const rho of labels) {
-      // point at bearing th from S on the ellipse: r = (4 rho^2 - |SL|^2) / (4 rho - 2 u.SL)
-      const th = ha + 0.012, ud = Math.cos(th) * (this.L[0] - this.S[0]) + Math.sin(th) * (this.L[1] - this.S[1]);
-      const r = (4 * rho * rho - 4 * fc * fc) / (4 * rho - 2 * ud);
-      const [lx, ly] = this.toScreen(this.S[0] + r * Math.cos(th), this.S[1] + r * Math.sin(th));
-      if (lx < -20 || lx > w + 20 || ly < 24 || ly > h - 4) continue;
+      let [lx, ly] = at(rho, ha + 0.012);
+      if (!ok([lx, ly])) {
+        // zoomed in: the wedge edge is off screen, so label where the ring crosses the top of the view
+        let lo = -ha, hi = ha; const yTop = 44;
+        if ((at(rho, lo)[1] - yTop) * (at(rho, hi)[1] - yTop) > 0) continue;
+        for (let k = 0; k < 40; k++) { const mid = (lo + hi) / 2; if ((at(rho, mid)[1] - yTop) * (at(rho, lo)[1] - yTop) <= 0) hi = mid; else lo = mid; }
+        [lx, ly] = at(rho, (lo + hi) / 2); lx += 4; ly += 14;
+        if (!ok([lx, ly])) continue;
+      }
       // outward of the wedge edge, knocked out of whatever is behind
       ctx.lineWidth = 3; ctx.strokeStyle = C.ink; ctx.lineJoin = "round";
       const a = `${num(rho, dec)} m`, b = `${num(2 * rho / this.c * 1000, dec + 1)} ms`;

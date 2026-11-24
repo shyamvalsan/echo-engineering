@@ -40,10 +40,17 @@ button, select { font: inherit; color: inherit; }
 .pick { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .pick label { display: flex; align-items: center; gap: 6px; color: var(--dim); }
 select {
-  background: var(--panel); border: 1px solid var(--line); border-radius: 2px; padding: 3px 6px; max-width: 320px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 2px; padding: 3px 6px; max-width: 400px;
   color: var(--text);
 }
-.source { margin-left: auto; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.source { margin-left: auto; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.cmd { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.cmd code { font: 11.5px/1 "Plex Condensed", system-ui, sans-serif; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; }
+.cmd code::before { content: "$ "; color: var(--faint); }
+.links { display: flex; gap: 14px; }
+.links a { color: var(--dim); text-decoration: none; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.links a:hover { color: var(--text); border-color: var(--dim); }
+.truelevel { color: var(--faint); margin-left: 6px; }
 .source.warn { color: var(--dim); }
 
 /* ---------- buttons */
@@ -137,10 +144,12 @@ main.compare { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
 table { border-collapse: collapse; width: 100%; }
 caption { text-align: left; color: var(--faint); font-size: 11.5px; padding: 2px 0; caption-side: top; }
 td { padding: 3px 4px 3px 0; border-top: 1px solid var(--grid); vertical-align: baseline; }
-td.mark span { display: inline-block; width: 34px; font-size: 11.5px; }
+td.mark span { display: inline-block; width: 40px; font-size: 11.5px; }
 td.mark .pass { color: var(--pass); }
 td.mark .fail { color: var(--fail); }
 td.mark .info { color: var(--faint); }
+td.mark .prov { color: var(--dim); }
+.unvnote { color: var(--dim); margin: 0 0 8px; max-width: 60ch; border-left: 2px dashed var(--faint); padding-left: 8px; }
 td.label { color: var(--dim); }
 tr.gating td.label { color: var(--text); font-weight: 500; }
 td.label .tier { color: var(--faint); font-size: 10.5px; margin-left: 5px; }

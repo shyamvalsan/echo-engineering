@@ -16,14 +16,25 @@ vendored in `viewer/vendor/`), so it works offline.
 | Parameter | Default | Meaning |
 | --- | --- | --- |
 | `runs` | `../runs` | Folder holding `index.json` and the run folders, relative to `viewer/`. `?runs=fixtures/runs` opens the fixture set. If `../runs/index.json` is missing or lists no runs, the viewer falls back to `fixtures/runs` and says so in the header. |
-| `run` | newest run | Run path as listed in `index.json`, e.g. `s1_bird/20261124-2310-fx-final`. |
+| `run` | newest final run | Run path as listed in `index.json`, e.g. `s1_bird/20261125-002316-s1`. Without it the newest `status: "final"` run is opened, else the newest run; switching stage picks that stage's newest final run the same way. |
 | `compare` | none | A second run path; opens compare mode. |
 | `speed` | `0.1` | `1`, `0.1` or `0.02` (real time, 10x and 50x slower). |
 | `t` | `0` | Initial timeline position in simulation seconds. |
 
 The URL is kept up to date as runs are picked, so a view can be shared by copying it.
 
+After the viewer code changes, reload with Ctrl+Shift+R: `http.server` sends no cache headers, so a browser
+may keep serving the old JavaScript modules.
+
 ## Controls
+
+- Header: stage and run switchers (known stages get names such as "1 Bird note" and "4 Speech"; `build_*`
+  stages appear as "Build pilot: ..."; anything else is shown with underscores as spaces), Compare, the run's
+  reproduce command (`manifest.command`) with a Copy button, and links to `../explainer/` and `../BUILD.md`.
+- Next to the Listen buttons: the true level of the echo in "As heard" (`manifest.audio.as_heard_echo_level_db`),
+  because at a true -44 dB the echo is very quiet by design.
+- Unverified runs (Tier 0 only) carry the "UNVERIFIED — Tier 0 only" mark and a note; their metrics read
+  "meets"/"misses" in neutral colours, never "pass". Tier 0 rows of verified runs read the same way.
 
 - One timeline (simulation seconds, 0 = clap emission) drives the wave video, the echo cursor, the groove
   cursor and the spectrogram cursors. Scrub with the waveform strip in the footer, or click/drag in the groove,
@@ -47,7 +58,7 @@ The viewer reads exactly these fields and tolerates everything optional being ab
 `runs/index.json`: `runs[]` with `stage`, `run_id`, `path` (relative to the runs folder), `title`, `created`,
 `status`, `passed`, `verified`. Order is kept (newest first); runs are grouped by `stage` for the switcher.
 
-`manifest.json`: `title`, `status` (`"tier0_only"` forces the UNVERIFIED mark), `verified`, `c`, `duration_s`
+`manifest.json`: `title`, `command`, `audio.as_heard_echo_level_db`, `status` (`"tier0_only"` forces the UNVERIFIED mark), `verified`, `c`, `duration_s`
 (timeline length), `t_direct_s` (direct-arrival tick in the Echo panel), `solver.tier1` (`"none"` means no
 `echo_tier1.wav` is requested), and `field`:
 `{file, fps, n_frames, t0_s, sim_seconds_per_frame, extent_m: [xmin, xmax, ymin, ymax]}` or `null`.
@@ -68,7 +79,7 @@ any rate, all sharing t = 0 = emission. Parsed in JavaScript (no decodeAudioData
 `spectrograms.json`: `freqs_hz`, `times_s`, `db_floor`, `panels.{target, tier0, tier1|null}` as `[F][T]` in dB.
 
 `metrics.json`: `passed`, `verified`, `fragile`, `failure_cause`, `headline.{echo_level_db_re_direct,
-echo_level_db_re_direct_raw3d, echo_spl_db, depth_m, post_count, fill_fraction, tier_gap_db}`,
+echo_level_db_re_direct_raw3d, echo_spl_db, depth_m, post_count, fill_fraction, tier_gap_db, likely_inaudible_on_site?}`,
 `metrics[] {id, label, value, unit, threshold, comparator, pass, tier, gating}`,
 `robustness[] {case, label, delta, pass}`. `per_clap` is not shown yet.
 
