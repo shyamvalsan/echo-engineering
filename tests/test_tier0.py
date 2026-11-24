@@ -209,7 +209,7 @@ def test_profile_matches_posts(claps, mode):
     a = 0.02
     rho = r0 + idx * dr
     xy = ellipse_point(rho, 0.0)
-    posts = np.repeat(np.c_[xy, np.full(len(idx), a)], 1, axis=0)
+    posts = np.c_[xy, np.full(len(idx), a)]
     n_out = 3400
     e_prof = profile_echo(torch.tensor(prof), claps, Scene(), mode, n_out=n_out, a_ref=a, r0=r0, dr=dr).numpy()
     # post_echo of the equivalent posts: weight each post's echo by its count (linear model).
@@ -261,14 +261,15 @@ def test_evaluation_time(claps):
     rho = rng.uniform(3.1, 30.0, n)
     th = rng.uniform(-0.3, 0.3, n)
     posts = np.c_[ellipse_point(rho, th), rng.choice([0.01, 0.02, 0.04, 0.08], n)]
-    post_echo(posts[:10], claps, Scene(), "2d", n_out=3200)  # warm the partial-wave cache
+    band = (500.0, 4000.0)  # the design band, as used by the design search and the Tier 1 comparison
+    post_echo(posts[:10], claps, Scene(), "2d", n_out=3200, band=band)  # warm the partial-wave cache
     t = time.perf_counter()
-    post_echo(posts, claps, Scene(), "2d", n_out=3200)
+    post_echo(posts, claps, Scene(), "2d", n_out=3200, band=band)
     t_post = time.perf_counter() - t
     prof = torch.rand(2700, dtype=torch.float64, requires_grad=True)
-    profile_echo(prof, claps, Scene(), "2d", n_out=3200)  # build the plan
+    profile_echo(prof, claps, Scene(), "2d", n_out=3200, band=band)  # build the plan
     t = time.perf_counter()
-    profile_echo(prof, claps, Scene(), "2d", n_out=3200).sum().backward()
+    profile_echo(prof, claps, Scene(), "2d", n_out=3200, band=band).sum().backward()
     t_prof = time.perf_counter() - t
     assert t_post < 1.0, t_post
     assert t_prof < 0.5, t_prof
