@@ -1,0 +1,35 @@
+check 3: empty scene
+check 1: rigid cylinder
+  cyl f_max=4000.0 a=0.01 off=0.0000,0.0000: max |err| 0.387 dB
+  cyl f_max=4000.0 a=0.01 off=0.0035,0.0053: max |err| 0.456 dB
+  cyl f_max=4000.0 a=0.01 off=0.0053,0.0021: max |err| 0.554 dB
+  cyl f_max=4000.0 a=0.02 off=0.0000,0.0000: max |err| 0.671 dB
+  cyl f_max=4000.0 a=0.02 off=0.0035,0.0053: max |err| 0.919 dB
+  cyl f_max=4000.0 a=0.02 off=0.0053,0.0021: max |err| 0.558 dB
+  cyl f_max=4000.0 a=0.04 off=0.0000,0.0000: max |err| 0.978 dB
+  cyl f_max=4000.0 a=0.04 off=0.0035,0.0053: max |err| 0.894 dB
+  cyl f_max=4000.0 a=0.04 off=0.0053,0.0021: max |err| 0.913 dB
+  cyl f_max=4000.0 a=0.08 off=0.0000,0.0000: max |err| 0.589 dB
+  cyl f_max=4000.0 a=0.08 off=0.0035,0.0053: max |err| 0.507 dB
+  cyl f_max=4000.0 a=0.08 off=0.0053,0.0021: max |err| 0.451 dB
+  cyl f_max=2000.0 a=0.01 off=0.0000,0.0000: max |err| 2.018 dB
+  cyl f_max=2000.0 a=0.01 off=0.0035,0.0053: max |err| 0.984 dB
+  cyl f_max=2000.0 a=0.01 off=0.0053,0.0021: max |err| 0.895 dB
+  cyl f_max=2000.0 a=0.02 off=0.0000,0.0000: max |err| 0.377 dB
+  cyl f_max=2000.0 a=0.02 off=0.0035,0.0053: max |err| 0.304 dB
+  cyl f_max=2000.0 a=0.02 off=0.0053,0.0021: max |err| 0.511 dB
+  cyl f_max=2000.0 a=0.04 off=0.0000,0.0000: max |err| 0.671 dB
+  cyl f_max=2000.0 a=0.04 off=0.0035,0.0053: max |err| 0.798 dB
+  cyl f_max=2000.0 a=0.04 off=0.0053,0.0021: max |err| 0.712 dB
+  cyl f_max=2000.0 a=0.08 off=0.0000,0.0000: max |err| 0.981 dB
+  cyl f_max=2000.0 a=0.08 off=0.0035,0.0053: max |err| 0.815 dB
+  cyl f_max=2000.0 a=0.08 off=0.0053,0.0021: max |err| 1.37 dB
+check 2: grid convergence
+  convergence ppw=9.0 dx=0.0094 wall=8s
+  convergence ppw=18.0 dx=0.0048 wall=129s
+check 4: tier0 vs tier1 sparse design (+ sample field video)
+empty_scene: pass=True
+cylinder: pass=True
+grid_convergence: pass=True
+tier0_vs_tier1: pass=True
+validation passed: True (1166.2 s)
