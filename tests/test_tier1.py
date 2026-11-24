@@ -1,6 +1,7 @@
 """Tier 1 solver: fast versions of validation checks 1 and 3, plus the absorption filter and the field video."""
 
 import json
+import os
 
 import numpy as np
 import pytest
@@ -11,7 +12,11 @@ from echo.clap import clap_family
 from echo.scene import C0, FS, Scene
 from stages.validate import analytic_cylinder_ir_spectrum, band_errors_db
 
+# Slow tests (tens of seconds each) run only with RUN_SLOW=1; the default suite keeps checks 1 and 3 (fast versions).
+slow = pytest.mark.skipif(not os.environ.get("RUN_SLOW"), reason="slow Tier 1 test; set RUN_SLOW=1")
 
+
+@slow
 def test_free_field_matches_2d_greens_function():
     """Point mass source on the grid vs the exact 2D Green's function.
 
@@ -35,7 +40,7 @@ def test_free_field_matches_2d_greens_function():
     assert np.max(np.abs(dphi - dphi.mean())) < 0.05  # rad: no residual delay between the two paths
 
 
-@pytest.mark.parametrize("radius", [0.01, 0.02])
+@pytest.mark.parametrize("radius", [pytest.param(0.01, marks=slow), 0.02])
 def test_cylinder_backscatter_within_1db_fast(radius):
     """Check 1 (fast): one post at 3 m, f_max 2 kHz, ppw 9 (dx 1.9 cm). Analytic: exact Hankel series."""
     post = [3.0, 0.0, radius]
@@ -74,6 +79,7 @@ def test_empty_scene_reflections_below_60db_fast():
     assert 20 * np.log10(np.abs(res[:, after]).max()) < -60.0
 
 
+@slow
 def test_echo_delay_and_absorption():
     """An echo arrives at 2 rho / c; absorption leaves early samples nearly intact and attenuates late ones."""
     post = [4.0, 0.0, 0.02]
