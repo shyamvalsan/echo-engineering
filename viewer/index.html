@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Composed Echo</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="vendor/uPlot.min.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <h1>Composed Echo</h1>
+  <div class="pick">
+    <label><span>Stage</span><select id="stage"></select></label>
+    <label><span>Run</span><select id="run"></select></label>
+  </div>
+  <button id="compare" class="tool toggle" aria-pressed="false" title="Put a second run next to this one">Compare</button>
+  <div class="pick" id="compareBox" hidden>
+    <label><span>with</span><select id="stageB" aria-label="Compare stage"></select></label>
+    <select id="runB" aria-label="Compare run"></select>
+  </div>
+  <span id="source" class="source"></span>
+</header>
+
+<main id="main"><p id="loading" class="loading">Loading runs</p></main>
+
+<footer class="transport">
+  <button id="play" class="play" title="Play or pause (space)">Play</button>
+  <div class="clock"><span id="tnow" class="tnow">0.00</span><span class="tunit">ms</span><span id="tsub" class="tsub"></span></div>
+  <div class="group"><span class="glabel">Speed</span><div id="speeds" class="segs"></div></div>
+  <div class="group"><span class="glabel">Sound</span><div class="segs">
+    <button id="pitch" class="seg" title="Audio slows with the picture, so pitch drops">Pitch follows</button>
+    <button id="mute" class="seg" title="Silence while the picture plays">Muted</button></div></div>
+  <div class="group"><span class="glabel">Listen</span><div id="kinds" class="segs"></div></div>
+  <div class="group" id="sides" hidden><span class="glabel">From</span><div class="segs">
+    <button class="seg" data-s="0">Left</button><button class="seg" data-s="1">Right</button></div></div>
+  <div class="scrub"><div id="overview" class="overview" title="Click or drag to move the timeline"></div><canvas id="ticks" class="ticks"></canvas></div>
+</footer>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
