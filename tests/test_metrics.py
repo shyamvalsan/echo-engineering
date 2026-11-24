@@ -86,3 +86,48 @@ def test_detuned_notes_judged():
     sharp40 = note_sequence([x * 2 ** (40 / 1200) for x in f], 0.045, "s40")
     assert note_sequence_score(sharp20.audio, tgt.notes)["cents_max"] < 30.0
     assert note_sequence_score(sharp40.audio, tgt.notes)["cents_max"] > 30.0
+
+
+# --- note judge on perfect echoes (target convolved with each clap, band-limited to the loss band) -----------------
+from echo.clap import band_limit, clap_family  # noqa: E402
+
+CLAPS = clap_family(5)
+
+
+def _perfect(audio, k):
+    return band_limit(np.convolve(audio, CLAPS[k]), 898.4375, 4000.0)
+
+
+def _stage_pass(stage, r):
+    return r["in_order"] >= THRESHOLDS[stage]["notes_in_order"] and r["cents_max"] <= THRESHOLDS[stage]["note_cents_max"]
+
+
+@pytest.mark.parametrize("k", range(5))
+@pytest.mark.parametrize("stage,tgt", [("s2_motif", motif()), ("s3_melody", melody(100)), ("s3_melody", melody(60))],
+                         ids=["motif", "melody100", "melody60"])
+def test_perfect_echo_passes_per_clap(stage, tgt, k):
+    assert _stage_pass(stage, note_sequence_score(_perfect(tgt.audio, k), tgt.notes))
+
+
+def _variant(tgt, freqs):
+    note_s = tgt.notes[0][2] - tgt.notes[0][1]
+    return note_sequence(freqs, note_s, "variant")
+
+
+@pytest.mark.parametrize("k", range(5))
+def test_wrong_sequences_fail_per_clap(k):
+    mel = melody(100)
+    f = [n[0] for n in mel.notes]
+    swapped = f.copy()
+    swapped[2], swapped[3] = swapped[3], swapped[2]  # F6 <-> G6
+    assert not _stage_pass("s3_melody", note_sequence_score(_perfect(_variant(mel, swapped).audio, k), mel.notes))
+    det60 = f.copy()
+    det60[5] *= 2 ** (60 / 1200)
+    assert not _stage_pass("s3_melody", note_sequence_score(_perfect(_variant(mel, det60).audio, k), mel.notes))
+    mo = motif()
+    g = [n[0] for n in mo.notes]
+    det40 = g.copy()
+    det40[1] *= 2 ** (40 / 1200)
+    assert not _stage_pass("s2_motif", note_sequence_score(_perfect(_variant(mo, det40).audio, k), mo.notes))
+    missing = _variant(mo, g[:2] + g[3:])
+    assert not _stage_pass("s2_motif", note_sequence_score(_perfect(missing.audio, k), mo.notes))

@@ -105,55 +105,74 @@ def hz_to_cents(f, ref):
     return 1200.0 * np.log2(np.asarray(f, dtype=float) / ref)
 
 
-def segment_notes(x, fs=FS, f_range=(500.0, 4000.0), min_note_s=0.02, energy_db=-25.0, dip=0.35, jump_cents=60.0):
-    """Segment a pitch track into notes. Returns list of (f_hz median, t_on, t_off).
+JUDGE_F_RANGE = (400.0, 4200.0)  # pyin search range for the note judge: the design band, never the target's notes
 
-    Frames are kept if pyin calls them voiced and the frame RMS is within energy_db of the max. Segments split at
-    dropped frames, at energy dips (RMS < dip x the smaller of the maxima in the 15 ms before / after), and where
-    the pitch moves by more than jump_cents from the running segment median. Segments shorter than min_note_s go.
+
+def segment_notes(x, fs=FS, note_s=0.1, f_range=JUDGE_F_RANGE, active_db=-25.0, dip_db=3.0, jump_cents=70.0):
+    """Transcribe notes from an echo window. Returns list of (f_hz, t_on, t_off).
+
+    What the judge is told: only the stage's nominal note length `note_s` (and the fixed design-band pitch search
+    range JUDGE_F_RANGE). It is not told the target's note count, boundaries or frequencies.
+
+    Frames: pyin (frame 256, hop 32) best-guess f0, and a 64-sample RMS envelope in dB smoothed over 3 frames.
+    Active frames are within active_db of the envelope max. Boundaries are (a) envelope dips: local minima with
+    prominence >= dip_db, at least note_s/2 apart; (b) pitch changes: peaks >= jump_cents (at least note_s/2 apart)
+    of |median log f0 over the next note_s/4 - median over the previous note_s/4|, unless within 0.3 note_s of a dip
+    boundary. Segments shorter than 0.4 note_s are dropped. A note's pitch is the median f0 over the middle 60 % of
+    its frames.
     """
     import librosa
+    import scipy.signal as ss
 
-    t, f0, vprob = pitch_track(x, fs, f_range=f_range)
     x = np.asarray(x, dtype=float)
-    rms = librosa.feature.rms(y=x, frame_length=64, hop_length=PYIN_HOP, center=True)[0][: len(t)]
-    rms = np.pad(rms, (0, len(t) - len(rms)))
-    keep = (vprob > 0.1) & (rms > rms.max() * 10 ** (energy_db / 20))
-    w = max(1, int(0.015 * fs / PYIN_HOP))
-    is_dip = np.zeros(len(t), bool)
-    for i in range(len(t)):
-        lm = rms[max(0, i - w):i].max(initial=0.0)
-        rm = rms[i + 1:i + 1 + w].max(initial=0.0)
-        if rms[i] < dip * min(lm, rm):
-            is_dip[i] = True
+    t, f0, _ = pitch_track(x, fs, fmin=f_range[0], fmax=f_range[1])
+    hop_s = PYIN_HOP / fs
+    rms = librosa.feature.rms(y=x, frame_length=64, hop_length=PYIN_HOP, center=True)[0]
+    rms = np.pad(rms, (0, max(0, len(t) - len(rms))))[: len(t)]
+    db = np.convolve(20 * np.log10(rms + 1e-12), np.ones(3) / 3, "same")
+    active = db > db.max() + active_db
+    dist = max(1, int(0.5 * note_s / hop_s))
+    dips, _ = ss.find_peaks(-db, prominence=dip_db, distance=dist)
+    bounds = {int(d) for d in dips if active[max(0, d - 1)] or active[min(len(t) - 1, d + 1)]}
+    k = max(2, int(0.25 * note_s / hop_s))
+    lf = np.log2(np.maximum(f0, 1.0))
+    jump = np.zeros(len(t))
+    for i in range(k, len(t) - k):
+        jump[i] = abs(np.median(lf[i:i + k]) - np.median(lf[i - k:i])) * 1200.0
+    pj, _ = ss.find_peaks(jump, height=jump_cents, distance=dist)
+    for q in pj:
+        if active[q] and all(abs(q - b) > 0.3 * note_s / hop_s for b in bounds):
+            bounds.add(int(q))
     notes, cur = [], []
 
     def close():
-        if cur and (len(cur) * PYIN_HOP / fs) >= min_note_s:
-            notes.append((float(np.median(f0[cur])), float(t[cur[0]]), float(t[cur[-1]])))
+        if cur and len(cur) * hop_s >= 0.4 * note_s:
+            n = len(cur)
+            mid = cur[int(0.2 * n):max(int(0.2 * n) + 1, int(0.8 * n))]
+            notes.append((float(2 ** np.median(lf[mid])), float(t[cur[0]]), float(t[cur[-1]])))
 
     for i in range(len(t)):
-        if not keep[i] or is_dip[i]:
+        if not active[i] or i in bounds:
             close()
             cur = []
-            continue
-        if cur and abs(hz_to_cents(f0[i], np.median(f0[cur]))) > jump_cents:
-            close()
-            cur = []
+            if not active[i]:
+                continue
         cur.append(i)
     close()
     return notes
 
 
-def note_sequence_score(echo_seg, target_notes, fs=FS, min_note_frac=0.4):
+def note_sequence_score(echo_seg, target_notes, fs=FS, note_s=None):
     """Compare a transcribed note sequence with the target notes [(f_hz, t_on, t_off)].
 
-    Returns {"in_order": 1.0|0.0 (same count and every note on the same semitone, in order),
+    The target's frequencies are used only to compare, after transcription. Returns
+    {"in_order": 1.0|0.0 (same count and every note on the same semitone, in order),
     "cents_max": max |cents| over notes (inf-free: 1200 if the sequence does not match), "n_detected", "cents"}.
     """
     fs_t = [n[0] for n in target_notes]
-    dur = min(n[2] - n[1] for n in target_notes)
-    det = segment_notes(echo_seg, fs, f_range=(min(fs_t), max(fs_t)), min_note_s=min_note_frac * dur)
+    if note_s is None:  # the stage's nominal note length is all the segmenter is told
+        note_s = float(np.median([n[2] - n[1] for n in target_notes]))
+    det = segment_notes(echo_seg, fs, note_s=note_s)
     cents = []
     ok = len(det) == len(fs_t)
     if ok:
