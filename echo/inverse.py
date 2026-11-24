@@ -66,9 +66,6 @@ class EchoLoss:
         fb = librosa.filters.mel(sr=fs, n_fft=MEL_N_FFT, n_mels=MEL_N, fmin=band[0], fmax=band[1])
         self.mel = torch.as_tensor(fb, dtype=torch.float32)
         self.win = torch.hann_window(MEL_N_FFT)
-        lo, hi = band
-        f = np.fft.rfftfreq(MEL_N_FFT, 1.0 / fs)
-        self._ok = None
 
     def logmel(self, x):
         X = torch.stft(x, MEL_N_FFT, MEL_HOP, window=self.win, return_complex=True, center=True)
@@ -81,17 +78,6 @@ class EchoLoss:
         l_stft = self.mrstft(e[:, None, :], t[:, None, :])
         l_mel = (self.logmel(e) - self.logmel(t)).abs().mean()
         return l_stft + self.w_mel * l_mel, float(l_stft.detach()), float(l_mel.detach())
-
-
-def _bandlimit_torch(x, band, fs=FS):
-    """Same zero-phase mask as echo.clap.band_limit, in torch (differentiable, batched over the first axis)."""
-    n = x.shape[-1]
-    nfft = 1 << int(np.ceil(np.log2(2 * n)))
-    from echo.tier0 import band_mask
-
-    f = np.fft.rfftfreq(nfft, 1.0 / fs)
-    m = torch.as_tensor(band_mask(f, band[0], band[1], fs), dtype=x.dtype)
-    return torch.fft.irfft(torch.fft.rfft(x, nfft, dim=-1) * m, nfft, dim=-1)[..., :n]
 
 
 def initial_profile(target_audio, n_rho, r0=R0_PROFILE, dr=DR_PROFILE, c=C0, fs=FS):

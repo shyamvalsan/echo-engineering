@@ -57,6 +57,17 @@ def git_commit():
         return "unknown"
 
 
+def git_dirty_paths():
+    """Modified/untracked paths under echo/ and stages/ (git status --porcelain), [] when clean, None if no git."""
+    try:
+        out = subprocess.run(["git", "status", "--porcelain", "--", "echo", "stages"], cwd=ROOT, capture_output=True,
+                             text=True, check=True).stdout
+    except Exception:
+        return None
+    return [ln[3:].strip() for ln in out.splitlines() if ln.strip() and not ln[3:].strip().endswith(".pyc")
+            and "__pycache__" not in ln]
+
+
 def make_run_id(tag, now=None):
     now = now or _dt.datetime.now()
     return f"{now:%Y%m%d-%H%M%S}-{tag}"
@@ -179,10 +190,12 @@ def write_run(stage, tag, title, *, scene: Scene, profile: dict, target_audio, t
         status = "final" if verified else "tier0_only"
     solver = solver or {"tier1": "none", "device": "cpu", "dx": None, "dt": None, "grid": None, "f_lo": None,
                         "f_max": None, "ppw": None, "wall_s": None}
+    dirty = git_dirty_paths()
     manifest = {
         "run_id": run_id, "stage": stage, "title": title,
         "created": _dt.datetime.now().astimezone().isoformat(timespec="seconds"),
-        "seed": seed, "git_commit": git_commit(), "status": status, "verified": verified,
+        "seed": seed, "git_commit": git_commit(), "git_dirty": bool(dirty), "git_dirty_paths": dirty or [],
+        "status": status, "verified": verified,
         "passed": bool(metrics.get("passed", False)),
         "fs": FS, "c": float(scene.c), "duration_s": duration_s, "t_direct_s": float(np.linalg.norm(
             scene.listener - scene.source) / scene.c),
@@ -192,6 +205,9 @@ def write_run(stage, tag, title, *, scene: Scene, profile: dict, target_audio, t
         "notes": notes,
     }
     if extra:
+        clash = set(extra) & set(manifest)
+        if clash:
+            raise ValueError(f"extra manifest keys collide with contract keys: {sorted(clash)}")
         manifest.update(extra)
     write_json(d / "manifest.json", manifest, indent=1)
     update_index(runs_root)

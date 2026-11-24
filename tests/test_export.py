@@ -84,3 +84,17 @@ def test_committed_stage1_run_folders_follow_contract():
         check_run_folder(mf.parent)
     if (RUNS / "index.json").exists():
         check_index(RUNS)
+
+
+def test_manifest_records_git_state_and_rejects_key_collisions(tmp_path):
+    import pytest
+
+    d = _fake_run(tmp_path)
+    man = json.loads((d / "manifest.json").read_text())
+    assert isinstance(man["git_dirty"], bool) and isinstance(man["git_dirty_paths"], list)
+    assert man["git_dirty"] == bool(man["git_dirty_paths"])
+    with pytest.raises(ValueError):
+        write_run("s1_bird", "x", "t", scene=Scene(), profile={"r0_m": 3.06, "dr_m": 0.01, "reflectivity": [1.0],
+                  "units": "x"}, target_audio=np.zeros(10), t_echo0=0.0178, claps=clap_family(5),
+                  echo_t0=np.zeros((5, 1920)), metrics=json.loads((d / "metrics.json").read_text()),
+                  history={"phases": []}, seed=0, command="c", runs_root=tmp_path, extra={"seed": 1})

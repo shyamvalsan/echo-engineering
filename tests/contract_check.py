@@ -29,6 +29,7 @@ def check_run_folder(d) -> list[str]:
     checked = []
     m = _load(d / "manifest.json")
     checked.append("manifest.json")
+    assert isinstance(m.get("git_dirty", False), bool)
     for k, t in (("run_id", str), ("stage", str), ("title", str), ("created", str), ("status", str),
                  ("verified", bool), ("fs", int), ("command", str), ("notes", str), ("git_commit", str)):
         assert isinstance(m.get(k), t), f"manifest.{k}: {m.get(k)!r}"
