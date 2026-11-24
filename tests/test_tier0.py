@@ -256,6 +256,9 @@ def test_gradient_to_profile(claps, mode):
 
 
 def test_evaluation_time(claps):
+    # The timed contract is the design band (500-4000 Hz), as used by the design search and the Tier 1
+    # comparison; the full band (no `band`) is about 4x slower (0.9 s measured under load).
+
     rng = np.random.default_rng(1)
     n = 3000
     rho = rng.uniform(3.1, 30.0, n)
@@ -273,3 +276,121 @@ def test_evaluation_time(claps):
     t_prof = time.perf_counter() - t
     assert t_post < 1.0, t_post
     assert t_prof < 0.5, t_prof
+
+
+# ------------------------------------------------------------------------------------- jittered radii
+
+
+def exact_2d_transfer(post, f, c=C0):
+    """Tier 0 2D model evaluated directly with scipy for this post's own radius (no tables, no radius grid)."""
+    P, a = post[:2], post[2]
+    Lst = np.array([0.0, D])
+    r1, r2 = np.linalg.norm(P), np.linalg.norm(P - Lst)
+    u, v = -P, Lst - P
+    delta = np.arctan2(u[0] * v[1] - u[1] * v[0], np.dot(u, v))
+    k = 2 * np.pi * f / c
+    T = cylinder_response(a, f, np.pi - delta, c)
+
+    def q(x):
+        return sp.hankel1(0, x) * np.sqrt(np.pi * x / 2) * np.exp(-1j * (x - np.pi / 4))
+
+    R = np.sqrt(2 * D / (np.pi * k * r1 * r2)) * np.exp(1j * np.pi / 4) * np.conj(q(k * r1) * q(k * r2) * T / q(k * D))
+    R *= 10 ** (-alpha_db_per_m(f) * (r1 + r2 - D) / 20)
+    return R * np.exp(-1j * k * (r1 + r2))
+
+
+def test_jittered_radii_match_exact_per_radius():
+    # Robustness sweep: radii jittered by up to +-1 mm. Each of 20 posts must match the exact per-radius model
+    # within 0.05 dB and 0.01 rad over 500-6000 Hz.
+    rng = np.random.default_rng(3)
+    n = 20
+    xy = ellipse_point(rng.uniform(3.1, 40.0, n), rng.uniform(-0.3, 0.3, n))
+    rad = rng.choice([0.01, 0.02, 0.04, 0.08], n) + rng.uniform(-1e-3, 1e-3, n)
+    n_fft = 4096
+    f = np.arange(n_fft // 2 + 1) * FS / n_fft
+    sel = (f >= 500) & (f <= 6000)
+    for i in range(n):
+        post = np.array([xy[i, 0], xy[i, 1], rad[i]])
+        H = post_transfer(post[None, :], Scene(), "2d", n_fft=n_fft).numpy()[sel]
+        ref = exact_2d_transfer(post, f[sel])
+        assert np.max(np.abs(20 * np.log10(np.abs(H / ref)))) < 0.05, i
+        assert np.max(np.abs(np.angle(H / ref))) < 0.01, i
+
+
+def test_jittered_radii_cost_like_catalog(claps):
+    # Robustness-sweep contract: 3000 posts with independently jittered radii cost about the same as catalog radii.
+    rng = np.random.default_rng(4)
+    n = 3000
+    xy = ellipse_point(rng.uniform(3.1, 30.0, n), rng.uniform(-0.3, 0.3, n))
+    cat = rng.choice([0.01, 0.02, 0.04, 0.08], n)
+    band = (500.0, 4000.0)
+    times = []
+    for rad in (cat, cat + rng.uniform(-1e-3, 1e-3, n)):
+        posts = np.c_[xy, rad]
+        post_echo(posts, claps, Scene(), "2d", n_out=3200, band=band)  # warm-up
+        t = time.perf_counter()
+        post_echo(posts, claps, Scene(), "2d", n_out=3200, band=band)
+        times.append(time.perf_counter() - t)
+    assert times[1] < 1.0 and times[1] < 2.5 * times[0] + 0.1, times
+
+
+# ------------------------------------------------------------------------------------ finite post height
+
+
+def h_ratio(post_height, ear_height, rho=20.0, f0=1000.0, n_fft=4096):
+    post = one_post(rho, 0.0, 0.04)
+    kk = int(round(f0 * n_fft / FS))
+    h = post_transfer(post, Scene(), "3d", n_fft=n_fft, post_height=post_height, ear_height=ear_height).numpy()[kk]
+    h_inf = post_transfer(post, Scene(), "3d", n_fft=n_fft).numpy()[kk]
+    return h / h_inf, post, kk * FS / n_fft
+
+
+def fresnel_scale(post, f):
+    r1 = np.linalg.norm(post[0, :2])
+    r2 = np.linalg.norm(post[0, :2] - np.array([0, D]))
+    k = 2 * np.pi * f / C0
+    return np.sqrt(k * (r1 + r2) / (np.pi * r1 * r2))
+
+
+def test_height_tall_post_is_infinite():
+    # A 50 m post with the ear at mid-height, rho = 20 m: each end sits at |s| = 25 m * scale Fresnel units
+    # (13.5 at 500 Hz, 19 at 1 kHz, 38 at 4 kHz). Each end adds an edge term of size ~ 1/(pi |s| sqrt 2), so
+    # F = 1 within 0.1 dB from 1 kHz up, and within the two-edge bound sqrt(2)/(pi |s|) at 500 Hz.
+    for f0 in (500.0, 1000.0, 2000.0, 4000.0):
+        r, post, f = h_ratio(50.0, 25.0, f0=f0)
+        s_end = 25.0 * fresnel_scale(post, f)
+        assert abs(r - 1) <= np.sqrt(2) / (np.pi * s_end)
+        if f0 >= 1000.0:
+            assert abs(20 * np.log10(abs(r))) < 0.1
+
+
+def test_height_hand_value():
+    # Ear at the foot of the post (z_e = 0), height chosen so the top sits at s = 1 Fresnel unit:
+    # F = E(1) / (1 + i), E(1) = C(1) + i S(1) = 0.779893 + 0.438259 i (Abramowitz & Stegun table 7.7).
+    # |F| = sqrt(0.779893^2 + 0.438259^2) / sqrt(2) = 0.63258 (-3.98 dB); arg F = atan(0.438259/0.779893) - pi/4
+    # = -0.27330 rad (physics), so the DSP-convention ratio is conj(F): phase +0.27330.
+    _, post, f = h_ratio(1.0, 0.0)
+    hgt = 1.0 / fresnel_scale(post, f)  # ~1.65 m at 1 kHz, 20 m
+    r, _, _ = h_ratio(hgt, 0.0)
+    assert abs(r) == pytest.approx(0.63258, rel=1e-3)
+    assert np.angle(r) == pytest.approx(0.27330, abs=1e-3)
+
+
+def test_height_loss_monotone_below_fresnel_zone(claps):
+    # Post centred on the ear (z_e = h/2): F = 2 E(h scale / 2) / (1 + i); |E(s)| grows monotonically up to s ~ 1.2,
+    # so shrinking the post below the Fresnel zone (~2.3 m here at 1 kHz) loses level monotonically.
+    _, post, f = h_ratio(1.0, 0.5)
+    hz = 2.0 * 1.2 / fresnel_scale(post, f)
+    mags = [abs(h_ratio(h, h / 2)[0]) for h in hz * np.array([1.0, 0.7, 0.5, 0.3, 0.1])]
+    assert np.all(np.diff(mags) < 0), mags
+    # Echo energy (whole clap band) drops the same way.
+    e = [
+        np.sum(post_echo(post, claps, Scene(), "3d", n_out=2200, post_height=h, ear_height=h / 2).numpy() ** 2)
+        for h in (1.5, 1.0, 0.5, 0.25)  # all below the Fresnel zone over the whole clap band (s <= 1.2 at 4 kHz)
+    ]
+    assert np.all(np.diff(e) < 0), e
+
+
+def test_height_rejected_in_2d():
+    with pytest.raises(ValueError):
+        post_transfer(one_post(5.0, 0.0, 0.02), Scene(), "2d", post_height=2.0)

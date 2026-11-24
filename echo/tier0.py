@@ -35,6 +35,9 @@ mode="3d" (point source, vertical post much taller than the first Fresnel zone, 
   Check (geometric optics, ka >> 1, backscatter, r1 = r2 = r): |H| = d sqrt(a) / (2 r^1.5), which is the convex
   mirror result: wavefront radii 2r (vertical, flat mirror) and r + a/2 (horizontal, focal length a/2) give
   |p_s| = (1/(4 pi r)) sqrt(r (a/2) / (2r (r + a/2))). Both modes are frequency-flat in that limit.
+  Finite posts (post_height=h, ear height z_e, free space, no ground): the axial integral is truncated to the post,
+  giving a Fresnel-integral factor F = [E(s_top) - E(s_bot)]/(1 + i) per post and frequency (see _height_factor);
+  F -> 1 when the post extends well beyond the first Fresnel zone sqrt(lambda r1 r2 / L) on both sides of z_e.
 
 Public functions
   cylinder_response(radius, f, angle=pi, c=C0)            T(phi), numpy (scipy series)
@@ -59,7 +62,8 @@ DTYPE = torch.float64
 CDTYPE = torch.complex128
 DR_PROFILE = 0.01  # m, profile bin width in bistatic range
 _E_IPI4 = complex(math.cos(math.pi / 4), math.sin(math.pi / 4))
-_RADIUS_QUANT = 1e-5  # m, radii are grouped to 0.01 mm when building partial-wave tables
+_RADIUS_GRID = 5e-4  # m, form functions are built on a 0.5 mm radius grid and blended linearly between nodes
+_KA_STEP = 0.004  # partial-wave master table spacing in ka (linear interpolation, relative error ~1e-5)
 _NODE_RATIO = 1.01  # profile model: geometric spacing of the rho nodes the transfer is interpolated between
 
 
@@ -96,18 +100,38 @@ def cylinder_response(radius, f, angle=np.pi, c=C0):
     return np.sum(coef * np.cos(n * angle[..., None]), axis=-1)
 
 
-def _backscatter_table(radius_q: float, c: float, fs: float, n_fft: int, k0: int, k1: int) -> torch.Tensor:
-    """B[f, n] = (-1)^n eps_n A_n(k a) on rfft bins k0..k1-1, so that T(pi - delta) = sum_n B_n cos(n delta)."""
-    return _backscatter_table_full(radius_q, c, fs, n_fft)[k0:k1]
+_KA_TABLE = {"ka_max": -1.0, "tab": None}
 
 
-@lru_cache(maxsize=512)
-def _backscatter_table_full(radius_q: float, c: float, fs: float, n_fft: int) -> torch.Tensor:
-    f = np.arange(n_fft // 2 + 1) * fs / n_fft
-    ka = 2 * np.pi * f * radius_q / c
-    coef = _partial_wave_coeffs(ka, _n_terms(float(ka.max(initial=0.0))))
-    coef = coef * (-1.0) ** np.arange(coef.shape[-1])
-    return torch.as_tensor(coef, dtype=CDTYPE)
+def _ka_table(ka_max: float) -> torch.Tensor:
+    """Master table M[j, n] = (-1)^n eps_n A_n(j * _KA_STEP), grown (rebuilt) when a larger ka is needed.
+
+    The form function depends on ka only, so one table serves every radius, c and FFT grid (bounded memory).
+    """
+    if _KA_TABLE["ka_max"] < ka_max:
+        top = 5.0 * math.ceil(ka_max / 5.0 + 1e-9) + 5.0
+        ka = np.arange(int(round(top / _KA_STEP)) + 2) * _KA_STEP
+        coef = _partial_wave_coeffs(ka, _n_terms(top))
+        coef = coef * (-1.0) ** np.arange(coef.shape[-1])
+        _KA_TABLE["tab"] = torch.as_tensor(coef, dtype=CDTYPE)
+        _KA_TABLE["ka_max"] = float(ka[-2])
+    return _KA_TABLE["tab"]
+
+
+def _backscatter_tables(radii, c: float, fs: float, n_fft: int, k0: int, k1: int) -> torch.Tensor:
+    """B[g, f, n] = (-1)^n eps_n A_n(k a_g) on rfft bins k0..k1-1 for each radius a_g, so that
+    T(pi - delta) = sum_n B_n cos(n delta). Interpolated linearly in ka from the master table (step 0.004: phase
+    step <= 0.008 rad, relative error ~1e-5), all radii in one gather."""
+    ka = 2 * np.pi * np.asarray(radii, dtype=float)[:, None] * (np.arange(k0, k1) * fs / n_fft)[None, :] / c
+    ka_max = float(ka.max(initial=0.0))
+    tab = _ka_table(ka_max)
+    tab = tab[:, : _n_terms(ka_max) + 1].contiguous()
+    u = ka / _KA_STEP
+    i0 = np.floor(u).astype(np.int64)
+    w = torch.as_tensor(u - i0, dtype=DTYPE)[..., None]
+    i0 = torch.as_tensor(i0)
+    lo = tab[i0]
+    return lo + w * (tab[i0 + 1] - lo)
 
 
 # ------------------------------------------------------------------------------------------------ Hankel H0
@@ -207,22 +231,82 @@ def _geometry(xy, source, listener):
 
 
 def _form_function(delta, radius, c, fs, n_fft, k0, k1):
-    """T(pi - delta) per post on bins k0..k1-1: [N, F] complex, partial-wave tables grouped by (quantized) radius."""
-    rq = np.round(np.asarray(radius, dtype=float) / _RADIUS_QUANT) * _RADIUS_QUANT
-    T = torch.zeros(len(delta), k1 - k0, dtype=CDTYPE)
-    for a in np.unique(rq):
-        idx = torch.as_tensor(np.nonzero(rq == a)[0])
-        B = _backscatter_table(float(a), float(c), float(fs), int(n_fft), int(k0), int(k1))
-        cosn = torch.cos(delta[idx, None] * torch.arange(B.shape[1], dtype=DTYPE))
-        T[idx] = cosn.to(CDTYPE) @ B.T
-    return T
+    """T(pi - delta) per post on bins k0..k1-1: [N, F] complex.
+
+    Radii are placed on a 0.5 mm grid: a post between two grid radii gets the linear blend of their form functions
+    (k h <= 0.07 at 8 kHz, error <~ 2e-3 relative, 0.02 dB), a post on the grid (every catalog radius) gets its own
+    exactly. Work scales with the number of distinct grid radii (~4 catalog radii x 5 under a +-1 mm jitter), not
+    with the post count; the master partial-wave table is shared by all radii (bounded memory).
+    """
+    g = np.asarray(radius, dtype=float) / _RADIUS_GRID
+    jr = np.round(g)
+    on = np.abs(g - jr) < 1e-6
+    j0 = np.where(on, jr, np.floor(g)).astype(np.int64)
+    w = np.where(on, 0.0, g - j0)
+    up = w > 0
+    need = np.unique(np.concatenate([j0, j0[up] + 1]))
+    row = {int(j): r for r, j in enumerate(need)}
+    B_all = _backscatter_tables(need * _RADIUS_GRID, float(c), float(fs), int(n_fft), int(k0), int(k1))
+    cosn = torch.cos(delta[:, None] * torch.arange(B_all.shape[-1], dtype=DTYPE)).to(CDTYPE)
+    order = np.argsort(j0, kind="stable")
+    js, starts = np.unique(j0[order], return_index=True)
+    ends = np.append(starts[1:], len(order))
+    outs = []
+    f_top = (k1 - 1) * fs / n_fft
+    for j, a, b in zip(js, starts, ends):
+        idx = order[a:b]
+        nc = min(B_all.shape[-1], _n_terms(2 * np.pi * f_top * (j + 1) * _RADIUS_GRID / c) + 1)  # terms this size needs
+        c_g = cosn[torch.as_tensor(idx), :nc]
+        if not up[idx].any():
+            outs.append(c_g @ B_all[row[int(j)], :, :nc].T)
+            continue
+        # Blend on the coefficient side: [(1-w) cos(n delta), w cos(n delta)] @ [B_j0, B_j1]^T.
+        wv = torch.as_tensor(w[idx], dtype=DTYPE)[:, None]
+        c2 = torch.cat([c_g * (1 - wv), c_g * wv], 1)
+        outs.append(c2 @ torch.cat([B_all[row[int(j)], :, :nc], B_all[row[int(j) + 1], :, :nc]], 1).T)
+    inv = np.empty_like(order)
+    inv[order] = np.arange(len(order))
+    return torch.cat(outs)[torch.as_tensor(inv)]
+
+
+class _FresnelE(torch.autograd.Function):
+    """E(s) = C(s) + i S(s) = int_0^s exp(i pi t^2 / 2) dt (scipy), differentiable in s."""
+
+    @staticmethod
+    def forward(ctx, s):
+        S, C = sp.fresnel(s.detach().numpy())
+        ctx.save_for_backward(s)
+        return torch.complex(torch.as_tensor(C, dtype=DTYPE), torch.as_tensor(S, dtype=DTYPE))
+
+    @staticmethod
+    def backward(ctx, grad):
+        (s,) = ctx.saved_tensors
+        de = torch.polar(torch.ones_like(s), 0.5 * math.pi * s * s)
+        return (torch.conj(de) * grad).real
+
+
+def _height_factor(r1, r2, k, post_height, ear_height):
+    """Finite-post correction to the 3d stationary-phase result, DSP convention: [N, F] complex.
+
+    Paraxially R1 + R2 = L + kappa' (z - z_e)^2 with kappa' = L / (2 r1 r2); the axial integral over the post
+    z in [0, h] relative to the infinite one, with s = (z - z_e) sqrt(k L / (pi r1 r2)) (Fresnel units,
+    first Fresnel zone half-height sqrt(lambda r1 r2 / L) <-> s = sqrt(2)), is
+        F = [E(s_top) - E(s_bottom)] / (1 + i),  s_bottom = -z_e * scale,  s_top = (h - z_e) * scale.
+    F -> 1 for a tall post around the ear. Returned as conj(F) (physics e^{-iwt} -> DSP). No ground reflection.
+    """
+    L = r1 + r2
+    scale = torch.sqrt(k[None, :] * (L / (math.pi * r1 * r2))[:, None])
+    e_top = _FresnelE.apply((post_height - ear_height) * scale)
+    e_bot = _FresnelE.apply(-ear_height * scale)
+    return torch.conj((e_top - e_bot) / complex(1.0, 1.0))
 
 
 def _sl_dist(scene):
     return float(np.linalg.norm(np.asarray(scene.listener, float) - np.asarray(scene.source, float)))
 
 
-def _reduced_transfer(r1, r2, delta, radius, scene, mode, n_fft, fs, k0, k1, absorption):
+def _reduced_transfer(r1, r2, delta, radius, scene, mode, n_fft, fs, k0, k1, absorption, post_height=None,
+                      ear_height=1.5):
     """H(f) e^{+ik(r1+r2)} for each post on bins k0..k1-1: [N, F] complex (everything except the pure delay).
 
     Reference implementation (exact Q table for every element). post_transfer uses an equivalent fast path.
@@ -241,6 +325,8 @@ def _reduced_transfer(r1, r2, delta, radius, scene, mode, n_fft, fs, k0, k1, abs
     elif mode == "3d":
         amp = d * torch.sqrt(2.0 / (math.pi * k * (r1 * r2 * L)[:, None]))
         R = amp * _E_IPI4 * torch.conj(T)
+        if post_height is not None:
+            R = R * _height_factor(r1, r2, k, post_height, ear_height)
     else:
         raise ValueError(f"mode must be '2d' or '3d', got {mode!r}")
     if absorption:
@@ -256,7 +342,8 @@ for _k in range(1, len(_QS)):
     _LOGQ.append(_QS[_k] - sum(_j * _LOGQ[_j] * _QS[_k - _j] for _j in range(1, _k)) / _k)
 
 
-def _post_sum_fast(r1, r2, delta, radius, scene, mode, n_fft, fs, k0, k1, absorption):
+def _post_sum_fast(r1, r2, delta, radius, scene, mode, n_fft, fs, k0, k1, absorption, post_height=None,
+                   ear_height=1.5):
     """sum_p H_p(f) on bins k0..k1-1, requires k r >= _X_ASY on both legs (2d). Same maths as _reduced_transfer
     times the delay, but every (post, frequency) exponent -ikL - alpha (L-d) ln10/20 + conj(log Q1 + log Q2) is a
     sum of outer products, so it is one real matmul per part and a single complex exp per element."""
@@ -294,21 +381,33 @@ def _post_sum_fast(r1, r2, delta, radius, scene, mode, n_fft, fs, k0, k1, absorp
     e_im = torch.cat(a_im, 1) @ torch.cat(b_im, 0)
     e_re = torch.cat(a_re, 1) @ torch.cat(b_re, 0) if a_re else torch.zeros_like(e_im)
     terms = torch.conj(T) * torch.exp(torch.complex(e_re, e_im))
+    if mode == "3d" and post_height is not None:
+        terms = terms * _height_factor(r1, r2, k, post_height, ear_height)
     return w * (amp_p.to(CDTYPE) @ terms)
 
 
 # ------------------------------------------------------------------------------------------------- posts
 
 
-def post_transfer(posts, scene, mode="2d", n_fft=4096, fs=FS, band=None, absorption=True, chunk=4096):
+def post_transfer(posts, scene, mode="2d", n_fft=4096, fs=FS, band=None, absorption=True, chunk=4096,
+                  post_height=None, ear_height=1.5):
     """Sum over posts of H(f) = conj(H_scat/H_direct) e^{-i 2 pi f |SL|/c}, on the rfft grid of length n_fft.
 
     posts: [N, 3] (x, y, radius), tensor (gradients flow to x, y) or array. Returns complex Tensor[n_fft//2 + 1];
     irfft(H, n_fft) is the impulse response re the direct clap, t = 0 at emission. `band` = (f_lo, f_hi) applies the
     zero-phase mask of echo.clap.band_limit.
+    Air absorption is always ISO 9613-1 at 20 C / 50 % RH, also when scene.c is changed (the robustness sweep
+    changes c only: delays and wavenumbers follow scene.c, the absorption does not).
+    post_height (mode="3d" only): None = posts much taller than the first Fresnel zone (stationary-phase result).
+    A number (m) = posts span z in [0, post_height], source and listener at ear_height, free space (no ground
+    reflection): each post is multiplied by the finite axial Fresnel-integral factor of _height_factor.
     """
     if mode not in ("2d", "3d"):
         raise ValueError(f"mode must be '2d' or '3d', got {mode!r}")
+    if post_height is not None and mode != "3d":
+        raise ValueError("post_height applies to mode='3d' only")
+    if post_height is not None and not post_height > 0:
+        raise ValueError("post_height must be > 0")
     p = _as_posts(posts)
     k0, k1, mask = _bins(n_fft, fs, band)
     H = torch.zeros(n_fft // 2 + 1, dtype=CDTYPE)
@@ -329,11 +428,13 @@ def post_transfer(posts, scene, mode="2d", n_fft=4096, fs=FS, band=None, absorpt
         parts = []
         if ks > k0:
             f = torch.arange(k0, ks, dtype=DTYPE) * (fs / n_fft)
-            R = _reduced_transfer(r1, r2, delta, rad, scene, mode, n_fft, fs, k0, ks, absorption)
+            R = _reduced_transfer(r1, r2, delta, rad, scene, mode, n_fft, fs, k0, ks, absorption, post_height,
+                                  ear_height)
             phase = torch.polar(torch.ones_like(R.real), -2 * math.pi * f[None, :] * ((r1 + r2) / c)[:, None])
             parts.append((R * phase).sum(0))
         if k1 > ks:
-            parts.append(_post_sum_fast(r1, r2, delta, rad, scene, mode, n_fft, fs, ks, k1, absorption))
+            parts.append(_post_sum_fast(r1, r2, delta, rad, scene, mode, n_fft, fs, ks, k1, absorption,
+                                        post_height, ear_height))
         acc = acc + torch.cat(parts)
     H = torch.cat([H[:k0], acc, H[k1:]])
     return H * torch.as_tensor(mask, dtype=DTYPE)
@@ -349,10 +450,12 @@ def _default_n_out(max_delay_s, n_clap, fs):
     return int(math.ceil(max_delay_s * fs)) + n_clap + int(0.01 * fs)
 
 
-def post_echo(posts, claps, scene, mode="2d", n_out=None, band=None, absorption=True, fs=FS, n_fft=None):
+def post_echo(posts, claps, scene, mode="2d", n_out=None, band=None, absorption=True, fs=FS, n_fft=None,
+              post_height=None, ear_height=1.5):
     """Echo of every clap variant from the posts: Tensor[K, n_out], pressure re the direct clap, t = 0 at emission.
 
     posts: [N, 3] tensor or array (None: scene.posts). claps: [K, Nc] (or [Nc]). n_out None: last echo + clap + 10 ms.
+    post_height / ear_height: finite posts for the 3d loudness estimate, see post_transfer.
     """
     p = _as_posts(scene.posts if posts is None else posts)
     cl = _as_claps(claps)
@@ -365,7 +468,8 @@ def post_echo(posts, claps, scene, mode="2d", n_out=None, band=None, absorption=
         n_out = _default_n_out(max_delay, cl.shape[-1], fs)
     if n_fft is None:
         n_fft = choose_n_fft(n_out, max_delay, cl.shape[-1], fs)
-    H = post_transfer(p, scene, mode=mode, n_fft=n_fft, fs=fs, band=band, absorption=absorption)
+    H = post_transfer(p, scene, mode=mode, n_fft=n_fft, fs=fs, band=band, absorption=absorption,
+                      post_height=post_height, ear_height=ear_height)
     C = torch.fft.rfft(cl, n=n_fft, dim=-1)
     return torch.fft.irfft(C * H, n=n_fft, dim=-1)[:, :n_out]
 
