@@ -24,8 +24,6 @@ from echo.realize import realize, scale_profile
 from echo.scene import FS, Scene, fill_fraction
 from echo.tier0 import DR_PROFILE, post_echo, profile_echo
 
-torch.set_num_threads(4)
-
 
 @dataclass
 class StageConfig:
@@ -45,6 +43,8 @@ class StageConfig:
     w_mel: float = 1.0
     shadow_depth: float = 0.5
     refine_steps: int = 100  # post-range polish against the profile transfer (realize.refine_ranges)
+    max_posts: int = 40000  # cap on post count: the profile is scaled down (and logged) if target_fill needs more
+    threads: int = 8  # torch.set_num_threads, applied in run_stage
     notes: str = ""
 
 
@@ -106,6 +106,7 @@ def build_design(cfg: StageConfig, profile, claps, band, n_out, seed=None) -> De
 def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, verbose=True, runs_root=None):
     """Run a stage end to end and write its run folder. Returns (run_dir, design, solve_result)."""
     t_all = time.time()
+    torch.set_num_threads(cfg.threads)
     target = cfg.make_target()
     claps = clap_family(cfg.n_claps, seed=cfg.seed)
     n_out = int(round(cfg.duration_s * FS))
@@ -113,6 +114,10 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
                                 lr=cfg.lr, w_mel=cfg.w_mel, n_out=n_out, verbose=verbose, log_every=5)
     band = res.band
     profile = scale_profile(prof_n, cfg.target_fill, cfg.r0, cfg.dr, cfg.a_ref)
+    capped = None
+    if profile.sum() > cfg.max_posts:  # mass in reference posts ~ post count (a_ref posts preferred)
+        capped = f"profile scaled by {cfg.max_posts / profile.sum():.4f} to respect max_posts={cfg.max_posts}"
+        profile = profile * (cfg.max_posts / profile.sum())
     t_r = time.time()
     des = build_design(cfg, profile, claps, band, n_out)
     t_r = time.time() - t_r
@@ -139,6 +144,7 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
     rs = {k: v for k, v in st.items() if k != "realized_profile"}
     extra = {"design": {"config": {k: v for k, v in asdict(cfg).items() if k != "make_target"},
                         "loss_band_hz": list(band), "t_echo0_s": t_echo0, "realization": rs,
+                        "max_posts_applied": capped,
                         "solve_wall_s": res.history["wall_s"], "realize_wall_s": t_r,
                         "total_wall_s": time.time() - t_all}}
     kw = {} if runs_root is None else {"runs_root": runs_root}

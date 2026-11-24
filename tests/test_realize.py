@@ -40,7 +40,8 @@ def test_geometry_rules(dilute):
     r = np.hypot(posts[:, 0], posts[:, 1])
     th = np.arctan2(posts[:, 1], posts[:, 0])
     for i in range(len(posts)):
-        near = (r < r[i]) & (r >= r[i] - 0.5)
+        rho = bistatic_range(posts[:, :2])
+        near = (rho < rho[i]) & (rho >= rho[i] - 0.5)
         need = posts[near, 2] / r[near] + posts[i, 2] / r[i]
         assert np.all(np.abs(th[near] - th[i]) >= need - 1e-12)
     assert set(np.unique(posts[:, 2])) <= {0.01, 0.02, 0.04, 0.08}

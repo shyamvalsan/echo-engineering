@@ -32,6 +32,8 @@ from echo.scene import BAND, HALF_ANGLE_DEG, MIN_GAP, RADII, R_MIN, Scene, bista
 from echo.tier0 import DR_PROFILE, cylinder_response
 
 GOLDEN = (math.sqrt(5.0) - 1.0) / 2.0
+POLISH_MAX_POSTS = 20000  # above this the range polish is skipped (time ~ N x bins x steps)
+POLISH_MAX_WORK = 2.5e7  # posts x in-band FFT bins per step (~8 s/step at 1e4 posts x 3200 bins on 8 threads)
 PACKING = 0.35  # usable fraction of the arc area for random sequential placement with the gap (capacity estimate)
 
 
@@ -55,17 +57,29 @@ def scale_profile(profile, target_fill, r0, dr=DR_PROFILE, a_ref=0.02, r_min=R_M
     return p * (n_posts / p.sum())
 
 
+def _polish_bins(rho_max, band, c=343.0, n_clap=128, fs=16000):
+    from echo.tier0 import choose_n_fft
+
+    md = 2 * (rho_max + 0.05) / c
+    n_fft = choose_n_fft(int(np.ceil(md * fs)), md, n_clap)
+    return int((band[1] - band[0]) / (fs / n_fft)) + 1
+
+
 def _arc_len(rho, half_angle_deg):
     return 2.0 * math.radians(half_angle_deg) * rho
 
 
 def realize(profile, scene_cfg: Scene | None = None, seed=0, *, r0, dr=DR_PROFILE, a_ref=0.02, radii=RADII,
-            band=BAND, gap=MIN_GAP, shadow_depth=0.5, n_try=48, smooth_m=0.10, claps=None, refine_steps=0):
+            band=BAND, gap=MIN_GAP, shadow_depth=0.5, n_try=48, smooth_m=0.10, claps=None, refine_steps=0,
+            polish_max_posts=POLISH_MAX_POSTS, angle_jitter=0.15):
     """Turn a profile into posts. Returns (posts ndarray[N, 3] (x, y, radius), stats dict).
 
     stats: n_posts, by_radius, requested_mass, realized_mass, dropped (posts), shadow_violations, min_gap_m,
     profile_rel_err (relative L2 error of the realized vs requested profile, both smoothed over smooth_m),
-    weights (radius -> strength), realized_profile (per bin, in reference-post units).
+    weights (radius -> strength), realized_profile (per bin, in reference-post units), refine_* (the range polish:
+    skipped, and logged in refine_skipped, when there are more than polish_max_posts posts).
+    Angles: golden-ratio sequence plus seeded Gaussian jitter (angle_jitter, as a fraction of the wedge width) per
+    candidate, so the layout is irregular (no lateral lattice) yet deterministic per seed.
     """
     scene = scene_cfg if scene_cfg is not None else Scene()
     rng = np.random.default_rng(seed)
@@ -108,28 +122,38 @@ def realize(profile, scene_cfg: Scene | None = None, seed=0, *, r0, dr=DR_PROFIL
         m_next += w[a]
     rhos, rads = np.asarray(rhos), np.asarray(rads)
     refine_db = None
-    if refine_steps and len(rhos):
+    refine_skipped = None
+    dropped = 0
+    work = len(rhos) * _polish_bins(r0 + n * dr, band, scene.c)
+    if refine_steps and len(rhos) > polish_max_posts:
+        refine_skipped = f"{len(rhos)} posts > polish_max_posts={polish_max_posts}"
+    elif refine_steps and work > POLISH_MAX_WORK:
+        refine_skipped = f"posts x in-band bins = {work:.3g} > POLISH_MAX_WORK={POLISH_MAX_WORK:.3g}"
+    elif refine_steps and len(rhos):
         rhos, refine_db = refine_ranges(rhos, rads, p, scene, r0=r0, dr=dr, a_ref=a_ref, band=band,
                                         claps=claps, steps=refine_steps)
         keep = rhos >= r0 - dr / 2
+        dropped += int(np.sum(~keep))  # polished below the first bin edge: removed
         rhos, rads = rhos[keep], rads[keep]
         o = np.argsort(rhos)
         rhos, rads = rhos[o], rads[o]
 
     # Phase C: angular placement along each equal-delay ellipse.
     placed_rho, placed = [], []  # sorted by rho
-    shadow_viol = dropped = 0
+    shadow_viol = 0
     g = rng.random()
     a_max = max(radii)
     for rho, a in zip(rhos, rads):
         rho, a = float(rho), float(a)
-        u = (g + GOLDEN * np.arange(1, n_try + 1)) % 1.0
+        u = (g + GOLDEN * np.arange(1, n_try + 1) + angle_jitter * rng.standard_normal(n_try)) % 1.0
         th = (2.0 * u - 1.0) * th_max
         xy = ellipse_point(rho, th, scene.source, scene.listener)
         ok_w = in_wedge(xy, half, rho_min=r0 - dr, source=scene.source, listener=scene.listener)
-        # neighbours: rho is 1-Lipschitz, so gap conflicts lie within rho - (a + a_max + gap)
+        # neighbours: rho is 1-Lipschitz, so gap conflicts lie within rho - (a + a_max + gap). "Nearer" (shadowing)
+        # is measured in rho, the placement order, consistently with the window.
         j0 = bisect.bisect_left(placed_rho, rho - max(shadow_depth, a + a_max + gap))
         nb = np.asarray(placed[j0:]) if j0 < len(placed) else np.zeros((0, 3))
+        rho_nb = np.asarray(placed_rho[j0:])
         if len(nb):
             d = np.linalg.norm(xy[:, None, :] - nb[None, :, :2], axis=-1) - nb[None, :, 2] - a
             ok_gap = np.all(d >= gap, axis=1)
@@ -139,7 +163,7 @@ def realize(profile, scene_cfg: Scene | None = None, seed=0, *, r0, dr=DR_PROFIL
             xv = xy - scene.source
             r_c = np.hypot(xv[:, 0], xv[:, 1])
             th_c = np.arctan2(xv[:, 1], xv[:, 0])
-            nearer = (r_nb[None, :] < r_c[:, None]) & (r_nb[None, :] >= r_c[:, None] - shadow_depth)
+            nearer = ((rho_nb < rho) & (rho_nb >= rho - shadow_depth))[None, :]
             need = nb[None, :, 2] / r_nb[None, :] + a / r_c[:, None]
             ok_sh = ~np.any(nearer & (np.abs(th_c[:, None] - th_nb[None, :]) < need), axis=1)
         else:
@@ -189,48 +213,65 @@ def realize(profile, scene_cfg: Scene | None = None, seed=0, *, r0, dr=DR_PROFIL
         "realized_profile": real,
         "refine_steps": int(refine_steps),
         "refine_transfer_err_db": refine_db,
+        "refine_skipped": refine_skipped,
     }
     return posts, stats
 
 
 def refine_ranges(rhos, rads, profile, scene: Scene, *, r0, dr=DR_PROFILE, a_ref=0.02, band=BAND, claps=None,
-                  steps=100, lr=5e-4, n_fft=2048):
+                  steps=100, lr=5e-4, n_fft=None, chunk=2048):
     """Polish post ranges so the posts' Tier 0 transfer matches the profile's transfer in band.
 
     Minimizes sum_f W(f) |H_posts(f) - H_profile(f)|^2 / sum_f W(f) |H_profile(f)|^2 (2D, posts on the wedge axis,
     which differs from their final off-axis placement by < -80 dB), W = family-mean clap power spectrum. This is a
-    realization-fidelity objective against the solved profile (not against the target). Returns (rhos, (err_db
-    before, err_db after)).
+    realization-fidelity objective against the solved profile (not against the target). n_fft defaults to
+    tier0.choose_n_fft over the largest delay (no time aliasing). The gradient is exact and chunked over posts
+    (dL/dH is fixed by the residual), so memory is bounded by `chunk` posts. Returns (rhos, (err_db before,
+    err_db after)), both on that non-aliased grid.
     """
     import torch
 
-    from echo.tier0 import post_transfer, profile_transfer
+    from echo.tier0 import choose_n_fft, post_transfer, profile_transfer
 
     s, l = scene.source, scene.listener
     if not (np.allclose(s, 0) and np.isclose(l[0], 0)):
         raise NotImplementedError("refine_ranges assumes S = (0,0) and L on the y axis")
     d2 = float(l[1] ** 2)
+    n_rho = len(profile)
+    max_delay = 2 * (max(r0 + (n_rho - 1) * dr, float(np.max(rhos))) + 0.05) / float(scene.c)
+    n_clap = 128 if claps is None else np.atleast_2d(claps).shape[-1]
+    if n_fft is None:
+        n_fft = choose_n_fft(int(np.ceil(max_delay * 16000)), max_delay, n_clap)
     cl = np.atleast_2d(np.asarray(claps)) if claps is not None else None
     W = (torch.as_tensor(np.mean(np.abs(np.fft.rfft(cl, n_fft, axis=-1)) ** 2, axis=0)) if cl is not None
          else torch.ones(n_fft // 2 + 1, dtype=torch.float64))
     sc0 = Scene(source=s, listener=l, c=scene.c)
     Hp = profile_transfer(torch.as_tensor(profile), sc0, n_fft=n_fft, a_ref=a_ref, r0=r0, dr=dr, band=band).detach()
     den = float((W * Hp.abs() ** 2).sum())
-    rho = torch.tensor(np.asarray(rhos, dtype=float), requires_grad=True)
+    rho = torch.tensor(np.asarray(rhos, dtype=float))
     rad = torch.as_tensor(np.asarray(rads, dtype=float))
+    N = len(rho)
+
+    def transfer(r, a):
+        x = (4 * r**2 - d2) / (4 * r)  # on-axis point of the ellipse |P-S| + |P-L| = 2 rho
+        return post_transfer(torch.stack([x, torch.zeros_like(x), a], 1), sc0, n_fft=n_fft, band=band)
+
+    rho.requires_grad_(True)
     opt = torch.optim.Adam([rho], lr=lr)
     best = (np.inf, rho.detach().clone())
     first = None
     for _ in range(steps + 1):
-        x = (4 * rho**2 - d2) / (4 * rho)  # on-axis point of the ellipse |P-S| + |P-L| = 2 rho
-        P = torch.stack([x, torch.zeros_like(x), rad], 1)
-        H = post_transfer(P, sc0, n_fft=n_fft, band=band)
-        L = (W * (H - Hp).abs() ** 2).sum() / den
-        lv = float(L.detach())
+        with torch.no_grad():
+            H = sum(transfer(rho[i:i + chunk], rad[i:i + chunk]) for i in range(0, N, chunk))
+        R = H - Hp
+        lv = float((W * R.abs() ** 2).sum() / den)
         first = lv if first is None else first
         if lv < best[0]:
             best = (lv, rho.detach().clone())
         opt.zero_grad()
-        L.backward()
+        G = (2 * W / den) * R  # dL/dH* : L = sum W |R|^2 / den, dL = 2 Re(sum W conj(R) dH) / den
+        for i in range(0, N, chunk):
+            Hc = transfer(rho[i:i + chunk], rad[i:i + chunk])
+            (G.conj() * Hc).real.sum().backward()
         opt.step()
     return best[1].numpy(), (10 * math.log10(first), 10 * math.log10(best[0]))
