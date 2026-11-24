@@ -39,7 +39,8 @@ from echo.scene import C0, FS, Scene, alpha_db_per_m
 RHO0 = 1.2  # kg/m^3; only ratios matter for the echo
 K_MAX = 3.0  # cap on the sub-cell bulk-modulus contrast
 FIELD_DTYPE = np.float32  # field precision
-PPW_DEFAULT = 8.0  # grid points per wavelength at f_max (validated, see DECISIONS.md)
+PHI_SOLID = 0.9  # nodes/faces covered at least this much are solid (no weakly coupled trapped pockets)
+PPW_DEFAULT = 9.0  # grid points per wavelength at f_max (validated, see DECISIONS.md)
 CFL_DEFAULT = 0.45  # c dt / dx (2D 8th-order staggered stability limit is 0.55)
 CACHE_DIR = Path(__file__).resolve().parent.parent / ".cache" / "tier1"
 SENSOR_HALF = 8  # windowed-sinc sensor interpolation half width (16 x 16 taps)
@@ -50,7 +51,7 @@ FD8 = (1225 / 1024, -245 / 3072, 49 / 5120, -5 / 7168)  # 8th-order staggered fi
 ENGINE_VERSION = "fd8-2"
 # Effective-area calibration of sub-cell posts, {r/dx: area factor}, linearly interpolated, 1 outside the
 # table's range above it. Values are measured and validated in stages/validate.py (check 1); see DECISIONS.md.
-AREA_CAL: dict = {}
+AREA_CAL: dict = {1.0625: 0.912, 2.125: 1.0}  # r/dx -> area factor; measured at ppw 9 (1 cm, 2 cm at 4 kHz)
 
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -165,8 +166,10 @@ def medium(posts, grid: Grid, kmax=K_MAX):
     bx = (1 - phi_x) / (1 + phi_x)
     by = (1 - phi_y) / (1 + phi_y)
     ks = np.minimum(1.0 / np.maximum(1.0 - phi_p, 1e-9), kmax)
-    solid = phi_p >= 0.999
+    solid = phi_p >= PHI_SOLID
     ks[solid] = 0.0
+    bx[phi_x >= PHI_SOLID] = 0.0
+    by[phi_y >= PHI_SOLID] = 0.0
     # Faces touching a solid node are closed, so the solid node is isolated. Otherwise its p = 0 would act as a
     # pressure-release sink.
     bx[solid | np.roll(solid, -1, 0)] = 0.0
