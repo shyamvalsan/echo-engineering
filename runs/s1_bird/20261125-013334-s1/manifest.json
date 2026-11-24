@@ -1,10 +1,16 @@
 {
- "run_id": "20261125-002316-s1",
+ "run_id": "20261125-013334-s1",
  "stage": "s1_bird",
  "title": "Bird note, 3.5 to 2.0 kHz whistle, 80 ms",
- "created": "2026-11-25T00:23:16+02:00",
+ "created": "2026-11-25T01:33:34+02:00",
  "seed": 0,
- "git_commit": "1a9c1d3",
+ "git_commit": "b200d61",
+ "git_dirty": false,
+ "git_dirty_paths": [],
+ "git_untracked_paths": [
+  "echo/buildkit.py",
+  "stages/build_pack.py"
+ ],
  "status": "tier0_only",
  "verified": false,
  "passed": false,
@@ -27,14 +33,14 @@
  "field": null,
  "audio": {
   "echo_gain_db": {
-   "tier0": 25.719087030948344,
+   "tier0": 25.728629739675675,
    "tier1": null
   },
   "target_gain_db": -0.9999999999999997,
-  "as_heard_echo_level_db": -43.86020638672314,
+  "as_heard_echo_level_db": -43.887120919121834,
   "clap_variant": 0
  },
- "notes": "Exported audio uses clap variant 0; metrics average 5 clap variants. Echoes band-limited to the loss band 898-4000 Hz (clap band within the design band). Profile solve: 4.1 s, 300 Adam steps, loss 2.362 -> 1.422. Realization: 3029 posts, 0 shadow violations, 0 dropped, post-vs-profile echo mismatch -38.0 dB.",
+ "notes": "Exported audio uses clap variant 0; metrics average 5 clap variants. Echoes band-limited to the loss band 898-4000 Hz (clap band within the design band). Profile solve: 116.9 s, 300 Adam steps, loss 2.362 -> 1.445. Realization: 3029 posts, 0 shadow violations, 0 dropped, post-vs-profile echo mismatch -38.6 dB.",
  "design": {
   "config": {
    "stage": "s1_bird",
@@ -52,6 +58,8 @@
    "w_mel": 1.0,
    "shadow_depth": 0.5,
    "refine_steps": 100,
+   "max_posts": 40000,
+   "threads": 8,
    "notes": ""
   },
   "loss_band_hz": [
@@ -73,23 +81,25 @@
     "0.04": 3.691533957523355,
     "0.08": 5.0527682031222785
    },
-   "requested_mass": 3028.53777777778,
+   "requested_mass": 3028.537777777778,
    "realized_mass": 3029.0,
    "dropped": 0,
    "shadow_violations": 0,
    "shadow_depth_m": 0.5,
-   "min_gap_m": 0.12967430909396238,
-   "profile_rel_err": 0.010563073929631725,
+   "min_gap_m": 0.050051443619553715,
+   "profile_rel_err": 0.010601879136730493,
    "refine_steps": 100,
    "refine_transfer_err_db": [
-    -24.32541854121805,
-    -38.018842521878554
+    -24.419622148976963,
+    -38.60279151269938
    ],
-   "post_vs_profile_mismatch_db": -38.018089007793755,
-   "post_vs_profile_level_db": 0.0006271930382858671
+   "refine_skipped": null,
+   "post_vs_profile_mismatch_db": -38.605635904871576,
+   "post_vs_profile_level_db": 0.0009184081234153041
   },
-  "solve_wall_s": 4.0846006870269775,
-  "realize_wall_s": 8.259946584701538,
-  "total_wall_s": 14.59137487411499
+  "max_posts_applied": null,
+  "solve_wall_s": 116.94025135040283,
+  "realize_wall_s": 105.47303462028503,
+  "total_wall_s": 225.5799548625946
  }
 }
