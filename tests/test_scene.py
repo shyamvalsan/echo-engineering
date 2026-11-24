@@ -63,6 +63,16 @@ def test_in_wedge():
     assert not in_wedge(np.array([50.0, 0.0]), r_max=40.0)
 
 
+def test_in_wedge_rho_min():
+    # On axis, rho = 3.0 lies at polar r = 2.9925 m (< r_min = 3.0): outside by default, inside with rho_min=3.0.
+    th = np.radians(np.linspace(-20, 20, 41))
+    pts = ellipse_point(3.0, th)
+    assert np.all(in_wedge(pts, rho_min=3.0))
+    assert not in_wedge(ellipse_point(3.0, 0.0))  # default (polar r_min) behaviour unchanged
+    assert not np.any(in_wedge(ellipse_point(2.99, th), rho_min=3.0))
+    assert not np.any(in_wedge(ellipse_point(5.0, np.radians([21.0, -21.0])), rho_min=3.0))
+
+
 def test_check_gaps():
     # Centres 0.2 m apart, radii 0.04 and 0.08 -> gap 0.08; third post far away.
     posts = np.array([[5.0, 0.0, 0.04], [5.2, 0.0, 0.08], [9.0, 1.0, 0.01]])

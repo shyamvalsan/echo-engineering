@@ -48,12 +48,13 @@ def test_spectral_peaks():
 def test_durations():
     ext = []
     for x, p in zip(clap_family(), clap_params()):
-        assert np.max(np.abs(x[: int(0.0005 * FS)])) > 0.05  # onset at sample 0, not delayed
+        assert abs(x[0]) < 0.01  # raised-cosine onset: no step at sample 0
+        assert np.max(np.abs(x[: int(0.0008 * FS)])) > 0.05  # onset at sample 0, not delayed
         last = np.nonzero(np.abs(x) > 0.01)[0][-1] / FS * 1000  # end of the burst at -40 dB re peak
         ext.append(last)
         assert last == pytest.approx(p["duration_ms"], rel=0.25), (last, p)
     ext = np.array(ext)
-    assert np.all((ext >= 1.5) & (ext <= 5.0)), ext  # 2-5 ms bursts
+    assert np.all((ext >= 2.0) & (ext <= 5.0)), ext  # spec: 2-5 ms bursts
     assert np.ptp(ext) > 2.0, ext  # different durations
 
 

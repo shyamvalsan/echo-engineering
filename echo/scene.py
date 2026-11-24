@@ -61,12 +61,21 @@ def ellipse_point(rho, angle, source=SOURCE, listener=LISTENER):
     return np.stack([s[0] + r * ux, s[1] + r * uy], axis=-1)
 
 
-def in_wedge(xy, half_angle_deg=HALF_ANGLE_DEG, r_min=R_MIN, r_max=np.inf, source=SOURCE):
-    """True where a point lies in the wedge: |polar angle about S from +x| <= half angle, r_min <= |P-S| <= r_max."""
-    v = np.asarray(xy, dtype=float) - np.asarray(source, dtype=float)
+def in_wedge(xy, half_angle_deg=HALF_ANGLE_DEG, r_min=R_MIN, r_max=np.inf, source=SOURCE, *,
+             rho_min: float | None = None, listener=LISTENER):
+    """True where a point lies in the wedge: |polar angle about S from +x| <= half angle, r_min <= |P-S| <= r_max.
+
+    With rho_min given, the radial lower bound is bistatic instead: bistatic_range(P) >= rho_min (r_min ignored).
+    """
+    xy = np.asarray(xy, dtype=float)
+    v = xy - np.asarray(source, dtype=float)
     r = np.hypot(v[..., 0], v[..., 1])
     ang = np.degrees(np.abs(np.arctan2(v[..., 1], v[..., 0])))
-    return (ang <= half_angle_deg + 1e-9) & (r >= r_min - 1e-9) & (r <= r_max + 1e-9)
+    if rho_min is None:
+        lower = r >= r_min - 1e-9
+    else:
+        lower = bistatic_range(xy, source, listener) >= rho_min - 1e-9
+    return (ang <= half_angle_deg + 1e-9) & lower & (r <= r_max + 1e-9)
 
 
 def check_gaps(posts) -> float:

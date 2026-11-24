@@ -15,7 +15,7 @@ CLAP_LEN_S = 0.008  # every variant is stored in an 8 ms buffer (128 samples at 
 # (duration ms, spectral peak Hz, log-bandwidth sigma in octaves) per variant; the first is the nominal clap.
 CLAP_VARIANTS = (
     (3.0, 2500.0, 0.55),
-    (2.0, 2800.0, 0.60),
+    (2.3, 2800.0, 0.60),
     (5.0, 2200.0, 0.50),
     (2.5, 3000.0, 0.55),
     (4.0, 2000.0, 0.55),
@@ -55,7 +55,8 @@ def band_limit(x, f_lo, f_hi, fs=FS, trans_hz=None):
     return y[..., pad : pad + n]
 
 
-N_CANDIDATES = 16  # noise draws per variant; the one whose spectrum best matches the design is kept
+ONSET_RAMP_S = 0.0003  # raised-cosine onset ramp, 0.3 ms
+N_CANDIDATES = 32  # noise draws per variant; the one whose spectrum best matches the design is kept
 
 
 def log_centroid_hz(y, fs):
@@ -86,20 +87,24 @@ def _one_clap(dur_s, f_peak, sigma_oct, rng, fs):
     shape *= np.clip((f - 300.0) / 300.0, 0.0, 1.0) ** 2
     shape *= 0.5 + 0.5 * np.cos(np.pi * np.clip((f - 4000.0) / 2000.0, 0.0, 1.0))
     k = int(0.001 * fs)
+    ramp = max(2, int(round(ONSET_RAMP_S * fs)))
+    onset = 0.5 - 0.5 * np.cos(np.pi * np.arange(ramp) / ramp)  # starts at exactly 0
     w = np.hanning(n_out)
     best, best_cost = None, np.inf
     for _ in range(N_CANDIDATES):
         buf = np.zeros(nfft)
         buf[lead : lead + n_burst] = rng.standard_normal(n_burst) * env
         y = np.fft.irfft(np.fft.rfft(buf) * shape, n=nfft)[lead : lead + n_out]
-        # Fade the last 1 ms to zero, then remove residual DC with a Hann-shaped correction.
+        # Onset ramp (cropping the zero-phase pre-ringing leaves a step at sample 0), fade the last 1 ms to
+        # zero, then remove residual DC with a Hann-shaped correction (zero at both ends).
+        y[:ramp] *= onset
         y[-k:] *= 0.5 + 0.5 * np.cos(np.pi * np.arange(1, k + 1) / k)
         y -= w * (y.sum() / w.sum())
         # A short burst has few degrees of freedom, so its spectrum is random; keep the draw closest to the design.
         lc, X, ff = log_centroid_hz(y, fs)
         in_band = X[(ff >= 1000) & (ff <= 4000)].sum() / X.sum()
         low = X[ff < 300].sum() / X.sum()
-        cost = abs(np.log2(lc / f_peak)) + (1.0 - in_band) + 20.0 * low
+        cost = 3.0 * abs(np.log2(lc / f_peak)) + (1.0 - in_band) + 20.0 * low + (1.0 if low > 5e-4 else 0.0)
         if cost < best_cost:
             best, best_cost = y, cost
     return best / np.max(np.abs(best))
@@ -108,7 +113,7 @@ def _one_clap(dur_s, f_peak, sigma_oct, rng, fs):
 def clap_family(n=5, fs=FS, seed=0) -> np.ndarray:
     """K clap variants, array [n, Nc] at fs (Nc = 8 ms). Deterministic for a given seed.
 
-    Noise bursts 2-5 ms long, energy mainly 1-4 kHz, spectral peaks 2.0-3.0 kHz (nominal 2.5 kHz),
+    Noise bursts 2-5 ms long (-40 dB extent), 0.3 ms raised-cosine onset, energy mainly 1-4 kHz, spectral peaks 2.0-3.0 kHz (nominal 2.5 kHz),
     zero DC, negligible energy below 300 Hz, each peak-normalized to 1. Up to 7 distinct variants.
     """
     if not 1 <= n <= len(CLAP_VARIANTS):
