@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Composed Echo</title>
+<link rel="icon" href="data:,">
+<meta name="description" content="An interactive explanation of a field of posts designed so that a hand clap comes back as a bird note, a tune, or a word.">
+<style>/*__CSS__*/</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch between light and dark theme">Dark</button>
+
+<header class="hero">
+  <h1>The composed echo</h1>
+  <p class="lede">You clap, and the hillside whistles back.</p>
+  <figure class="fig fig-wide hero-fig" id="hero">
+    <canvas class="cv" data-h="300" aria-label="Plan view: a person at the left, and a fan of posts spreading out to the right"></canvas>
+    <div class="controls">
+      <button class="btn primary" data-act="clap" type="button">Clap</button>
+      <span class="note" data-out="note">Press clap, with sound on. The posts are drawn from above; the ring is the sound, slowed down 40 times so you can follow it.</span>
+    </div>
+  </figure>
+</header>
+
+<main class="prose">
+<p>Picture a field of plain posts, hundreds or thousands of them, standing in the open with nothing else around. No speakers, no wires, no power. You stand in front of the field and clap once. What comes back is not a smeared echo of your clap, but a short falling whistle, like a bird.</p>
+<p>Nothing in the field makes sound. Every post just bounces back a little of your clap, a little later than the one before. Put the posts in exactly the right places and those tiny echoes add up to a sound you chose in advance: a bird call, a few notes, perhaps one day a spoken word.</p>
+<p>This project designs such fields on a computer and tests them in a careful simulation. Nothing has been built yet. This page explains the idea one step at a time, and every figure lets you listen. Turn your sound on.</p>
+
+<h2>An echo is a recording played back by geometry</h2>
+<p>Start with one wall. Your clap travels out, hits the wall, and travels back. Sound moves at about 343 metres per second, so the further the wall, the longer the wait.</p>
+<figure class="fig" id="wall">
+  <canvas class="cv" data-h="230" aria-label="A person on the left and a wall you can drag left and right"></canvas>
+  <div class="controls">
+    <button class="btn primary" data-act="clap" type="button">Clap</button>
+    <label class="slider">Wall distance <input type="range" min="3" max="60" step="0.5" value="17" data-in="dist"></label>
+  </div>
+  <p class="readout" data-out="readout"></p>
+  <figcaption>Drag the wall (or the slider). The trace underneath is what reaches your ear: your own clap, then the echo. The echo here is turned up so you can hear it clearly; <span data-out="loud"></span></figcaption>
+</figure>
+<p>The rule that matters for everything that follows: the sound has to go there and back, so <strong>every millisecond of waiting is 17.15 centimetres of distance</strong>. Distance in the field becomes time in the echo. A wall is the simplest possible "recording": a single tick, stored as a place.</p>
+
+<h2>Many posts, many echoes</h2>
+<p>Now swap the wall for a row of thin posts, one behind the other, running away from you. Each post returns its own small tick. When the posts are far apart you hear a rattle of separate ticks. Move them closer and the ticks come so quickly that your ear stops counting and hears a pitch instead.</p>
+<figure class="fig" id="row">
+  <canvas class="cv" data-h="200" aria-label="A row of posts and the train of echoes it returns"></canvas>
+  <div class="controls">
+    <button class="btn primary" data-act="clap" type="button">Clap</button>
+    <label class="slider">Spacing <input type="range" min="0" max="1000" step="1" value="560" data-in="spacing"></label>
+  </div>
+  <p class="readout" data-out="readout"></p>
+  <figcaption>A row 10 metres deep. The pitch you hear is the speed of sound divided by twice the spacing: posts 8.6 cm apart sing at about 2,000 Hz, the pitch of a high whistle.</figcaption>
+</figure>
+<p>That is the whole trick in miniature. Spacing sets pitch. Change the spacing gradually along the row and the pitch slides. Group posts into bands and you get separate notes.</p>
+
+<h2>The layout is the waveform</h2>
+<p>Go one step further. Any sound can be drawn as a wiggly line, its waveform: how hard the air is pushed, moment by moment. If we want the echo to be that sound, we need the amount of reflecting material at each distance to follow the same wiggle. More posts where the line is high, fewer where it is low. The field becomes the sound written out along the ground, one millisecond for every 17 centimetres, a little like the groove of a record.</p>
+<figure class="fig fig-wide" id="groove">
+  <div class="controls top">
+    <div class="seg" role="radiogroup" aria-label="Target sound">
+      <button type="button" class="seg-b" data-target="bird" aria-pressed="true">Bird note</button>
+      <button type="button" class="seg-b" data-target="motif" aria-pressed="false">Four notes</button>
+    </div>
+    <div class="seg" role="radiogroup" aria-label="Kind of posts">
+      <button type="button" class="seg-b" data-mode="neg" aria-pressed="false">Magic posts</button>
+      <button type="button" class="seg-b" data-mode="real" aria-pressed="true">Real posts</button>
+    </div>
+  </div>
+  <canvas class="cv" data-h="380" aria-label="Top: the target waveform. Bottom: posts along the ground, denser where the waveform is higher"></canvas>
+  <div class="controls">
+    <button class="btn" data-act="target" type="button">Play the target</button>
+    <button class="btn primary" data-act="clap" type="button">Clap at the field</button>
+  </div>
+  <p class="readout" data-out="readout"></p>
+  <figcaption>Top: the sound we want back. Middle: how much reflection we need at each distance. Bottom: the same thing as posts on the ground, seen from above (each dot is a post; the real fields fan out sideways too). Echo turned up for listening.</figcaption>
+</figure>
+<p>There is a catch, and it shapes the whole project. A waveform swings both ways, above and below the line. A post can only push sound back; there is no such thing as a post that reflects "negatively". Switch to <em>magic posts</em> to see what the impossible version would need: the red stretches are places where we would want negative posts.</p>
+<p>The fix is to lift the whole wiggle up until none of it is below zero, by adding a smooth, slowly varying background of extra posts. That background, the <em>bias</em>, is nearly silent in the echo, because a clap has almost no deep, low-pitched sound in it to reflect. But it is not free. Something like a third to a half of all the posts are spent just holding the wiggle up, and the useful part of the echo is that much quieter than it could be. The readout above shows the share for each sound.</p>
+<p>This is also why many small posts beat a few big ones. A smooth density of small posts traces a clean wave. A few large posts spaced evenly make the ticks you heard in the row above, which add buzzy overtones to the note.</p>
+
+<h2>Why the clap matters</h2>
+<p>So far the field has been treated as if you could send it a perfect, instant click. A real clap is not a click. It is a short burst of noise, two to five thousandths of a second long, with most of its energy between about 1,000 and 4,000 Hz. Every post returns a copy of the whole burst, so the echo is the designed sound heard "through" the clap.</p>
+<figure class="fig" id="clap">
+  <div class="controls top">
+    <div class="seg" role="radiogroup" aria-label="Clap" data-out="claps"></div>
+  </div>
+  <canvas class="cv" data-h="260" aria-label="The clap waveform, and the echo of the bird-note field for that clap"></canvas>
+  <div class="controls">
+    <button class="btn" data-act="solo" type="button">Play the clap alone</button>
+    <button class="btn primary" data-act="clap" type="button">Clap at the bird field</button>
+  </div>
+  <p class="readout" data-out="readout"></p>
+  <figcaption>The five claps are the project's own clap models: noise bursts of different lengths and brightness. Echo turned up for listening.</figcaption>
+</figure>
+<p>With an ideal click the echo is the bird note exactly. With a clap it is breathier, and its colour shifts from one clap to the next. Notes far outside the clap's range, very low ones especially, barely come back at all. People clap differently each time, so every design in this project is scored against all five claps, never one lucky one. The designer also compensates: it can put extra posts where the clap is weak, within limits.</p>
+
+<h2>How big, how loud</h2>
+<p>Because distance is time, the length of the sound sets the depth of the field. There is no way around this with plain posts: 17 centimetres for every millisecond.</p>
+<figure class="fig fig-wide" id="size">
+  <div class="controls top">
+    <label class="slider wide">Length of sound <input type="range" min="80" max="800" step="10" value="180" data-in="ms"></label>
+  </div>
+  <p class="readout big" data-out="readout"></p>
+  <canvas class="cv" data-h="230" aria-label="The depth of the field compared with a bus, a tennis court, an Olympic pool and a football pitch"></canvas>
+  <figcaption>Depth of the post field only; it starts 3 metres in front of you. The marks on the slider are this project's targets: a bird note (80 ms), four notes (180 ms), the word "hello" (400 ms) and eight notes of a tune (800 ms).</figcaption>
+</figure>
+<p>A bird note fits in a field about the length of a bus. A recognisable tune needs a field longer than a football pitch, because notes much shorter than a tenth of a second stop sounding like a melody. The simulation also tries 60 ms notes to see whether a shorter, faster tune still comes through.</p>
+<p>Loudness is the other hard limit. Each post is thin, so it returns only a sliver of the clap, and that sliver spreads out in every direction on the way back. Posts far away are fainter still. The whole field adds up, but the echo will be much quieter than the clap. A clap is about 100 decibels at arm's length. Below about 35 decibels, roughly a quiet library, an echo would be lost in the ordinary background noise of most outdoor places.</p>
+<figure class="fig" id="loud">
+  <canvas class="cv" data-h="150" aria-label="A loudness scale from silence to a clap, with everyday sounds marked"></canvas>
+  <figcaption data-out="caption"></figcaption>
+</figure>
+
+<h2>What the simulation found</h2>
+<p>The figures above use a deliberately simple model: every post returns a delayed, softened copy of the clap, and nothing else happens. The project uses a fuller version of that same model (it calls it Tier 0), which knows how strongly a post of each thickness reflects each pitch, to search for a design quickly. Then it hands every design to a much slower <em>referee</em> (Tier 1): a simulation that follows the actual sound wave as it ripples through the field, bounces between posts, and gets blocked by posts in front. A stage passes only if it passes in the referee. Both simulations are flat, as if seen from above, with posts infinitely tall; loudness is then corrected for the real, three-dimensional world.</p>
+<div id="results" class="results"></div>
+<p class="small" data-out="results-note"></p>
+
+<h2>What a simulation cannot tell us</h2>
+<p>A simulation is only as honest as what it leaves out. These are left out, on purpose, for now:</p>
+<ul>
+  <li><strong>Wind and weather.</strong> Wind and layers of warm and cool air bend sound and blur the timing. The simulation checks a still, uniform day, plus a cold and a hot one.</li>
+  <li><strong>The ground and real posts.</strong> The real ground reflects too, and real posts have a top. Both are approximated, not simulated.</li>
+  <li><strong>Background noise.</strong> Traffic, leaves and birds will compete with a faint echo. The 35 decibel line above is a rule of thumb, not a measurement of any site.</li>
+  <li><strong>Your ears.</strong> Pitch trackers and a speech recogniser stand in for a listener, and they can be fooled in both directions. The real test is a person listening to the audio files, which is why every result above has a play button.</li>
+</ul>
+<p>The open questions are concrete: is the echo loud enough to hear outdoors, how short can the notes get before a tune stops being a tune, and can plain posts ever carry speech, whose low, rich sounds are exactly what thin posts and claps are worst at.</p>
+
+<h2>How it could be built</h2>
+<p>The plan for a real structure goes in three steps, each cheap enough to fail at:</p>
+<ol>
+  <li><strong>A tabletop model at one tenth scale.</strong> Shrink the field ten times and raise every pitch ten times, into ultrasound. The physics is the same, so a field that fits on a table can test the designs cheaply.</li>
+  <li><strong>A full-size outdoor trial.</strong> A real bird-note field, the smallest design, in a real open space, with real claps and real wind.</li>
+  <li><strong>A permanent structure.</strong> Only if the first two work, and only at a size the site can hold.</li>
+</ol>
+<p data-out="build-link"></p>
+
+<footer class="colophon">
+  <p>The composed echo is a design study: a simulator and an inverse designer for passive acoustic structures. The sounds in the interactive figures are computed live in your browser from the project's own clap and target signals, with the simple echo model described above. The results section is filled from the project's run files at build time.</p>
+  <p data-out="built"></p>
+</footer>
+</main>
+
+<script>/*__DATA__*/</script>
+<script>/*__JS__*/</script>
+</body>
+</html>

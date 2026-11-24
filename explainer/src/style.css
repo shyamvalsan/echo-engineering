@@ -1,0 +1,164 @@
+:root {
+  --bg: #f3f5f6;
+  --fig: #e8ecef;
+  --ink: #18222b;
+  --muted: #56636e;
+  --rule: #cfd6dc;
+  --accent: #0d6c8a;
+  --accent-ink: #ffffff;
+  --warn: #b0402c;
+  --ok: #2f6f45;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", "URW Palladio L", Georgia, serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11171c;
+    --fig: #19222a;
+    --ink: #e2e7eb;
+    --muted: #98a5b0;
+    --rule: #2c3741;
+    --accent: #5bbfdc;
+    --accent-ink: #0b1a20;
+    --warn: #ee8a73;
+    --ok: #7cc493;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11171c;
+  --fig: #19222a;
+  --ink: #e2e7eb;
+  --muted: #98a5b0;
+  --rule: #2c3741;
+  --accent: #5bbfdc;
+  --accent-ink: #0b1a20;
+  --warn: #ee8a73;
+  --ok: #7cc493;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 19px;
+  line-height: 1.62;
+  overflow-x: hidden;
+}
+.hero, .prose { max-width: 40rem; margin: 0 auto; padding: 0 16px; }
+.hero { padding-top: 12vh; }
+h1 {
+  font-size: clamp(2.6rem, 8vw, 4.6rem);
+  line-height: 1.02;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.3em;
+}
+.lede { font-size: clamp(1.3rem, 3.4vw, 1.65rem); line-height: 1.35; color: var(--muted); margin: 0 0 1.6em; font-style: italic; }
+h2 {
+  font-size: 1.75rem;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 2.6em 0 0.6em;
+}
+p { margin: 0 0 1em; }
+ul, ol { padding-left: 1.3em; margin: 0 0 1.2em; }
+li { margin-bottom: 0.55em; }
+a { color: var(--accent); text-underline-offset: 0.15em; }
+strong { font-weight: 600; }
+.small { font-size: 0.85rem; color: var(--muted); font-family: var(--sans); line-height: 1.5; }
+
+/* Figures: set into the column, the wide ones break out a little on large screens. */
+.fig {
+  margin: 1.8em 0 2em;
+  padding: 16px;
+  background: var(--fig);
+  border-radius: 6px;
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+@media (min-width: 960px) {
+  .fig-wide { margin-left: -6rem; margin-right: -6rem; }
+}
+.hero-fig { margin-bottom: 2.4em; }
+.cv { display: block; width: 100%; touch-action: pan-y; }
+figcaption { color: var(--muted); margin-top: 10px; font-size: 0.85rem; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: 12px; }
+.controls.top { margin: 0 0 12px; }
+.note { color: var(--muted); font-size: 0.85rem; flex: 1 1 16rem; }
+.readout { margin: 10px 0 0; font-variant-numeric: tabular-nums; min-height: 1.45em; }
+.readout.big { font-family: var(--serif); font-size: 1.25rem; margin: 0 0 10px; }
+.readout b { font-weight: 600; color: var(--accent); }
+
+.btn {
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  background: var(--bg);
+  color: var(--ink);
+  cursor: pointer;
+}
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.btn:disabled { opacity: 0.45; cursor: default; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--rule); border-radius: 999px; overflow: hidden; background: var(--bg); }
+.seg-b {
+  font: inherit; font-size: 0.85rem; padding: 6px 12px; border: 0; background: transparent; color: var(--muted); cursor: pointer;
+}
+.seg-b[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+
+.slider { display: inline-flex; align-items: center; gap: 10px; flex: 1 1 14rem; color: var(--muted); }
+.slider input { flex: 1; min-width: 0; accent-color: var(--accent); }
+.slider.wide { flex-basis: 100%; }
+
+.theme-toggle {
+  position: absolute; top: 14px; right: 16px;
+  font: 0.8rem var(--sans); color: var(--muted); background: transparent;
+  border: 1px solid var(--rule); border-radius: 999px; padding: 4px 11px; cursor: pointer;
+}
+
+/* Results */
+.results { margin: 1.6em 0; display: grid; gap: 18px; font-family: var(--sans); font-size: 0.9rem; line-height: 1.45; }
+@media (min-width: 960px) { .results { margin-left: -6rem; margin-right: -6rem; } }
+.card { border: 1px solid var(--rule); border-radius: 6px; padding: 16px; background: var(--bg); }
+.card h3 { font-family: var(--serif); font-size: 1.3rem; font-weight: 600; margin: 0 0 2px; }
+.card .blurb { color: var(--muted); margin: 0 0 12px; }
+.card.pending { background: transparent; border-style: dashed; }
+.sub { display: grid; gap: 16px; grid-template-columns: 1fr; padding-top: 12px; border-top: 1px solid var(--rule); margin-top: 12px; }
+@media (min-width: 720px) { .sub { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.verdict { font-family: var(--serif); font-size: 1.15rem; margin: 0 0 6px; }
+.verdict.pass { color: var(--ok); }
+.verdict.fail { color: var(--warn); }
+.cause { border-left: 3px solid var(--warn); padding-left: 10px; margin: 6px 0 10px; }
+.facts { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; margin: 8px 0 10px; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+.checks { list-style: none; padding: 0; margin: 6px 0 10px; }
+.checks li { margin: 0 0 4px; padding-left: 1.4em; text-indent: -1.4em; }
+.mark-ok { color: var(--ok); font-weight: 700; }
+.mark-no { color: var(--warn); font-weight: 700; }
+.plan { width: 100%; display: block; background: var(--fig); border-radius: 4px; }
+.test-banner { border: 2px solid var(--warn); color: var(--warn); padding: 10px 14px; border-radius: 6px; font-family: var(--sans); font-size: 0.9rem; margin: 1em 0; }
+
+.colophon { margin: 4em 0 3em; padding-top: 1.2em; border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.9rem; font-family: var(--sans); line-height: 1.5; }
+
+@media (max-width: 520px) {
+  body { font-size: 18px; }
+  .hero { padding-top: 64px; }
+  h2 { font-size: 1.5rem; }
+  .fig { padding: 12px; margin-left: -4px; margin-right: -4px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto !important; }
+}
