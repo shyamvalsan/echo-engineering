@@ -303,5 +303,81 @@ spectrum (ideal flat-spectrum clap), (b) positivity constraint (signed reflectiv
 Box 30 min. Files: `REPORT.md`, `README.md`, `artifacts/report/`. One-paragraph verdict; one scorecard per stage
 (pass/fail, echo level, depth, post count, tier gap); solver validation table; answers to the four open questions,
 each citing a `metrics.json` path and key; ranked next steps; a viewer screenshot per stage; one reproduce command
-per stage and one to serve the viewer. Full test suite passing. Every number generated from the metrics files by a
+per stage and one to serve the viewer. Re-run `uv run python explainer/build.py` so the explainer carries the real results and audio, link the explainer, viewer and `BUILD.md` from `README.md` and the top of `REPORT.md`, and summarize the build path in the report. Full test suite passing. Every number generated from the metrics files by a
 script (`stages/report.py`), not typed by hand. If Tier 1 validation failed, "UNVERIFIED" is the first word of the report.
+
+## Task 12: Interactive lay-person explainer
+
+Added by the owner mid-run: "we also need lay person explanation of the project, an interactive write up".
+Box 90 min. Files: everything under `explainer/` only (plus `artifacts/explainer/` screenshots).
+
+A single scrolling page that a curious non-specialist can read in ten minutes and come away understanding what this
+project is, why it should work, what the simulation found, and what stands between it and a real structure. It is
+an explanation first and a demo second: plain words, short paragraphs, no jargon without a one-line gloss, every
+idea paired with something to see, hear or drag.
+
+- Output: `explainer/index.html`, fully self-contained (inline CSS and JS, no framework, no build tooling beyond the
+  Python script below; any audio or data embedded as base64/JSON). It must open by double-click from disk and from
+  `http.server`, work at phone width (16 px side gutter, no horizontal scroll), define colours as tokens on `:root`
+  with both light and dark themes (`@media (prefers-color-scheme: dark)` guarded by `:root:not([data-theme="light"])`,
+  plus `:root[data-theme="dark"]`), set an explicit `body` background, have a 2–4 word `<title>`, and load external
+  scripts from nowhere (inline everything) so it can also be published as a hosted page later.
+- `explainer/build.py` assembles `index.html` from `explainer/src/` (template, css, js) plus a results block read
+  from the real run folders (`runs/index.json`, each final run's `metrics.json`, `manifest.json`, `scene.json`,
+  `profile.json`, and its short WAVs embedded as base64). When no real runs exist yet it builds with the results
+  sections showing "simulation still running" and everything else working. Task 11 re-runs it at the end.
+- Interactive pieces (all computed in the browser with a small single-scattering model in plain JS + Web Audio, so
+  the reader hears what they build):
+  1. "An echo is a recording played back by geometry": clap at a wall, drag the wall, hear and see the delay
+     (17.15 cm of range per millisecond of echo).
+  2. "Many posts, many echoes": add a row of posts, hear clicks merge into a pitch as spacing shrinks; spacing ↔ pitch
+     readout (spacing = c / 2f).
+  3. "The layout is the waveform": draw or pick a sound (falling whistle, four-note motif) and watch it turn into a
+     density of posts along range; play the clap and the echo. Show the positivity problem honestly: posts cannot
+     reflect negatively, so the design is bias + signal, and show what the bias costs.
+  4. "Why the clap matters": swap an ideal click for a real clap burst and hear the difference.
+  5. "How big is it?": a slider from 80 ms to 800 ms of sound showing structure depth against familiar lengths
+     (a bus, a tennis court, a football pitch), and how loud the echo is expected to be.
+  6. Results: one card per stage with target / echo / as-heard audio buttons, pass or fail in plain words, depth,
+     post count, echo loudness in everyday terms, and a small plan-view drawing of the real design from `scene.json`.
+  7. "What a simulation cannot tell us" and "How it could be built" — a short honest summary that links to
+     `BUILD.md` and the full viewer (`../viewer/`).
+- Tone: confident, concrete, never hype. State plainly what is simulated and what is not. No emoji.
+- Verify in a real browser (Playwright): desktop 1440×900 and phone 390×844, both themes, no console errors, every
+  interactive piece exercised, audio graph starts on user gesture. Screenshots to `artifacts/explainer/`. Look at
+  them critically and iterate on the design and the wording at least twice.
+
+Done when: the page builds, reads well, every interactive piece works, screenshots saved, committed.
+
+## Task 13: Real-world build path
+
+Added by the owner mid-run: "importantly we need a clear path to actually create the structure in the real world".
+The spec's non-goal is a physical build tonight; this task delivers the plan and the fabrication data, not hardware.
+Box 120 min. Starts after stages 1 and 2 have final runs. Files: `BUILD.md`, `echo/buildkit.py`, `stages/build_pilot.py`,
+`tests/test_buildkit.py`, `build/` outputs, `runs/build_*/` run folders.
+
+- `BUILD.md`: a staged path a small team could follow, each phase with goal, what is built, bill of materials with
+  cost range, tools, what is measured, the pass/fail number that unlocks the next phase, and what to do on failure:
+  1. Desk phase (done tonight): what simulation established and what it left open, with numbers from `metrics.json`.
+  2. 1:10 ultrasonic scale model on a tabletop (5–40 kHz, structure about 1.4–3 m, pins/rods on a CNC-drilled or
+     laser-cut board): the cheapest test of the whole idea including 3D effects. Give the concrete rig: emitter,
+     microphone, sampling rate, how to record the impulse response and slow it down 10× to listen.
+  3. Full-scale pilot of the smallest worthwhile design outdoors: site requirements (background noise, ground, wind,
+     clearance), post material and height (from the Fresnel-zone/finite-height argument), foundations, survey and
+     stake-out method that meets the tolerance the robustness sweep demands, build sequence, acceptance measurement.
+  4. Permanent installation: durability, safety, access, permissions, maintenance, and the longer pieces.
+  Include a tolerance budget (from the robustness sweeps), a loudness budget (from the echo-level metric, with the
+  35 dB audibility line), a risk register ranked by what would kill the project, and a rough schedule and budget.
+  Label every cost and material figure as an estimate with its basis; do not invent supplier quotes.
+- `echo/buildkit.py`: turn a final design into fabrication data — stake-out table (CSV: id, x, y, radius, distance and
+  bearing from the clap point, bistatic range, echo delay), a to-scale printable plan (SVG and PDF) with the clap
+  point, listener, baseline and post rows, a DXF or SVG drilling template for the 1:10 model, and a bill of materials
+  (count and total length per stock diameter for a stated post height). Tests on geometry round-trip and scaling.
+- `stages/build_pilot.py`: design a **build-optimized pilot** with the existing pipeline under practical constraints
+  (stock pipe diameters nearest the catalog, a cap on post count, a minimum spacing a person can walk and mow between
+  if feasible, maximum loudness) for the bird note, and if time allows the motif. Score it with the same Tier 1
+  referee and thresholds as its stage, add a physics check the stages do not have — the finite-height / ground
+  correction estimate for the chosen post height — and write its run folder and its build pack to `build/<design>/`.
+- Every number in `BUILD.md` that comes from simulation cites its `metrics.json` path and key.
+
+Done when: `BUILD.md` is complete and specific, the build pack exists for at least the pilot design, tests pass, committed.
