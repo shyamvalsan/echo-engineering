@@ -110,3 +110,28 @@ def test_backfill_routes(tmp_path):
     man2.pop("ir")
     assert man2 == man
     check_run_folder(d)
+
+
+def test_gain_to_true_level_reproduces_as_heard_level(tmp_path):
+    """(clap_0 (*) ir) * gain_to_true_level has the echo level heard in as_heard.wav (independent read of the file:
+    echo peak after the direct clap over the direct peak), within 0.5 dB, for both tiers; and after a backfill."""
+    from stages.backfill_ir import backfill
+
+    for i, with_ir in enumerate((True, False)):
+        d = _run(tmp_path / str(i), with_ir=with_ir, tier1=True)
+        if not with_ir:
+            backfill(d)
+        b = json.loads((d / "manifest.json").read_text())["ir"]
+        x, _ = sf.read(d / "as_heard.wav", dtype="float64")
+        i_d = int(round(0.3 / 343 * FS))
+        heard = 20 * np.log10(np.max(np.abs(x[i_d + 200:])) / np.max(np.abs(x[: i_d + 128])))
+        clap0 = clap_family(5)[0]
+        for tier in ("tier0", "tier1"):
+            if b[tier] is None:
+                continue
+            ir, _ = sf.read(d / b[tier], dtype="float64")
+            lvl = 20 * np.log10(np.max(np.abs(export.convolve_trunc(clap0, ir) * b["gain_to_true_level"][tier])))
+            assert abs(lvl - heard) < 0.5, (tier, lvl, heard)
+            assert abs(b["level_db"]["as_stored"][tier] + 20 * np.log10(b["gain_to_true_level"][tier])
+                       - b["level_db"]["true_3d"]) < 1e-6
+        assert b["model_level"] == "2d"

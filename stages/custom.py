@@ -20,9 +20,9 @@ time: whistles, pure-tone notes, glides) -> "phase_locked" ring realization, K =
 otherwise (harmonic-rich, noisy, speech-like) -> "sampling" (stage 4's choice for speech: inverse-CDF sampling with
 range polish). Spectral flatness is recorded for information. No pitch tracker or other judge is used.
 
-Settings: tonal = stage 2 v2 (1 cm posts, +-20 deg, fill 0.1 % for low extinction, phase-locked K = 1, 600 Adam steps at
-lr 0.05); broadband = stage 4 (1 cm posts, sampling, 1,000 posts per 100 ms of target, lr 0.05, 400 steps: the
-4b/4c runs used 800, halved here for an interactive turnaround). Both use the 500-4000 Hz band (StageConfig
+Settings: tonal = stage 2 v2 (1 cm posts, +-20 deg, fill 0.1 % for low extinction, phase-locked K = 1); broadband =
+stage 4 (1 cm posts, sampling, 1,000 posts per 100 ms of target, range polish cut to 20 steps). Both: 250 Adam steps at
+lr 0.05 (stages used 300-1200; cut for an interactive turnaround), torch on 2 threads (see SOLVE_THREADS). Both use the 500-4000 Hz band (StageConfig
 band_min_hz=500, as stage 4: the clap band starts at 898 Hz, user targets may not).
 
 Metrics: there is no pass condition for an arbitrary target. metrics.json carries generic information only (echo
@@ -41,6 +41,7 @@ full-wave result (status "final") and keeps its run_id.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import io
 import json
 import math
@@ -72,6 +73,13 @@ TIER1_BUDGET_S = 20 * 60.0
 TIER1_CELL_STEPS_PER_S = 55e9 / 260.0  # stage 4's cost model (8 idle threads)
 TIER1_GRIDS = (2500.0, 4000.0)  # validated grids for 1 cm posts (runs/validation/metrics.json)
 NO_PASS = "no pass condition defined for custom targets"
+# torch threads for the profile solve: 2. Measured on the shared 8-core machine (load ~11), 0.3 s target, 51 Adam steps:
+# 2 threads 1.4-1.7 s, 4 threads 1.8 s, 8 threads 48 s (oversubscribed thread pools spin); the solve is small.
+SOLVE_THREADS = 2
+REFINE_STEPS = 20  # sampling realization's range polish (stage 4 used the driver default 100: 71 s of a 79 s design
+#   for a 0.3 s broadband target); phase-locked designs skip the polish anyway
+STEPS = 250  # profile-solve Adam steps at lr 0.05: the example's loss plateaus by ~250-300 (1.98 -> 1.71 at 300,
+#   1.72 at 600); the solve is ~all of the design time (MR-STFT loss + backward per step, plus a one-off SVD plan)
 
 
 class CustomInputError(ValueError):
@@ -252,7 +260,7 @@ def make_config(target: Target, realization, name):
                            f"{'tonal' if tonal else 'broadband'})",
         tag=f"custom_{slug(name)}", make_target=lambda: target, duration_s=duration_for(target.audio),
         a_ref=0.01, catalog=(0.01,), half_angle_deg=20.0, band_min_hz=BAND[0], band_max_hz=BAND[1],
-        realization=realization, posts_per_period=1, steps=600 if tonal else 400, lr=0.05, threads=4,
+        realization=realization, posts_per_period=1, steps=STEPS, lr=0.05, refine_steps=REFINE_STEPS, threads=SOLVE_THREADS,
         correction_rounds=1, robustness=False, field=True, stretch_prior_tier0=True,
         notes=f"Custom target \"{name}\" (user input, band-limited {BAND[0]:.0f}-{BAND[1]:.0f} Hz). {NO_PASS}.")
     if tonal:
@@ -316,11 +324,45 @@ def _finish_folder(run_dir, cfg, name, info, cls, warnings, command, tier1_block
     export.write_json(d / "manifest.json", man, indent=1)
 
 
+class _Progress(io.TextIOBase):
+    """stdout sink for run_stage(verbose=True): turns its log lines into progress(stage, fraction) calls."""
+
+    STEP = re.compile(r"^step\s+(\d+) loss ([0-9.]+)")
+
+    def __init__(self, say, steps, lo, hi, echo=None):
+        self.say, self.steps, self.lo, self.hi, self.echo, self.buf = say, steps, lo, hi, echo, ""
+
+    def write(self, text):
+        if self.echo is not None:
+            self.echo.write(text)
+        self.buf += text
+        while "\n" in self.buf:
+            line, self.buf = self.buf.split("\n", 1)
+            m = self.STEP.match(line.strip())
+            if m:
+                k = int(m.group(1))
+                self.say(f"profile solve: step {k}/{self.steps} (loss {float(m.group(2)):.3f})",
+                         self.lo + (self.hi - self.lo) * 0.85 * k / self.steps)
+            elif "realized" in line:
+                self.say("realizing posts", self.lo + (self.hi - self.lo) * 0.88)
+            elif line.startswith("=== "):
+                self.say("writing run folder (echoes, IRs, spectrograms, index)", self.lo + (self.hi - self.lo) * 0.95)
+        return len(text)
+
+
+def _staged_run(cfg, tier1, cmd, runs_root, say, lo, hi, echo=None):
+    from stages.common import run_stage
+
+    say("building the Tier 0 range plan and starting the profile solve", lo)
+    with contextlib.redirect_stdout(_Progress(say, cfg.steps, lo, hi, echo)):
+        return run_stage(cfg, tier1, command=cmd, verbose=True, runs_root=runs_root)
+
+
 def design_custom(src, name="custom", max_duration_s=1.0, tier1=False, progress=None, command=None,
                   runs_root=None):
     """Full custom pipeline. src: path or bytes. progress(stage_text, fraction) is called along the way.
     Returns {"run_dir", "run_id", "warnings", "timings", "classification", "tier1"}."""
-    from stages.common import Tier1Hooks, run_stage
+    from stages.common import Tier1Hooks
 
     say = progress or (lambda *_: None)
     runs_root = Path(runs_root or export.RUNS)
@@ -338,8 +380,12 @@ def design_custom(src, name="custom", max_duration_s=1.0, tier1=False, progress=
          "--max-duration", str(max_duration_s)] + (["--tier1"] if tier1 else []))))
     say(f"designing on the fast model ({'tonal: phase-locked rings' if real == 'phase_locked' else 'broadband: sampling'})", 0.1)
     t = time.time()
-    run_dir, des, _ = run_stage(cfg, None, command=cmd, verbose=False, runs_root=runs_root)
+    run_dir, des, _ = _staged_run(cfg, None, cmd, runs_root, say, 0.1, 0.5 if tier1 else 0.97)
     tim["design_s"] = time.time() - t
+    w = json.loads((run_dir / "manifest.json").read_text()).get("wall_s") or {}
+    tim["profile_solve_s"] = w.get("profile_solve_s")
+    tim["realize_s"] = w.get("realize_s")
+    tim["score_export_index_s"] = tim["design_s"] - (w.get("profile_solve_s") or 0) - (w.get("realize_s") or 0)
     run_id = run_dir.name
     t1_block = {"requested": bool(tier1), "status": "not requested" if not tier1 else "queued"}
     if tier1:
@@ -356,11 +402,19 @@ def design_custom(src, name="custom", max_duration_s=1.0, tier1=False, progress=
     _finish_folder(run_dir, cfg, name, info, cls, warnings, cmd, t1_block)
     say("fast-model design written", 0.5 if tier1 and t1_block["status"] == "queued" else 1.0)
     if tier1 and t1_block["status"] == "queued":
-        say(f"full-wave run (est. {est['est_solve_s'] / 60:.1f} min, waits for the solver lock)", 0.55)
         t = time.time()
         tmp_root = runs_root / STAGE / "_tmp" / run_id
         try:
-            d1, _, _ = run_stage(cfg1, Tier1Hooks(), command=cmd, verbose=True, runs_root=tmp_root)
+            say(f"full-wave run (est. {est['est_solve_s'] / 60:.1f} min on an idle machine; waits for the solver lock)",
+                0.55)
+            def say1(s_, f_):
+                if s_.startswith("realizing"):
+                    s_, f_ = f"full-wave solve running (est. {est['est_solve_s'] / 60:.1f} min idle; field video after)", 0.62
+                elif s_.startswith("profile solve"):
+                    s_, f_ = "re-solving the profile in the full-wave band (" + s_ + ")", 0.55 + 0.05 * (f_ - 0.55) / 0.43
+                say(s_, f_)
+
+            d1, _, _ = _staged_run(cfg1, Tier1Hooks(), cmd, tmp_root, say1, 0.55, 0.98, echo=sys.__stdout__)
             tim["tier1_s"] = time.time() - t
             for p in run_dir.iterdir():  # replace the Tier 0 folder's contents, keep its run_id
                 shutil.rmtree(p) if p.is_dir() else p.unlink()

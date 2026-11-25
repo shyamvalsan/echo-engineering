@@ -65,10 +65,24 @@ class Lab:
         self.q: queue.Queue = queue.Queue()
         self._design = design_fn
         self.version = export.git_commit()
+        self._load_mirrors()
         self.worker = threading.Thread(target=self._work, name="lab-worker", daemon=True)
         self.worker.start()
 
     # ---- jobs
+    def _load_mirrors(self):
+        """Jobs of earlier server sessions (from their mirrors); unfinished ones are marked as interrupted."""
+        for p in sorted(self.jobs_dir.glob("*.json")) if self.jobs_dir.is_dir() else []:
+            try:
+                j = json.loads(p.read_text())
+            except Exception:  # noqa: BLE001
+                continue
+            if not JOB_ID_RE.match(str(j.get("job_id", ""))):
+                continue
+            if j.get("status") in ("queued", "running"):
+                j.update(status="error", stage="error", message="interrupted: the lab server was restarted")
+            self.jobs[j["job_id"]] = j
+
     def _mirror(self, job):
         self.jobs_dir.mkdir(parents=True, exist_ok=True)
         tmp = self.jobs_dir / f".{job['job_id']}.tmp"

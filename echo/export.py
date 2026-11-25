@@ -216,7 +216,8 @@ def write_run(stage, tag, title, *, scene: Scene, profile: dict, target_audio, t
     write_json(d / "manifest.json", manifest, indent=1)
     if ir is not None:
         i0_, i1_ = fit(ir["tier0"]), (fit(ir["tier1"]) if ir.get("tier1") is not None else None)
-        write_ir(d, i0_, ir["band"], i1_, ir.get("source_t1"), extra={"check": {
+        write_ir(d, i0_, ir["band"], i1_, ir.get("source_t1"), clap=claps[0], true_level_db=as_heard_level_db,
+                 extra={"check": {
             "tier0_reconstruction_error_db": ir_error_db(i0_, claps[0], w_t0),
             "tier1_reconstruction_error_db": ir_error_db(i1_, claps[0], w_t1) if (i1_ is not None and w_t1 is not None)
             else None,
@@ -333,18 +334,49 @@ def ir_error_db(ir, clap, echo):
     return float(10 * np.log10(max(np.sum((rec - echo) ** 2), 1e-300) / max(np.sum(echo ** 2), 1e-300)))
 
 
-def write_ir(run_dir, ir_t0, band, ir_t1=None, source_t1=None, extra=None, source_t0=IR_SRC_T0):
+def ir_level_db(ir, clap):
+    """Peak level (dB re the direct clap, peak 1) of clap (*) ir: the project's echo-level definition."""
+    e = convolve_trunc(np.asarray(clap, float) / np.max(np.abs(clap)), np.asarray(ir, float))
+    pk = float(np.max(np.abs(e)))
+    return 20 * math.log10(pk) if pk > 0 else None
+
+
+def write_ir(run_dir, ir_t0, band, ir_t1=None, source_t1=None, extra=None, source_t0=IR_SRC_T0, clap=None,
+             true_level_db=None):
     """Write ir_tier0.wav (and ir_tier1.wav) as 32-bit float, unnormalized, and set manifest['ir'] (only that key
-    is changed: read-modify-write). Returns the ir block."""
+    is changed: read-modify-write). Returns the ir block.
+
+    Level convention: both IRs are stored at the 2D (line-source) model level, as computed (Tier 0 2D mode, Tier 1
+    2D full-wave). With `clap` (variant 0) and `true_level_db` (the run's 3D-corrected echo level for that clap,
+    manifest.audio.as_heard_echo_level_db), the block carries per tier
+    gain_to_true_level = 10^((true_level_db - level of clap (*) ir) / 20) and level_db {as_stored, true_3d}:
+    (source (*) ir) * gain_to_true_level is the echo at the project's true (3D-corrected) level re the direct sound."""
     d = Path(run_dir)
     sf.write(d / "ir_tier0.wav", np.asarray(ir_t0, dtype=np.float32), FS, subtype="FLOAT")
     if ir_t1 is not None:
         sf.write(d / "ir_tier1.wav", np.asarray(ir_t1, dtype=np.float32), FS, subtype="FLOAT")
     block = {"tier0": "ir_tier0.wav", "tier1": "ir_tier1.wav" if ir_t1 is not None else None, "fs": FS,
              "band_hz": [float(band[0]), float(band[1])], "t0_s": 0.0, "units": IR_UNITS,
+             "model_level": "2d",
              "source": {"tier0": source_t0, "tier1": source_t1 if ir_t1 is not None else None},
              "peak": {"tier0": float(np.max(np.abs(ir_t0))),
                       "tier1": float(np.max(np.abs(ir_t1))) if ir_t1 is not None else None}}
+    stored = {"tier0": None, "tier1": None}
+    gain = {"tier0": None, "tier1": None}
+    if clap is not None:
+        stored["tier0"] = ir_level_db(np.asarray(ir_t0, np.float32), clap)
+        if ir_t1 is not None:
+            stored["tier1"] = ir_level_db(np.asarray(ir_t1, np.float32), clap)
+        if true_level_db is not None:
+            for k, v in stored.items():
+                if v is not None:
+                    gain[k] = float(10 ** ((float(true_level_db) - v) / 20))
+    block["gain_to_true_level"] = gain
+    block["level_db"] = {"as_stored": stored, "true_3d": None if true_level_db is None else float(true_level_db)}
+    block["level_convention"] = ("IRs are stored at the 2D (line-source) model level as computed; source (*) ir * "
+                                 "gain_to_true_level[tier] is the echo at the run's true 3D-corrected level re the "
+                                 "direct sound (level_db.true_3d = manifest.audio.as_heard_echo_level_db, clap 0; "
+                                 "level_db.as_stored = peak dB of clap_0 (*) ir)")
     if extra:
         block.update(extra)
     mp = d / "manifest.json"

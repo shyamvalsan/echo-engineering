@@ -71,13 +71,28 @@ def backfill(run_dir, dry_run=False):
            "tier0_deconv_reconstruction_error_db": err0_dec, "tier1_route": src1,
            "tier1_reconstruction_error_db": err1}
     if not dry_run:
-        export.write_ir(d, ir0, band, ir1, src1, extra={"check": {
+        export.write_ir(d, ir0, band, ir1, src1, clap=clap0,
+                        true_level_db=(man.get("audio") or {}).get("as_heard_echo_level_db"), extra={"check": {
             "tier0_reconstruction_error_db": err0, "tier1_reconstruction_error_db": err1,
             "tier0_deconv_vs_direct_db": agree0, "deconv_lambda": export.DECONV_LAMBDA,
             "definition": "error_db = 10 log10(|clap_0 (*) ir - echo|^2 / |echo|^2) over the echo file; "
                           "tier0_deconv_vs_direct_db = 10 log10(|ir_deconv - ir_direct|^2 / |ir_direct|^2) for Tier 0",
             "written_by": "stages.backfill_ir"}})
     return row
+
+
+def refresh_levels(run_dir):
+    """Add the level fields (gain_to_true_level, level_db) to an IR block written at run time, from its own files."""
+    d = Path(run_dir)
+    man = json.loads((d / "manifest.json").read_text())
+    b = man["ir"]
+    cfg = (man.get("design") or {}).get("config") or {}
+    clap0 = clap_family(int(cfg.get("n_claps", 5)), seed=int(man.get("seed") or 0))[0]
+    ir0, _ = sf.read(d / b["tier0"], dtype="float64")
+    ir1 = sf.read(d / b["tier1"], dtype="float64")[0] if b.get("tier1") else None
+    extra = {k: v for k, v in b.items() if k == "check"}
+    export.write_ir(d, ir0, b["band_hz"], ir1, (b.get("source") or {}).get("tier1"), extra=extra, clap=clap0,
+                    true_level_db=(man.get("audio") or {}).get("as_heard_echo_level_db"))
 
 
 def run_dirs(runs_root=export.RUNS, only=None):
@@ -94,13 +109,17 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--only", nargs="*", help="stage folders to process")
     ap.add_argument("--dry-run", action="store_true")
-    ap.add_argument("--force", action="store_true", help="also redo runs whose IR was stored at run time")
+    ap.add_argument("--force", action="store_true", help="also redo runs whose IR was written at run time")
     a = ap.parse_args(argv)
     rows = []
     for d in run_dirs(only=a.only):
         man = json.loads((d / "manifest.json").read_text())
-        if not a.force and ((man.get("ir") or {}).get("source") or {}).get("tier1") == export.IR_SRC_T1_STORED:
-            print(f"{d.parent.name}/{d.name}: IR stored at run time, skipped")
+        if not a.force and (man.get("ir") or {}).get("check", {}).get("written_by") == "echo.export.write_run":
+            if "gain_to_true_level" not in man["ir"] and not a.dry_run:
+                refresh_levels(d)
+                print(f"{d.parent.name}/{d.name}: IR written at run time; level fields added")
+            else:
+                print(f"{d.parent.name}/{d.name}: IR written at run time, skipped")
             continue
         r = backfill(d, a.dry_run)
         rows.append(r)
