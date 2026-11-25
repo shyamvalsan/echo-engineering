@@ -168,10 +168,63 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .plan { width: 100%; display: block; background: var(--fig); border-radius: 4px; }
 .test-banner { border: 2px solid var(--warn); color: var(--warn); padding: 10px 14px; border-radius: 6px; font-family: var(--sans); font-size: 0.9rem; margin: 1em 0; }
 
+/* Three verdicts, three lines; "not established" is its own neutral state. */
+.vlines { list-style: none; padding: 0; margin: 8px 0 12px; display: grid; gap: 6px; font-family: var(--sans); font-size: 0.9rem; line-height: 1.45; }
+.vlines .v { display: grid; grid-template-columns: 7.2rem 8.6rem minmax(0, 1fr); gap: 2px 10px; align-items: baseline; margin: 0; }
+.vk { color: var(--muted); }
+.vs { justify-self: start; font-weight: 600; font-size: 0.8rem; padding: 1px 9px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.v-pass .vs { color: var(--ok); }
+.v-fail .vs { color: var(--warn); }
+.v-null .vs { color: var(--muted); border-style: dashed; }
+.v-none .vs { color: var(--muted); border-color: var(--rule); font-weight: 400; }
+.vt { color: var(--ink); }
+.card .vlines .v { grid-template-columns: 6.6rem 8.2rem minmax(0, 1fr); }
+@media (max-width: 720px) {
+  .vlines .v, .card .vlines .v { grid-template-columns: auto 1fr; }
+  .vlines .vt { grid-column: 1 / -1; }
+}
+.vlines.compact { gap: 3px; font-size: 0.85rem; }
+.vlines.compact .v, .card .vlines.compact .v { grid-template-columns: 6.6rem auto minmax(0, 1fr); }
+.vlines.compact .vt { color: var(--muted); }
+.sub .vlines .v, .sub .vlines.compact .v { grid-template-columns: 6.6rem auto; }
+.sub .vlines .vt { grid-column: 1 / -1; }
+.sub .vlines .vt:empty { display: none; }
+@media (max-width: 720px) {
+  .vlines.compact .v, .card .vlines.compact .v { grid-template-columns: 6.6rem auto; }
+  .vlines.compact .vt { grid-column: 1 / -1; }
+}
+.vlines .vt:empty { display: none; }
+.status a { text-decoration: none; display: block; }
+.status a span { display: block; }
+.status a:hover span { text-decoration: underline; }
+.res-h { font-size: 1.3rem; margin: 1.6em 0 0.2em; }
+.res-h.quiet { color: var(--muted); font-weight: 500; }
+.results .vlines.compact { gap: 3px; font-size: 0.85rem; }
+.vlines.compact .v, .card .vlines.compact .v { grid-template-columns: 6.6rem auto minmax(0, 1fr); }
+.vlines.compact .vt { color: var(--muted); }
+.sub .vlines .v, .sub .vlines.compact .v { grid-template-columns: 6.6rem auto; }
+.sub .vlines .vt { grid-column: 1 / -1; }
+.sub .vlines .vt:empty { display: none; }
+@media (max-width: 720px) {
+  .vlines.compact .v, .card .vlines.compact .v { grid-template-columns: 6.6rem auto; }
+  .vlines.compact .vt { grid-column: 1 / -1; }
+}
+.vlines .vt:empty { display: none; }
+.status a { text-decoration: none; display: block; }
+.status a span { display: block; }
+.status a:hover span { text-decoration: underline; }
+.res-h { font-family: var(--serif); margin: 0.6em 0 -6px; }
+.card.quiet { background: transparent; }
+.card.feat { border-color: var(--ok); }
+.cost { display: block; font-family: var(--sans); font-size: 0.85rem; color: var(--muted); }
+.shot img { display: block; width: 100%; height: auto; border-radius: 4px; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.82em; background: var(--fig); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
 .colophon { margin: 4em 0 3em; padding-top: 1.2em; border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.9rem; font-family: var(--sans); line-height: 1.5; }
 
 @media (max-width: 520px) {
   body { font-size: 18px; }
+  .facts { grid-template-columns: 1fr; gap: 0; }
+  .facts dd { margin-bottom: 6px; }
   .hero { padding-top: 64px; }
   h2 { font-size: 1.5rem; }
   .fig { padding: 12px; margin-left: -4px; margin-right: -4px; }

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The Composed Echo</title>
 <link rel="icon" href="data:,">
-<meta name="description" content="An interactive explanation of a field of posts designed so that a hand clap comes back as a bird note, a tune, or a word.">
+<meta name="description" content="An interactive explanation of a field of posts designed so that a hand clap comes back as a chosen sound: what works in simulation, how it was judged, and how to try it.">
 <style>/*__CSS__*/</style>
 </head>
 <body>
@@ -13,7 +13,7 @@
 
 <header class="hero">
   <h1>The composed echo</h1>
-  <p class="lede">You clap, and the hillside whistles back.</p>
+  <p class="lede">You clap, and the hillside whistles back. So far, in simulation.</p>
   <p class="status"><a href="#story" data-out="status"></a></p>
   <figure class="fig fig-wide hero-fig" id="hero">
     <canvas class="cv" data-h="300" aria-label="Plan view: a person at the left, and a fan of posts spreading out to the right"></canvas>
@@ -25,9 +25,9 @@
 </header>
 
 <main class="prose">
-<p>Picture a field of plain posts, hundreds or thousands of them, standing in the open with nothing else around. No speakers, no wires, no power. You stand in front of the field and clap once. What comes back is not a smeared echo of your clap, but a short falling whistle, like a bird.</p>
+<p>Picture a field of plain posts, a thousand or so, standing in the open with nothing else around. No speakers, no wires, no power. You stand in front of the field and clap once. What comes back is not a smeared echo of your clap, but a short falling whistle, like a bird.</p>
 <p>Nothing in the field makes sound. Every post just bounces back a little of your clap, a little later than the one before. Put the posts in exactly the right places and those tiny echoes add up to a sound you chose in advance: a bird call, a few notes, perhaps one day a spoken word.</p>
-<p>This project designs such fields on a computer and tests them in a careful simulation. Nothing has been built yet. This page explains the idea one step at a time, and every figure lets you listen. Turn your sound on.</p>
+<p>This project designs such fields on a computer and tests them in a careful simulation. In that simulation the whistle works: a clap comes back as a recognisable falling whistle. Nothing has been built yet. This page explains the idea one step at a time, lets you hear the results, and says plainly how they were judged. Turn your sound on.</p>
 
 <h2>An echo is a recording played back by geometry</h2>
 <p>Start with one wall. Your clap travels out, hits the wall, and travels back. Sound moves at about 343 metres per second, so the further the wall, the longer the wait.</p>
@@ -54,6 +54,20 @@
   <figcaption>A row 10 metres deep. The pitch you hear is the speed of sound divided by twice the spacing: posts 8.6 cm apart sing at about 2,000 Hz, the pitch of a high whistle.</figcaption>
 </figure>
 <p>That is the whole trick in miniature. Spacing sets pitch. Change the spacing gradually along the row and the pitch slides. Group posts into bands and you get separate notes.</p>
+
+<h2 id="works">What works: the whistle</h2>
+<p>Put that to use. Stand the posts in rings around you, one ring for every ripple of a whistle, and let the rings creep closer together as they go further out. Each ring returns one cycle of the sound, and because the rings get closer, the cycles get shorter and the pitch falls. It is the chirp you hear when you clap in front of a long flight of stairs or a picket fence, bent into a glide.</p>
+<p data-out="works-what"></p>
+<figure class="fig" id="whistle">
+  <canvas class="cv plan" data-h="170" aria-label="The whistle design seen from above: you at the left, rings of thin posts fanning out to the right"></canvas>
+  <div class="controls" data-out="works-buttons"></div>
+  <p class="readout" data-out="works-readout"></p>
+  <figcaption data-out="works-caption"></figcaption>
+</figure>
+<p data-out="works-facts"></p>
+<h3>Three verdicts, kept apart</h3>
+<div data-out="works-verdicts"></div>
+<p><strong>Why they can differ.</strong> An ear that knows what it is listening for is forgiving: it hears a whistle through hiss, and through a pitch that is a hair off. The strict tests are not forgiving: a faint hiss well below the whistle, or posts a couple of millimetres out of place, pull their scores down even when the whistle sounds the same. And knowing the answer makes anyone hear it more easily. That is exactly why a blind test, where the listener does not know what each echo was meant to be, matters<span data-out="blind-note"></span>.</p>
 
 <h2>The layout is the waveform</h2>
 <p>Go one step further. Any sound can be drawn as a wiggly line, its waveform: how hard the air is pushed, moment by moment. If we want the echo to be that sound, we need the amount of reflecting material at each distance to follow the same wiggle. More posts where the line is high, fewer where it is low. The field becomes the sound written out along the ground, one millisecond for every 17 centimetres, a little like the groove of a record.</p>
@@ -115,14 +129,13 @@
 </figure>
 
 <h2 id="story">What we did, and what happened</h2>
-<p class="small">Written on 25 November, after every stage had been run on the careful simulator. Sentences with numbers in them are filled in from the run files each time this page is rebuilt.</p>
-<p>We built two simulators. The fast one treats every post as returning one clean, delayed copy of the clap, like the figures above; it can try thousands of layouts. The slow, careful one follows the actual sound wave as it moves through the field, including posts standing in each other's shadow and sound bouncing from post to post before it comes back. Only the careful one may declare a pass, because only it sees how a crowded field goes wrong. It was first checked against textbook cases with known exact answers.</p>
-<p>A designer program turns each target sound into a layout of posts. Fixed pass marks, written down before any design existed and never adjusted, then score the echo. <span data-out="story-marks"></span></p>
-<p>Overnight, an independent review of the careful simulator found a real flaw: right next to each post it used a cruder calculation, which in dense fields bent the pitch slightly, by under 1%. Small, but about the whistle's whole margin, so it was fixed and re-checked before any result was accepted. Two uncertainties remain. For the thinnest posts the careful simulator is confirmed only for sound bounced straight back, not for sound scattered sideways or forwards. And its handling of dense fields has been checked for consistency with itself, not against an exact answer.</p>
+<p class="small">Written on 25 November. Sentences with numbers in them are filled in from the run files each time this page is rebuilt.</p>
+<p>We built two simulators. The fast one treats every post as returning one clean, delayed copy of the clap, like the figures above, and can try thousands of layouts. The careful one follows the actual sound wave through the field, shadows and post-to-post bounces included, and only it may declare a result. An overnight independent review found a flaw in it that bent the pitch by under 1%; it was fixed before any result was accepted.</p>
+<p>A designer program turns each target sound into a layout of posts, and strict pass marks, written down before any design existed, score the echo. <span data-out="story-marks"></span></p>
 
 <h3>Stage by stage</h3>
 <p data-out="story-s1"></p>
-<p><strong>The first discovery: exact rings beat scattered posts.</strong> Posts scattered at random, more where the waveform is high, each add a little noise. Exact rings, one per ripple of the sound wave, make every post pull in the same direction, like the fine ruled lines on a CD that split light into clean colours. <span data-out="story-lesson-a"></span></p>
+<p><strong>The first lesson: exact rings beat scattered posts.</strong> Posts scattered at random each add a little noise; exact rings make every post pull in the same direction, like the fine lines on a CD that split light into clean colours.</p>
 <figure class="fig fig-wide" id="rings">
   <canvas class="cv" data-h="250" aria-label="Two strips of posts along range for the same whistle: scattered by density, and placed in exact rings"></canvas>
   <div class="controls">
@@ -137,7 +150,7 @@
   <figcaption>The same 80 ms whistle and the same number of posts, laid out two ways. "Match" compares each echo with the echo a perfect, continuous design would give (100% is perfect). This uses the simple model from the figures above and ignores shadowing; the careful simulator is the judge of the real designs. Echoes turned up for listening.</figcaption>
 </figure>
 <p data-out="story-s2"></p>
-<p><strong>The second discovery: a field of posts behaves like slightly thicker air.</strong> Sound slows a little in a forest of posts, which stretches the echo; laying the field out slightly stretched cancels that. It also fades as it goes deeper, because every row takes a little sound from the rows behind, and that cannot be designed out. The fading grows with the square of post thickness and grows again when posts are squeezed into a narrow lane, so thin posts over a wide fan are a must.</p>
+<p><strong>The second lesson: a field of posts behaves like slightly thicker air.</strong> Sound slows a little among posts, stretching the echo; a slightly stretched layout cancels that. It also fades with depth, as every row takes a little sound from the rows behind, more so with thick posts or a narrow lane. So: thin posts over a wide fan.</p>
 <figure class="fig fig-wide" id="thick">
   <canvas class="cv" data-h="220" aria-label="How much of the echo survives at each depth of the post field"></canvas>
   <div class="controls">
@@ -150,48 +163,53 @@
     <button class="btn" type="button" data-cal="1">Stage 2</button>
   </div>
   <p class="readout" data-out="readout"></p>
-  <figcaption><span data-out="real"></span> This is a cartoon of the effect, scaled to land near those two measured numbers, not the careful simulator: the real fading also depends on pitch and on how the posts are arranged.</figcaption>
+  <figcaption><span data-out="real"></span> This is a cartoon of the effect, scaled to land near those measured numbers, not the careful simulator: the real fading also depends on pitch and on how the posts are arranged.</figcaption>
 </figure>
 <p data-out="story-s3"></p>
-<p><strong>The third discovery: the clap and the posts both favour the middle.</strong> <span data-out="story-lesson-c"></span></p>
-<p data-out="story-s4"></p>
+<p><strong>The third lesson: the clap and the posts both favour the middle.</strong> <span data-out="story-lesson-c"></span></p>
 
-<h3>Two practical surprises</h3>
-<p data-out="story-surprise"></p>
+<h3>The afternoon: listening</h3>
+<p data-out="story-listen"></p>
+<p data-out="story-review"></p>
 
-<h3>Where that leaves us</h3>
-<p data-out="story-score"></p>
-<p data-out="story-todo" hidden></p>
-<p>The cheapest decisive experiment is a tabletop model at one tenth scale, in ultrasound: the physics is the same, so a field on a table would show whether real posts behave the way the careful simulator says. <span data-out="story-pilot"></span></p>
-<p>The night went less smoothly than planned: slow downloads held up the start, an automated worker hung for hours, and a usage limit paused the work in the afternoon. So some runs are thinner than planned, with fewer repeat checks.</p>
+<h3>Three practical points</h3>
+<div data-out="story-surprise"></div>
 
 <h2>What the simulation found</h2>
-<p>Each card below is read directly from the project's run files. The <em>fast simulator</em> is the one the project calls Tier 0; the <em>careful simulator</em> is Tier 1, and a test passes only if it passes there. Both are flat, as if seen from above, with posts infinitely tall; loudness is then corrected for the real, three-dimensional world.</p>
+<p>Each card below is read directly from the project's run files, and every echo has a play button: listen and judge for yourself. Each card carries the three verdicts on their own lines: the <em>strict tests</em> fixed before the experiment, the <em>revised tests</em> drawn up after the listening, and the verdict <em>by ear</em>. "Not established" means no automated measure could tell the accepted echo from deliberately wrong ones; it is neither a pass nor a fail. All results are from the careful simulator (the project's Tier 1), which is flat, as if seen from above, with posts infinitely tall; loudness is then corrected for the real, three-dimensional world.</p>
 <div id="results" class="results"></div>
 <p class="small" data-out="results-note"></p>
+
+<h2 id="try">Try it yourself</h2>
+<p>The project's viewer has a <strong>Live</strong> mode. Clap near your computer and the selected structure answers through your speaker, using the echo the careful simulator computed for it. Then replay your clap and watch the wave roll out through the posts and come back.</p>
+<figure class="fig fig-wide shot" data-out="live-shot" hidden></figure>
+<ol>
+  <li>Get the project: <code>git clone https://github.com/shyamvalsan/echo-engineering</code>, then, inside it, start the small local server: <code>uv run python -m echo.lab</code>.</li>
+  <li>Open <code>http://localhost:8000/viewer/</code> in your browser, choose <strong>Live</strong>, press <em>Start listening</em> and allow the microphone. Clap once.</li>
+</ol>
+<p>The echo you hear is turned up, otherwise you would hear only your own clap; the viewer always shows by how many decibels, next to the true level. <span data-out="try-level"></span> Headphones are best for loud settings: through speakers a big boost can feed back into the microphone (the viewer turns the echo down if it hears that happening). This page cannot listen to you itself; the viewer does that on your own machine, and nothing is recorded until you press start.</p>
+<p><strong>Design from your own sound.</strong> In Live mode, give the designer a short sound file and it lays out a field of posts for it, optionally checked on the careful simulator, and opens it so you can clap at it. Without the viewer: <code>uv run python -m stages.custom --target your_sound.wav --name "my sound"</code>. <span data-out="try-custom"></span></p>
 
 <h2>What a simulation cannot tell us</h2>
 <p data-out="closing-shown"></p>
 <p>And some things were left out on purpose:</p>
 <ul>
+  <li><strong>Hearing right after a clap.</strong> A loud sound dulls the ear for a few tens of milliseconds, and the echo starts only a couple of hundredths of a second after the clap. Whether that hides the whistle is not simulated; only people listening on a real site can say.</li>
   <li><strong>Wind and weather.</strong> Wind and layers of warm and cool air bend sound and blur the timing. The simulation checks a still, uniform day, plus a cold and a hot one for some designs.</li>
   <li><strong>The ground and real posts.</strong> The real ground reflects too, and real posts have a top. Both are approximated, not simulated, and the careful simulator is flat.</li>
-  <li><strong>Background noise.</strong> Traffic, leaves and birds will compete with a faint echo. The 35 decibel line is a rule of thumb, not a measurement of any site.</li>
-  <li><strong>Your ears.</strong> Pitch trackers and a speech recogniser stand in for a listener, and they can be fooled in both directions. The real test is a person listening, which is why every result has a play button.</li>
+  <li><strong>Background noise.</strong> Traffic, leaves and birds compete with a faint echo. The 35 decibel line is a rule of thumb, not a measurement of any site.</li>
+  <li><strong>Your ears.</strong> Pitch trackers and a speech recogniser stand in for a listener, and they can be fooled in both directions. <span data-out="ears-note"></span></li>
 </ul>
 <p>Nothing on this page shows that a composed echo works in the open air. It shows where the idea is close, where it is far, and why.</p>
 
-<h2>How it could be built</h2>
-<p>If it is pursued, the path goes in three steps, each cheap enough to fail at:</p>
-<ol>
-  <li><strong>A tabletop model at one tenth scale,</strong> in ultrasound, to check the simulators against real posts.</li>
-  <li><strong>A full-size outdoor trial</strong> of the smallest design, with real claps, real ground and real wind.</li>
-  <li><strong>A permanent structure,</strong> only if the first two work, and only at a size the site can hold.</li>
-</ol>
+<h2 id="build">How it could be built</h2>
+<p>The build path starts with the whistle and with the question the simulation cannot answer: can a person standing there hear the echo straight after their own clap? Three steps, each cheap enough to fail at:</p>
+<ol data-out="build-steps"></ol>
 <p data-out="build-link"></p>
 
 <footer class="colophon">
-  <p>The composed echo is a design study: a simulator and an inverse designer for passive acoustic structures. The sounds in the interactive figures are computed live in your browser from the project's own clap and target signals, with the simple echo model described above. The results section is filled from the project's run files at build time.</p>
+  <p>The composed echo is a design study: a simulator and an inverse designer for passive acoustic structures. The sounds in the explanatory figures are computed live in your browser from the project's own clap and target signals, with the simple echo model described above; the results and the whistle's sounds come from the careful simulator's run files at build time.</p>
+  <p><a href="https://github.com/shyamvalsan/echo-engineering">Source on GitHub</a> · <a href="../REPORT.md">The report</a> · <a href="../viewer/">The viewer</a> · <a href="../BUILD.md">The build path</a> · MIT license</p>
   <p data-out="built"></p>
 </footer>
 </main>

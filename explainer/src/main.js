@@ -563,6 +563,64 @@
   }
   const fl = (e, id) => (e.judge_floor || e.floor || {})[id];
 
+  // ---------- the three verdicts, always kept apart ----------
+  const TESTS = D.scoreboard || [];
+  const testOf = (e) => TESTS.find((t) => t.run_id === e.run_id);
+  const featured = (t) => !!t && (t.revised === true || t.strict === true);
+  const LEVELS = (D.listen && D.listen.levels) || {};
+  const rmet = (e, id) => ((e.crit || {}).revised_metrics || []).find((m) => m.id === id);
+  function dateWords(s) { const d = new Date(s); return isNaN(d) ? '' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }); }
+  function strictSentence(e, rich) {
+    const c = e.crit || {};
+    if (c.strict === true) return 'Passes the marks fixed before the experiment.';
+    if (c.strict !== false) return 'No strict score recorded.';
+    if (!rich) return `Misses the marks fixed before the experiment${gateWords(e) ? ` (${gateWords(e)})` : ''}.`;
+    const p = gate(e, 'pitch_err_pct'), sc = gate(e, 'spec_corr');
+    if (p && nv(p.value)) {
+      const f = fl(e, p.id);
+      return `Misses narrowly: the pitch wanders by up to ${fmt(p.value, 2)}% where the limit is ${p.threshold}%${nv(f) ? `, and even a perfect echo of a real clap scores ${fmt(f, 2)}%` : ''}${sc && nv(sc.value) ? `; the spectrogram match is ${fmt(sc.value, 2)} against a mark of ${sc.threshold}, pulled down by a faint hiss well below the whistle` : ''}.`;
+    }
+    return `Misses the marks fixed before the experiment${gateWords(e) ? ` (${gateWords(e)})` : ''}.`;
+  }
+  function revisedSentence(e, rich) {
+    const c = e.crit || {};
+    if (!c.revised_scored) return 'Not scored with the revised tests yet.';
+    const ctl = nv(c.controls_total) && c.controls_total ? `${c.controls_rejected} of ${c.controls_total} deliberately wrong echoes rejected` : '';
+    if (c.revised === true) {
+      if (/same judge/i.test(c.revised_rests_on || '')) return `Confirmed, but not independently: it relies on the same speech recognizer as the strict test${ctl ? `, with ${ctl}` : ''}.`;
+      const id = rmet(e, 'id_claps'), pc = rmet(e, 'pitch_cents');
+      if (rich && id && nv(id.value) && pc && nv(pc.value) && nv(pc.threshold)) return `Confirmed: picked out as the whistle among other sounds for ${fmt(id.value, 0)} of 5 claps, with its pitch about ${fmt(pc.value, 0)} cents off (the limit is ${fmt(pc.threshold, 0)}; a semitone is 100 cents)${nv(c.controls_total) && c.controls_total ? `, while ${c.controls_rejected === c.controls_total ? `all ${c.controls_total}` : `${c.controls_rejected} of ${c.controls_total}`} deliberately wrong echoes were rejected, including the whistle shifted by a semitone` : ''}.`;
+      return `Confirmed${ctl ? `, with ${ctl}` : ''}.`;
+    }
+    if (c.revised === false) return 'Not passed.';
+    return 'Not established: no automated measure could tell this echo from deliberately wrong ones. Neither a pass nor a fail.';
+  }
+  function earSentence(t) {
+    if (!t || t.ear !== 'pass') return 'No listening verdict recorded.';
+    const ear = D.listening || {};
+    let s = `Accepted by the owner, listening${ear.date ? ` on ${dateWords(ear.date)}` : ''} and knowing what it was meant to be${t.ear_blind ? '' : ' (not a blind test)'}.`;
+    if (!t.ear_on_newest && t.n_designs > 1) s += ' The files attach this verdict to the earlier design; it is not recorded which of the two designs the owner heard.';
+    return s;
+  }
+  function vState(kind, e, t) {
+    const c = e.crit || {};
+    if (kind === 'strict') return c.strict === true ? ['pass', 'Passes'] : c.strict === false ? ['fail', 'Misses'] : ['none', 'No score'];
+    if (kind === 'revised') return !c.revised_scored ? ['none', 'Not scored'] : c.revised === true ? ['pass', 'Confirmed'] : c.revised === false ? ['fail', 'Not passed'] : ['null', 'Not established'];
+    return t && t.ear === 'pass' ? ['pass', 'Accepted'] : ['none', 'Not recorded'];
+  }
+  function vLines(e, rich) {
+    const t = testOf(e);
+    const c = e.crit || {};
+    const compact = rich === 'compact';
+    const rows = compact
+      ? [['strict', 'Strict tests', c.strict === false ? esc(gateWords(e)) : ''],
+        ['revised', 'Revised tests', ''],
+        ['ear', 'By ear', t && t.ear === 'pass' ? `the owner, knowing the target${t.ear_blind ? '' : ' (not blind)'}${!t.ear_on_newest && t.n_designs > 1 ? '; recorded on the earlier design, and it is not recorded which of the two designs the owner heard' : ''}` : '']]
+      : [['strict', 'Strict tests', strictSentence(e, rich)], ['revised', 'Revised tests', revisedSentence(e, rich)], ['ear', 'By ear', earSentence(t)]];
+    return `<ul class="vlines${compact ? ' compact' : ''}">${rows.map(([k, label, sent]) => { const [cls, word] = vState(k, e, t); return `<li class="v v-${cls}" data-v="${k}:${cls}"><span class="vk">${label}</span><span class="vs">${word}</span><span class="vt">${sent}</span></li>`; }).join('')}</ul>`;
+  }
+  const trueLevel = (e) => (LEVELS[e.tag] || {}).true_db;
+
   // What came back, in plain words: generic templates keyed on the fields a run carries.
   function backSentence(e) {
     const out = [];
@@ -640,25 +698,74 @@
     return `<p class="small">${intro}</p><ul class="checks robust">${items.map((i) => `<li>${i}</li>`).join('')}</ul>`;
   }
 
+  function earlierLine(o) {
+    const when = new Date(o.created), dwo = designWords(o), c = o.crit || {};
+    const st = c.strict === true ? 'strict tests passed' : c.strict === false ? 'strict tests missed' : 'no strict score';
+    const rv = !c.revised_scored ? '' : `; revised tests: ${c.revised === true ? 'confirmed' : c.revised === false ? 'not passed' : 'not established'}`;
+    const ear = c.ear ? '; this is the design the listening verdict is recorded on' : '';
+    return `<p class="small earlier">Earlier design${isNaN(when) ? '' : ', ' + when.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}${dwo ? ` (${esc(dwo)})` : ''}: ${st}${gateWords(o) ? ` (${gateWords(o)})` : ''}${rv}${ear}.</p>`;
+  }
+  function audioButtons(x) {
+    const a = x.e.audio || {}, out = ['<div class="controls">'];
+    if (a.target) out.push(`<button class="btn" type="button" data-wav="${x.id}-target">Target</button>`);
+    if (a.echo) out.push(`<button class="btn primary" type="button" data-wav="${x.id}-echo">Echo${a.echo_is_tier0 ? ' (fast simulator)' : ''}, turned up</button>`);
+    if (a.as_heard) out.push(`<button class="btn" type="button" data-wav="${x.id}-as_heard">As heard, true loudness</button>`);
+    if (!a.target && !a.echo && !a.as_heard) out.push('<span class="small">No audio files were written for this run.</span>');
+    out.push('</div>');
+    return out.join('');
+  }
+  // Two sentences for the sounds that came back less clearly: what came back, and why.
+  function lessClearWhy(x) {
+    const e = x.e, k = x.gp.key, hd = e.headline || {};
+    if (k.startsWith('s2')) {
+      const o = gate(e, 'notes_in_order');
+      return `What came back: notes that are there for some claps and out of balance${o && nv(o.value) ? `; the strict note-tracker found all four in order for ${fmt(100 * o.value, 0)}% of claps` : ''}. Why: in the first design the field swallowed the higher notes before they could return; the redesign stopped most of that fading but left the notes unevenly loud.`;
+    }
+    if (k.startsWith('s3')) {
+      const sw = (e.design || {}).strip_half_width_m;
+      return `What came back: mostly a hiss of stray reflections${e.heard_hz ? `, heard by the pitch tracker as tones near ${fmt(e.heard_hz[0], 0)} to ${fmt(e.heard_hz[1], 0)} Hz` : ''}, with the tune faint inside it. Why: the field is ${num(hd.depth_m, 0, ' m')} deep${sw ? ` and was squeezed into a strip ${fmt(2 * sw, 0)} m wide to keep the careful simulation affordable` : ''}, so the posts shade each other and the later notes fade.`;
+    }
+    if (x.s.key === '4a') return 'What came back: a breathy vowel whose first resonance, the low one that makes "ah" sound like "ah", the test could not find. Why: a clap carries little low-pitched sound, and thin posts return low pitches weakly.';
+    if (x.s.key === '4b') {
+      const es = gate(e, 'estoi') || (nv(t1(e, 'estoi')) ? { value: t1(e, 'estoi') } : null), f = fl(e, 'estoi'), cs = gate(e, 'closed_set_correct');
+      return `What came back: a blurred syllable${es && nv(es.value) ? `, with a clarity score of ${fmt(es.value, 2)}${nv(f) ? ` where a perfect echo scores ${fmt(f, 2)}` : ''}` : ''}${cs && nv(cs.value) ? `; asked which of three syllables it is closest to, the test picked ${cs.value >= 1 ? 'the right one' : 'a wrong one'}` : ''}. Why: the same low-pitch handicap as the vowel, in a field ${num(hd.depth_m, 0, ' m')} deep whose stray reflections smear the consonant.`;
+    }
+    return backSentence(e).split('. ').slice(0, 2).join('. ');
+  }
+  function lessClearHTML(x) {
+    const e = x.e, hd = e.headline || {};
+    const parts = ['<div class="run">'];
+    if (e.target_name) parts.push(`<h5>"${esc(e.target_name)}"</h5>`);
+    else if (x.s.heading) parts.push(`<h5>${esc(x.s.heading)}</h5>`);
+    parts.push(e.has_metrics ? vLines(e, 'compact') : `<p class="verdict">${verdictOf(e)[0]}</p>`);
+    parts.push(`<p class="back">${lessClearWhy(x)}</p>`);
+    const tl = trueLevel(e);
+    parts.push(`<p class="small">${num(hd.depth_m, 0, ' m')} deep, ${hd.post_count == null ? 'posts not recorded' : fmt(hd.post_count, 0) + ' posts'}; echo about ${num(hd.echo_spl_db, 0, ' dB')} for a 100 dB clap${nv(tl) ? `, ${fmt(-tl, 0)} dB below the clap` : ''}.</p>`);
+    parts.push(audioButtons(x));
+    for (const o of e.earlier || []) parts.push(earlierLine(o));
+    parts.push('</div>');
+    return parts.join('');
+  }
+
   function entryHTML(x) {
     const e = x.e, hd = e.headline || {};
     const [verdict, cls] = verdictOf(e);
     const parts = [`<div class="run">`];
     if (e.target_name && x.s.entries.length > 1) parts.push(`<h5>"${esc(e.target_name)}"</h5>`);
     const dw = designWords(e);
-    parts.push(`<p class="small">${dw ? 'Design: ' + esc(dw) + '.' : esc(e.title || e.stage)}</p>`, `<p class="verdict ${cls}">${verdict}</p>`);
-    const back = backSentence(e);
+    parts.push(`<p class="small">${dw ? 'Design: ' + esc(dw) + '.' : esc(e.title || e.stage)}</p>`, e.has_metrics ? vLines(e, true) : `<p class="verdict ${cls}">${verdict}</p>`);
+    const back = x.gp.key.startsWith('s1') && e.has_metrics ? '' : backSentence(e);
     if (back) parts.push(`<p class="back">${back}</p>`);
     const depth = hd.depth_m, lw = loudWords(hd.echo_spl_db), sh = e.shape || {};
     parts.push('<dl class="facts">',
       `<dt>Depth</dt><dd>${num(depth, 1, ' m')}${depth != null ? ` (about ${fmt(depth / 12, 1)} bus lengths)` : ''}</dd>`,
       `<dt>Posts</dt><dd>${hd.post_count == null ? 'not recorded' : fmt(hd.post_count, 0)}</dd>`,
-      `<dt>Echo loudness</dt><dd>${num(hd.echo_spl_db, 0, ' dB')}${lw ? ', ' + lw : ''}</dd>`,
+      `<dt>Echo loudness</dt><dd>${num(hd.echo_spl_db, 0, ' dB')}${lw ? ', ' + lw : ''}${nv(trueLevel(e)) ? `; ${fmt(-trueLevel(e), 0)} dB below the clap` : ''}</dd>`,
       `<dt>Loudness, fast vs careful</dt><dd>${hd.tier_gap_db == null ? 'no careful-simulator result' : `within ${fmt(Math.abs(hd.tier_gap_db), 1)} dB of each other`}</dd>`);
     if (sh.tier0 != null && sh.tier1 != null) parts.push(`<dt>Shape, fast vs careful</dt><dd>spectrogram match ${fmt(sh.tier0, 2)} vs ${fmt(sh.tier1, 2)}${Math.abs(sh.tier0 - sh.tier1) >= 0.05 ? ': they disagree' : ': they agree'}</dd>`);
     parts.push('</dl>');
     if (e.metrics.length) {
-      parts.push('<ul class="checks">');
+      parts.push('<p class="small">The strict tests, one by one:</p><ul class="checks">');
       for (const m of e.metrics) {
         const mk = m.pass === true ? '<span class="mark-ok">Pass</span>' : m.pass === false ? '<span class="mark-no">Fail</span>' : '<span>n/a</span>';
         const u = m.unit ? (m.unit === '%' ? '%' : ' ' + esc(m.unit)) : '';
@@ -672,22 +779,12 @@
     }
     if (e.fragile) parts.push(`<p class="small">Fragile${e.fragile_reason ? ': ' + esc(e.fragile_reason) : ''}.</p>`);
     parts.push(robustHTML(e));
-    const a = e.audio || {};
-    parts.push('<div class="controls">');
-    if (a.target) parts.push(`<button class="btn" type="button" data-wav="${x.id}-target">Target</button>`);
-    if (a.echo) parts.push(`<button class="btn primary" type="button" data-wav="${x.id}-echo">Echo${a.echo_is_tier0 ? ' (fast simulator)' : ''}, turned up</button>`);
-    if (a.as_heard) parts.push(`<button class="btn" type="button" data-wav="${x.id}-as_heard">As heard, true loudness</button>`);
-    if (!a.target && !a.echo && !a.as_heard) parts.push('<span class="small">No audio files were written for this run.</span>');
-    parts.push('</div>');
+    parts.push(audioButtons(x));
     if (e.scene && e.scene.posts && e.scene.posts.length) parts.push(`<canvas class="plan cv" data-h="150" data-plan="${x.id}" aria-label="Plan view of the designed post field"></canvas><p class="small">The design from above, you at the left${e.scene.posts.length < (hd.post_count || 0) ? `; one in ${Math.round(hd.post_count / e.scene.posts.length)} posts drawn` : ''}.</p>`);
     const fine = [...(e.caveats || [])];
     if (e.failure_cause) fine.unshift("In the run's own words: " + e.failure_cause);
     if (fine.length) parts.push(`<details class="fine"><summary>Fine print (${fine.length})</summary><ul>${fine.map((c) => `<li>${esc(c)}</li>`).join('')}</ul></details>`);
-    for (const o of e.earlier || []) {
-      const when = new Date(o.created);
-      const dwo = designWords(o);
-      parts.push(`<p class="small earlier">Earlier attempt${isNaN(when) ? '' : ', ' + when.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}${dwo ? ` (${esc(dwo)})` : ''}: ${verdictOf(o)[0].replace(/\.$/, '').toLowerCase()}${gateWords(o) ? `; ${gateWords(o)}` : ''}.</p>`);
-    }
+    for (const o of e.earlier || []) parts.push(earlierLine(o));
     parts.push('</div>');
     return parts.join('');
   }
@@ -717,19 +814,19 @@
       const rowsEnd = [];
       res.slice().sort((a, b) => a.e.headline.echo_spl_db - b.e.headline.echo_spl_db).forEach((x) => {
         const xx = X(Math.max(0, Math.min(110, x.e.headline.echo_spl_db)));
-        g.fillStyle = x.e.passed ? palette.ok : palette.accent;
+        g.fillStyle = featured(testOf(x.e)) ? palette.ok : palette.accent;
         g.beginPath(); g.moveTo(xx, axisY - 15); g.lineTo(xx - 4, axisY - 23); g.lineTo(xx + 4, axisY - 23); g.fill();
         const lab = shortName(x), tw = g.measureText(lab).width;
         let row = rowsEnd.findIndex((end) => end < xx - tw / 2 - 4);
         if (row < 0) { row = rowsEnd.length; rowsEnd.push(-1e9); }
         if (row > 3) return;
         rowsEnd[row] = xx + tw / 2;
-        text(g, lab, Math.max(tw / 2 + 2, Math.min(w - tw / 2 - 2, xx)), axisY - 28 - row * 14, x.e.passed ? palette.ok : palette.accent, 'center');
+        text(g, lab, Math.max(tw / 2 + 2, Math.min(w - tw / 2 - 2, xx)), axisY - 28 - row * 14, featured(testOf(x.e)) ? palette.ok : palette.accent, 'center');
       });
       text(g, 'decibels at the listener', w - 10, h - 4, palette.muted, 'right');
     }
     $('[data-out="caption"]', fig).textContent = res.length
-      ? 'Marked in colour: how loud each final design\'s echo is expected to be at the listener, from the simulation, for a 100 dB clap (green: the one that passed). These are three-dimensional estimates and could easily be off by several decibels.'
+      ? 'Marked in colour: how loud each final design\'s echo is expected to be at the listener, from the simulation, for a 100 dB clap (green: the ones the automated tests confirm; every echo here was accepted by ear). These are three-dimensional estimates and could easily be off by several decibels. Remember that the clap itself is far louder still.'
       : 'When the simulation finishes, each design\'s expected echo loudness will be marked on this scale. Until then, it is a yardstick.';
     drawers.push(draw);
   })();
@@ -748,73 +845,63 @@
   })();
 
   // ---------- the whole story: sentences generated from the run data ----------
+  const CNT = D.counts || { n: 0, strict: [], revised_yes: [], revised_null: [], revised_no: [], ear: [], revised_scored: 0 };
+  const cap = (q) => q.charAt(0).toUpperCase() + q.slice(1);
+  const nWord = (n) => ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'][n] || String(n);
+  const range = (a, d = 0, unit = '') => { const v = a.filter(nv); if (!v.length) return null; const lo = Math.min(...v), hi = Math.max(...v); return Math.round(lo) === Math.round(hi) ? fmt(lo, d) + unit : `${fmt(lo, d)} to ${fmt(hi, d)}${unit}`; };
   (function story() {
-    $('[data-out="status"]').textContent = D.status || '';
+    $('[data-out="status"]').innerHTML = (D.status || '').split(/(?<=\.)\s+(?=[A-Z0-9])/).map((q) => `<span>${esc(q)}</span>`).join('');
     const put = (k, html) => { const el = $(`[data-out="${k}"]`); if (!el) return; if (html) { el.innerHTML = html; el.hidden = false; } else el.hidden = true; };
     const chron = (gp) => gp.subs.flatMap((s) => s.entries.flatMap((e) => [...(e.earlier || [])].reverse().concat([e])));
     const ORD = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth'];
     const [g1, g2, g3, g4] = G;
-    // pass marks, from the bird run
     const b0 = g1 && g1.subs[0] && g1.subs[0].entries[0];
     const pm = b0 && (gate(b0, 'pitch_err_pct') || {}), cm = b0 && (gate(b0, 'spec_corr') || {});
-    put('story-marks', pm && cm && pm.threshold != null ? `For the whistle the marks are a pitch within ${pm.threshold}% of the target all along the note, and a spectrogram (a picture of which pitches sound when) that matches the target's with a score of ${cm.threshold} or better, where 1 is perfect. Tunes must come back note for note, in order and in tune; speech is judged by a vowel test, a "which syllable?" test with a clarity score, and a speech recognizer.` : null);
-    // stage 1
+    put('story-marks', pm && cm && pm.threshold != null ? `For the whistle: pitch within ${pm.threshold}% of the target all along the note, and a spectrogram (a picture of which pitches sound when) matching the target's with a score of ${cm.threshold} or better, where 1 is perfect.` : null);
     if (g1 && g1.subs.length) {
       const all = chron(g1), cur = all[all.length - 1];
-      const bits = all.map((e, i) => `the ${ORD[i] || (i + 1) + 'th'} used ${esc(designWords(e).split(';')[0] || 'a new design')}: ${gateWords(e) || 'no scores'}`);
+      const first = all[0], how = (e) => esc(designWords(e).split(';')[0] || 'a new design');
+      const bits = all.length > 1 ? `The first design used ${how(first)} (${gateWords(first) || 'no scores'}); the last used ${how(cur)} (${gateWords(cur) || 'no scores'}).` : `It used ${how(cur)} (${gateWords(cur) || 'no scores'}).`;
       const f = fl(cur, 'pitch_err_pct'), p = gate(cur, 'pitch_err_pct');
-      put('story-s1', `<strong>The bird whistle.</strong> We tried it ${all.length === 1 ? 'once' : `${all.length} times`}. ${bits.map((b) => b[0].toUpperCase() + b.slice(1)).join('. ')}. ${cur.passed ? (cur.verified ? 'The last one passed on the careful simulator.' : 'The last one passed on the fast simulator only.') : `Still a near miss${p && nv(f) ? `: the pitch limit is ${p.threshold}%, and even a perfect echo already scores ${fmt(f, 1)}% on that test, because a real clap is a ragged burst of noise` : ''}.`}`);
+      put('story-s1', `<strong>The whistle.</strong> We designed it ${all.length === 1 ? 'once' : `${nWord(all.length)} times`}. ${bits} ${(cur.crit || {}).strict ? 'The last one passed the strict tests.' : `On the strict tests that is a near miss${p && nv(f) ? `: the limit is ${p.threshold}%, and even a perfect echo of a real clap scores ${fmt(f, 2)}%` : ''}. To the ear it is a whistle.`}`);
     } else put('story-s1', null);
+    const deep = (gp) => gp ? range(gp.subs.flatMap((s) => s.entries.map((e) => e.headline && e.headline.depth_m))) : null;
     if (g2 && g2.subs.length) {
-      const all = chron(g2), cur = all[all.length - 1];
-      const bits = all.map((e, i) => `${all.length > 1 ? `The ${ORD[i]} design used ` : 'The design used '}${esc(designWords(e) || 'posts')}. ${backSentence(e).split('. ').slice(0, 2).join('. ').replace(/\.?$/, '.')}`);
-      put('story-s2', `<strong>Four notes.</strong> ${bits.join(' ')} ${cur.passed ? 'It passed.' : 'It did not pass.'}`);
-    } else put('story-s2', '<strong>Four notes.</strong> Not run to a final result yet.');
+      const all = chron(g2);
+      put('story-s2', `<strong>Longer sounds need deeper fields.</strong> The four notes needed ${deep(g2) || 'tens of'} m, and in ${all.length > 1 ? 'the first design' : 'that design'} the higher notes faded away inside the field.`);
+    } else put('story-s2', null);
+    const t3 = [];
     if (g3 && g3.subs.length) {
-      const parts = g3.subs.map((s) => { const e = s.entries[0]; return `${s.heading}: ${verdictOf(e)[0].replace(/\.$/, '').toLowerCase()} (${gateWords(e)})`; });
-      const e0 = g3.subs[0].entries[0], ns = e0.note_sweep, ff = e0.full_fan, la = e0.level_along;
-      let t = `<strong>The tune.</strong> We tried two note lengths. ${parts.map((q) => q[0].toUpperCase() + q.slice(1)).join('. ')}.`;
-      const sw = (e0.design || {}).strip_half_width_m;
-      if (sw) t += ` To keep the careful simulation affordable, the ${fmt(e0.headline.depth_m, 0)} m field was squeezed into a strip ${fmt(2 * sw, 0)} m wide, where the posts shade each other and there is no room for the extra posts the far end needs.`;
-      if (e0.heard_hz) t += ` What came back was mostly a hiss of stray reflections, heard by the pitch tracker as tones near ${fmt(e0.heard_hz[0], 0)} to ${fmt(e0.heard_hz[1], 0)} Hz.`;
-      if (la) t += ` It also faded: from about ${fmt(la.spl_db[0], 0)} dB at the first note to ${fmt(la.spl_db[la.spl_db.length - 1], 0)} dB at the last.`;
-      if (ns && ns.perfect_ms) t += ` Short notes are not the problem: on the fast simulator a perfect echo still transcribes with notes of ${ns.perfect_ms} ms${ns.design_ms ? '' : ', while this design failed at every length'}.`;
-      if (ff && ff.n_posts) t += ` A design across the whole fan (${fmt(ff.n_posts, 0)} posts, fast simulator only, unverified) ${nv(ff.in_order) ? `got the notes in order for ${fmt(100 * ff.in_order, 0)}% of claps` : 'was tried'}.`;
-      put('story-s3', t);
-    } else put('story-s3', '<strong>The tune.</strong> Not run to a final result yet.');
+      const e0 = g3.subs[0].entries[0], sw = (e0.design || {}).strip_half_width_m;
+      t3.push(`The tune needed ${deep(g3)} m${sw ? `, squeezed into a strip ${fmt(2 * sw, 0)} m wide to keep the simulation affordable` : ''}, and it came back mostly as hiss.`);
+    }
     if (g4 && g4.subs.length) {
-      const words = g4.subs.map((s) => {
-        const es = s.entries, pass = es.filter((e) => e.passed && e.verified).length;
-        return `${s.heading.replace(/:.*$/, '')}${es.length > 1 ? ` (${es.map((e) => `"${e.target_name}"`).join(', ')})` : ''}: ${es.length > 1 ? `${pass} of ${es.length} passed` : pass ? 'passed' : 'failed'}`;
-      });
       const hello = heads.find((x) => x.gp === g4 && x.e.recognized && x.e.recognized.length);
-      let t = `<strong>Speech.</strong> ${words.map((q) => q[0].toUpperCase() + q.slice(1)).join('. ')}.`;
-      if (hello) t += ` ${backSentence(hello.e).split(' In the fast model')[0].split(' The careful simulator covered')[0]}`;
-      const lc = heads.find((x) => x.gp === g4 && x.e.largest_cost);
-      if (lc) t += ` What limits speech most, by the fast simulator's reckoning: the ${esc(lc.e.largest_cost)}, followed by the error that comes from building with a limited number of thin posts.`;
-      put('story-s4', t);
-    } else put('story-s4', '<strong>Speech.</strong> Not run to a final result yet.');
-    // lessons with data
-    const s1all = g1 ? chron(g1) : [];
-    const sc = s1all.find((e) => (e.design || {}).realization === 'sampling'), rg = s1all.find((e) => (e.design || {}).realization === 'phase_locked');
-    put('story-lesson-a', sc && rg ? 'The whistle scores above show the jump.' : null);
+      const hits = hello ? hello.e.recognized.filter((q) => /hello/i.test(q)).length : null;
+      t3.push(`Speech needed ${deep(g4)} m. ${hello ? `A speech recognizer heard "hello" for ${hits} of ${hello.e.recognized.length} claps; the vowel and syllables came back blurred.` : ''}`);
+    }
+    put('story-s3', t3.length ? `${t3.join(' ')}` : null);
     const pk = (S.clap_params || []).map((q) => q.peak_hz);
-    put('story-lesson-c', pk.length ? `The project's five claps are brightest between ${fmt(Math.min(...pk) / 1000, 1)} and ${fmt(Math.max(...pk) / 1000, 1)} kHz. Thin posts, meanwhile, return high pitches far better than low ones. So the low notes of a tune and the deep resonances of a vowel start at a disadvantage before any design is made, which is part of why "ah" lost its first resonance.` : null);
-    // surprises
+    put('story-lesson-c', pk.length ? `The project's claps are brightest between ${fmt(Math.min(...pk) / 1000, 1)} and ${fmt(Math.max(...pk) / 1000, 1)} kHz, and thin posts return high pitches far better than low ones, so low notes and the deep resonances of a vowel start at a disadvantage. The whistle sits right in the sweet spot.` : null);
+    // the afternoon
+    const lv = D.listening;
+    const n = CNT.n, nEar = CNT.ear.length;
+    put('story-listen', lv && n ? `On the afternoon of ${dateWords(lv.date) || 'the same day'} the owner listened to each echo on its own, knowing what it was meant to be, and accepted ${nEar === n ? `all ${nWord(n)}` : `${nWord(nEar)} of ${nWord(n)}`}: "${esc(lv.quote || '')}". The strict tests had clearly been stricter than the ear, so a second set was drawn up afterwards with two duties: pass what the ear accepted, and still reject deliberately wrong echoes, such as another target's echo, the clap alone, the echo backwards, or the right sound a semitone off.` : null);
+    put('story-review', CNT.revised_scored ? `An independent reviewer checked the new tests and made us withdraw a pass we had claimed: for the four notes, the rule had been fitted so closely to the accepted echo that it would also have passed a version with a wrong note. It now reads "not established". So the revised tests confirm ${nWord(CNT.revised_yes.length)} of ${nWord(n)} automatically (${listJoin(CNT.revised_yes)}${CNT.revised_yes.includes('"hello"') ? ', which relies on the same speech recognizer as the strict test, so it is not an independent check' : ''}). For the other ${nWord(CNT.revised_null.length)}, no automated measure could tell the accepted echo from wrong ones. The strict tests stay on the record unchanged: ${nWord(CNT.strict.length)} of ${nWord(n)} pass${CNT.strict.length === 1 ? 'es' : ''}${CNT.strict.length ? ` (${listJoin(CNT.strict)})` : ''}.` : null);
+    // practical points
+    const s1all = g1 ? chron(g1) : [];
     const cur1 = s1all[s1all.length - 1];
     const side = cur1 && (cur1.robust || []).find((x) => x.case === 'listener_side_1m');
     const jit = cur1 && (cur1.robust || []).find((x) => x.case === 'jitter'), nom = cur1 && (cur1.robust || []).find((x) => x.case === 'nominal');
+    const rg = D.listen && D.listen.range, wl = D.whistle && D.whistle.true_db;
     put('story-surprise', [
-      side ? `<strong>The listening spot is tiny.</strong> A metre to the side, the whistle falls apart (${valWords(side.m)}), and design studies put the sweet spot of a wide fan at a few centimetres sideways: every echo must reach your ear in step, and a wide fan lines up for one place only.` : null,
-      jit && nom ? `<strong>Millimetres matter.</strong> ${esc(jit.label)}: the strict tests moved from ${valWords(nom.m)} to ${valWords(jit.m)}, even though the echo sounds almost the same to the ear.` : null,
-    ].filter(Boolean).join(' '));
-    const tests = D.scoreboard || [];
-    const passed = tests.filter((x) => x.passed), failed = tests.filter((x) => !x.passed);
-    put('story-score', tests.length ? `<strong>The scoreboard.</strong> ${passed.length} of ${tests.length} tests passed on the careful simulator${passed.length ? `: ${listJoin(passed.map((x) => x.name))}` : ''}.${failed.length ? ` Not passed: ${listJoin(failed.map((x) => x.name))}.` : ''} ${passed.length ? 'The pass comes with the caveats above; it is a hint that the idea can carry a word, not proof that it does.' : ''}` : null);
-    put('story-pilot', D.pilot ? `A pilot design for a first outdoor build has been worked out: ${D.pilot.depth_m != null ? `${fmt(D.pilot.depth_m, 1)} m deep` : ''}${D.pilot.post_count != null ? `, ${fmt(D.pilot.post_count, 0)} posts` : ''}${nv(D.pilot.echo_spl_db) ? `, an expected echo of about ${fmt(D.pilot.echo_spl_db, 0)} dB` : ''}${D.pilot.passed != null ? `; it ${D.pilot.passed ? 'passes' : 'does not pass'} the strict tests on the simulator` : ''}.` : 'A pilot design for a first outdoor build is being prepared.');
-    const missing = G.slice(0, 4).filter((g) => !g.subs.length).map((g) => g.name.toLowerCase());
-    put('story-todo', missing.length ? `Not run to a final result yet: ${listJoin(missing)}.` : null);
-    put('closing-shown', tests.length ? `What the simulation does show: in a careful two-dimensional model, a field of thin posts returns a clap as a sound with the shape of a chosen target, close enough that ${passed.length ? `${listJoin(passed.map((x) => x.name))} passed its test` : 'the whistle came close to its strict test'}. What it does not show: that any of this survives wind, ground, real posts and a real ear outdoors; ${failed.length ? `that the strict marks can be met for ${listJoin(failed.map((x) => x.name))}; ` : ''} or that the echo would be loud enough at a real site, where ${heads.filter((x) => nv(x.e.headline.echo_spl_db) && x.e.headline.echo_spl_db < 50).length} of ${heads.length} designs would sit below the level of a quiet room.` : null);
+      side ? `<p><strong>The listening spot is tiny.</strong> A metre to the side, the whistle falls apart (${valWords(side.m)}); the sweet spot is a few centimetres wide, because every echo must reach your ear in step.</p>` : null,
+      jit && nom ? `<p><strong>Millimetres matter to the strict tests.</strong> Posts nudged by a few millimetres moved the scores from ${valWords(nom.m)} to ${valWords(jit.m)}, though the echo sounds almost the same.</p>` : null,
+      `<p><strong>The echo is far quieter than the clap that makes it.</strong> ${rg ? `At the listener, the simulated echoes sit ${fmt(-rg[1], 0)} to ${fmt(-rg[0], 0)} dB below the clap${nv(wl) ? `; the whistle about ${fmt(-wl, 0)} dB below` : ''}. ` : ''}It arrives a couple of hundredths of a second after the clap, while the ear is still recovering. Whether a person standing there hears it straight after their own clap is the first thing a real test must answer.</p>`,
+    ].filter(Boolean).join(''));
+    put('closing-shown', n ? `What the simulation does show: in a careful two-dimensional model, rings of thin posts return a clap as a falling whistle that a listener recognises and that the revised tests confirm, and every other target comes back as something an ear that knew the target accepted. What it does not show: that any of this survives wind, ground and real posts outdoors; that a listener who does not know the target would name each sound; or that a person hears the echo right after their own clap.` : null);
+    put('ears-note', nEar ? `The owner's ear accepted ${nEar === n ? `all ${nWord(n)}` : nWord(nEar)} echoes, knowing each target${D.blind_kit ? '; a blind-test kit, with the echoes shuffled and unlabelled, is ready and has not been run yet' : ''}. The real test is people listening, which is why every result has a play button.` : 'The real test is a person listening, which is why every result has a play button.');
+    put('blind-note', D.blind_kit ? '; a blind-test kit has been prepared, and has not been run yet' : '');
   })();
 
   // ---------- "thicker air": a cartoon of fading through a post field ----------
@@ -868,22 +955,78 @@
     drawers.push(update);
   })();
 
+  function planDrawer(cv, sc) {
+    drawers.push(() => {
+      const { g, w, h } = setup(cv);
+      let xMax = 1, yMax = 1;
+      for (const p of sc.posts) { xMax = Math.max(xMax, p[0]); yMax = Math.max(yMax, Math.abs(p[1])); }
+      const k = Math.min((w - 16) / (xMax + 1), (h - 16) / (2 * yMax));
+      const X = (x) => 8 + (x + 0.8) * k, Y = (y) => h / 2 - y * k;
+      g.fillStyle = palette.accent;
+      for (const p of sc.posts) { g.beginPath(); g.arc(X(p[0]), Y(p[1]), Math.max(0.7, p[2] * k), 0, 7); g.fill(); }
+      g.fillStyle = palette.ink; g.beginPath(); g.arc(X(0), Y(0), 3.5, 0, 7); g.fill();
+      text(g, 'you', X(0), Y(0) + 16, palette.ink, 'center');
+      text(g, `${fmt(xMax, 0)} m`, X(xMax), h - 2, palette.muted, 'right');
+    });
+  }
+
+  // ---------- what works: the whistle ----------
+  (function works() {
+    const fig = $('#whistle'); if (!fig) return;
+    const W = D.whistle, x = W && heads.find((q) => q.e.run_id === W.run_id);
+    const put = (k, html) => { const el = $(`[data-out="${k}"]`); if (el) el.innerHTML = html || ''; };
+    if (!W || !x) {
+      put('works-what', 'The whistle\'s careful-simulator result will appear here once its run files exist.');
+      fig.hidden = true; return;
+    }
+    const e = x.e, hd = e.headline || {}, d = e.design || {}, A = W.audio || {};
+    put('works-what', `In the careful simulator, the design drawn below, ${hd.post_count != null ? fmt(hd.post_count, 0) : 'about a thousand'} thin posts in rings, answers a clap with a falling whistle (${esc(x.gp.blurb.replace(/^A falling whistle,\s*/, '').replace(/\.$/, ''))}). Listen for yourself, from the clap alone to the echo at its true loudness.`);
+    const cv = $('canvas', fig);
+    if (e.scene && e.scene.posts && e.scene.posts.length) planDrawer(cv, e.scene); else cv.hidden = true;
+    const boost = W.boost_db, tl = W.true_db;
+    const btn = [['clap', 'The clap', false], ['target', 'The target', !!A.target], ['echo', 'The echo alone', !!A.echo],
+      ['boosted', nv(boost) ? `Clap, then echo (+${fmt(boost, 1)} dB)` : 'Clap, then echo', !!A.boosted], ['true', 'Clap, then echo at true level', !!A.true]];
+    put('works-buttons', btn.filter((b) => b[0] === 'clap' || b[2]).map(([k, label]) => `<button class="btn${k === 'boosted' ? ' primary' : ''}" type="button" data-whistle="${k}">${label}</button>`).join(''));
+    const say = {
+      clap: 'One of the project\'s five model claps: a short burst of noise.',
+      target: 'The sound the field was designed to return: a whistle falling from 3.5 to 2 kHz in 80 ms.',
+      echo: 'The echo alone, from the careful simulator, turned up to full volume.',
+      boosted: `The clap, then the echo raised by ${nv(boost) ? fmt(boost, 1) + ' dB' : 'a lot'}${nv(boost) && nv(tl) ? `, so that it sits ${fmt(-(tl + boost), 0)} dB under the clap` : ''}. This is roughly how it would sound if your ear did not have to recover from the clap.`,
+      true: `The clap, then the echo at its true level${nv(tl) ? `, about ${fmt(-tl, 0)} dB below the clap` : ''}. At a comfortable volume most speakers will only reproduce the clap: the echo falls below what they, and the room, let through. That is what the owner heard too.`,
+    };
+    fig.querySelectorAll('[data-whistle]').forEach((b) => b.addEventListener('click', () => {
+      const k = b.dataset.whistle;
+      put('works-readout', say[k]);
+      if (k === 'clap') { const c = CLAPS[0], z = new Float32Array(c.length + 2 * LEAD); z.set(c.map((v) => 0.9 * v / (peak(c) || 1)), LEAD); play(z); return; }
+      playWav('whistle-' + k, A[k]).catch((err) => { b.disabled = true; b.textContent += ' (could not play)'; console.warn(err); });
+    }));
+    put('works-caption', `The design from above, you at the left${e.scene && e.scene.posts.length < (hd.post_count || 0) ? `; one in ${Math.round(hd.post_count / e.scene.posts.length)} posts drawn` : ''}. Sounds from the careful simulator's files for this design${nv(tl) ? `; the true echo level, ${fmt(tl, 1)} dB relative to the clap, is from the project's listening folder` : ''}.`);
+    const lw = loudWords(hd.echo_spl_db);
+    put('works-facts', `<strong>Size, posts, loudness.</strong> The field is ${num(hd.depth_m, 1, ' m')} deep${nv(hd.depth_m) && hd.depth_m > 9 && hd.depth_m < 16 ? ', about the length of a city bus,' : ''} and fans out ${d.half_angle_deg ? `${fmt(d.half_angle_deg, 0)} degrees either side` : 'to the sides'}. It has ${hd.post_count != null ? fmt(hd.post_count, 0) : 'about a thousand'} posts${d.radius_m ? `, each ${fmt(d.radius_m * 200, 0)} cm across` : ''}, so it is mostly open ground. For a 100 dB clap at arm's length the echo reaches about ${num(hd.echo_spl_db, 0, ' dB')} at your ear${lw ? `, ${lw.split(':')[0]}` : ''}: plenty on a quiet site, yet ${nv(tl) ? `${fmt(-tl, 0)} dB` : 'far'} below the clap itself.`);
+    put('works-verdicts', vLines(e, true));
+  })();
+
   (function renderResults() {
     const box = $('#results');
     const html = [];
     if (D.test_data) html.push(`<div class="test-banner">Test build: the results below come from ${esc(D.source)} and may be made-up numbers, not simulation results.</div>`);
-    G.forEach((gp, gi) => {
-      html.push(`<section class="card${gp.subs.length ? '' : ' pending'}"><h3>${esc(gp.name)}</h3><p class="blurb">${esc(gp.blurb)}</p>`);
+    const isFeat = (x) => featured(testOf(x.e));
+    const feat = heads.filter(isFeat);
+    if (feat.length) {
+      html.push('<h3 class="res-h">Sounds that came back clearly</h3>');
+      feat.forEach((x) => html.push(`<section class="card feat"><h3>${esc(x.e.target_name ? (x.s.key === '4c' ? `The word "${x.e.target_name}"` : `"${x.e.target_name}"`) : x.gp.name)}</h3><p class="blurb">${esc(x.e.target_name ? (x.e.title || '').replace(/^Speech \w+:\s*/, '') : x.gp.blurb)}</p>${entryHTML(x)}</section>`));
+    }
+    const rest = G.map((gp, gi) => ({ gp, gi, xs: heads.filter((x) => x.gp === gp && !isFeat(x)) })).filter((r) => r.xs.length || !r.gp.subs.length);
+    if (rest.length) html.push(`<h3 class="res-h quiet">${feat.length ? 'Sounds that came back less clearly' : 'Results'}</h3>`);
+    rest.forEach(({ gp, xs }) => {
+      html.push(`<section class="card${gp.subs.length ? ' quiet' : ' pending'}"><h3>${esc(gp.name)}</h3><p class="blurb">${esc(gp.blurb)}</p>`);
       if (!gp.subs.length) {
         const lo = { tier0_only: 'scored with the fast simulator only', intermediate: 'still being designed' }[gp.latest_other] || gp.latest_other;
         html.push(D.results.index_found
           ? `<p>No final result yet${lo ? `: the newest run for this stage is ${esc(lo)}` : ''}. This fills in when the stage has a final, scored run.</p>`
           : '<p>Simulation still running. This fills in when the stage has a final, scored run.</p>');
       }
-      gp.subs.forEach((s, si) => {
-        if (s.heading) html.push(`<h4>${esc(s.heading)}</h4>`);
-        html.push(`<div class="${s.entries.length > 1 ? 'sub' : ''}">${s.entries.map((e, ei) => entryHTML(heads.find((x) => x.id === `${gi}-${si}-${ei}`))).join('')}</div>`);
-      });
+      html.push(`<div class="${xs.length > 1 ? 'sub' : ''}">${xs.map(lessClearHTML).join('')}</div>`);
       html.push('</section>');
     });
     box.innerHTML = html.join('');
@@ -891,20 +1034,7 @@
       const id = b.dataset.wav, key = id.split('-').pop(), x = heads.find((q) => id.startsWith(q.id + '-'));
       playWav(id, x.e.audio[key]).catch((err) => { b.disabled = true; b.textContent += ' (could not play)'; console.warn(err); });
     }));
-    box.querySelectorAll('[data-plan]').forEach((cv) => {
-      const sc = heads.find((q) => q.id === cv.dataset.plan).e.scene;
-      drawers.push(() => {
-        const { g, w, h } = setup(cv);
-        let xMax = 1, yMax = 1;
-        for (const p of sc.posts) { xMax = Math.max(xMax, p[0]); yMax = Math.max(yMax, Math.abs(p[1])); }
-        const k = Math.min((w - 16) / (xMax + 1), (h - 16) / (2 * yMax));
-        const X = (x) => 8 + (x + 0.8) * k, Y = (y) => h / 2 - y * k;
-        g.fillStyle = palette.accent;
-        for (const p of sc.posts) { g.beginPath(); g.arc(X(p[0]), Y(p[1]), Math.max(0.7, p[2] * k), 0, 7); g.fill(); }
-        g.fillStyle = palette.ink; g.beginPath(); g.arc(X(0), Y(0), 3.5, 0, 7); g.fill();
-        text(g, `${fmt(xMax, 0)} m`, X(xMax), h - 2, palette.muted, 'right');
-      });
-    });
+    box.querySelectorAll('[data-plan]').forEach((cv) => planDrawer(cv, heads.find((q) => q.id === cv.dataset.plan).e.scene));
     const done = G.filter((g) => g.subs.length).length;
     const when = new Date(D.built);
     $('[data-out="results-note"]').textContent = (D.results.index_found ? `${done} of ${G.length} stages have a final run.` : 'No simulation results yet: the runs are still going.') +
@@ -913,7 +1043,26 @@
     if (D.results.problems.length) console.warn('results problems', D.results.problems);
   })();
 
-  $('[data-out="build-link"]').innerHTML = `The plan for each step is in <a href="../BUILD.md">the build path</a>${D.build_md ? '' : ' (being written)'}. Every run, its sound-field animation and its full scores are in <a href="../viewer/">the project viewer</a>.`;
+  (function build() {
+    const C$ = D.costs || {}, P = D.pilot, c = (k) => (C$[k] ? ` <span class="cost">${esc(C$[k].replace(/\s*\(est\.[^)]*\)/, '').replace(/^[~+]/, 'about '))} (estimate)</span>` : '');
+    const steps = [
+      `<strong>Hear it outdoors.</strong>${c('3a')} Drive one 20 mm steel bar into a quiet field, then a small regular row of 30 posts that should return a single tone. Several people clap and listen. <em>Tells us</em> whether a person hears an echo straight after their own clap, and what real ground and wind do. <em>Cannot tell</em> whether the whistle's fine shape survives.`,
+      `<strong>A tabletop model at one tenth scale, in ultrasound.</strong>${C$['2a'] ? ` <span class="cost">about ${esc(C$['2a'].replace(/\s*\(est\.[^)]*\)/, '').replace(/^[~+]/, ''))} for the rig, then ${esc((C$['2b'] || '').replace(/\s*\(est\.[^)]*\)/, '').replace(/^\+/, ''))} and ${esc((C$['2c'] || '').replace(/\s*\(est\.[^)]*\)/, '').replace(/^\+/, ''))} for two pin boards (estimates)</span>` : ''} The physics is the same at a tenth of the size and ten times the pitch, so pins on a board stand in for posts, with real ground and real height. <em>Tells us</em> whether real posts behave as the careful simulator says, including whether its faint hiss is real. <em>Cannot tell</em> anything about hearing: the ear's recovery after a clap does not scale down.`,
+      `<strong>A full-size whistle, only if both go well.</strong>${c('3b')} ${P ? `The pilot design: ${P.post_count != null ? fmt(P.post_count, 0) + ' posts' : 'a few hundred posts'}${P.depth_m != null ? ` in a field ${fmt(P.depth_m, 1)} m deep` : ''}. ` : ''}<em>Tells us</em> whether a clap returns the whistle outdoors, judged by listeners who are not told what to expect. <em>Cannot tell</em> whether longer pieces would work; those come only after a short one does.`,
+    ];
+    $('[data-out="build-steps"]').innerHTML = steps.map((q) => `<li>${q}</li>`).join('');
+    $('[data-out="build-link"]').innerHTML = `The full plan, with parts lists, go and no-go numbers and the physics behind each rule, is in <a href="../BUILD.md">the build path</a>${D.build_md ? '' : ' (being written)'}. The code and every run are on <a href="https://github.com/shyamvalsan/echo-engineering">GitHub</a>; each run's sound-field animation and full scores are in <a href="../viewer/">the project viewer</a>.`;
+    // try it yourself
+    const rg = D.listen && D.listen.range;
+    const tl = $('[data-out="try-level"]'); if (tl) tl.textContent = rg ? `In reality the echoes shown on this page sit ${fmt(-rg[1], 0)} to ${fmt(-rg[0], 0)} dB below the clap.` : '';
+    const cu = D.custom, tc = $('[data-out="try-custom"]');
+    if (tc) tc.textContent = cu ? `An example made this way: ${String(cu.title || 'a custom sound').replace(/^Custom:\s*/, '')}, ${cu.post_count != null ? fmt(cu.post_count, 0) + ' posts' : 'a field of posts'}${cu.depth_m != null ? ` ${fmt(cu.depth_m, 0)} m deep` : ''}${cu.verified ? ', checked on the careful simulator' : ', fast simulator only'}.` : '';
+    const shot = $('[data-out="live-shot"]');
+    if (shot && D.live_img) {
+      shot.innerHTML = `<img src="${D.live_img.uri}" width="${D.live_img.w}" height="${D.live_img.h}" alt="The viewer's Live mode: a clap replayed, its wave spreading through a field of posts, with the echo, its spectrogram and the list of recorded claps beside it" loading="lazy"><figcaption>Live mode, replaying a clap against a structure designed from a supplied two-note sound. Left: the echo boost in decibels, with the true level marked. Middle: the wave moving through the posts. Right: your sound and its echo.</figcaption>`;
+      shot.hidden = false;
+    }
+  })();
   $('[data-out="built"]').textContent = `Source data: ${D.source === 'runs' ? 'the project\'s run folders' : D.source}.`;
 
   // ---------- scattered by density versus exact rings ----------

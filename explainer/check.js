@@ -1,5 +1,8 @@
 // Browser check for the explainer, run through the Playwright MCP `browser_run_code` (filename: explainer/check.js)
-// with a server at http://localhost:8743 from the repo root. Exercises every interactive piece at desktop and phone
+// with a server at http://localhost:8743 from the repo root. Build first:
+//   uv run python explainer/build.py
+//   uv run python explainer/make_fixture.py && uv run python explainer/build.py --runs explainer/_fixture_runs --out explainer/_test_verdicts.html
+// The fixture build carries every verdict state (pass, fail, not established, not scored). Exercises every interactive piece at desktop and phone
 // width in both themes, records console errors and horizontal overflow, and saves screenshots to artifacts/explainer/.
 async (page0) => {
   // own browser context: other agents may drive the shared tab
@@ -12,8 +15,7 @@ async (page0) => {
   page.on('pageerror', (e) => errors.push(String(e)));
   const cases = [
     { file: 'index.html', tag: 'default' },
-    { file: '_test_index.html', tag: 'fixture' },
-    { file: '_test_redesign.html', tag: 'redesign' },
+    { file: '_test_verdicts.html', tag: 'fixture' },
   ];
   for (const c of cases) {
     for (const vp of [{ w: 1440, h: 900, n: 'desktop' }, { w: 390, h: 844, n: 'phone' }]) {
@@ -26,7 +28,13 @@ async (page0) => {
         const before = await page.evaluate(() => (window.__echoCtx ? window.__echoCtx.state : 'none'));
         await page.click('#hero [data-act="clap"]');
         await page.waitForTimeout(700);
-        if (c.tag === 'default') await page.screenshot({ path: `artifacts/explainer/final-hero-${vp.n}-${theme}.png` });
+        if (c.tag === 'default') await page.screenshot({ path: `artifacts/explainer/final2-hero-${vp.n}-${theme}.png` });
+        // what works: every whistle button
+        const wb = await page.locator('[data-whistle]').count();
+        const p0 = await page.evaluate(() => window.__echoPlays);
+        for (let i = 0; i < wb; i++) { await page.locator('[data-whistle]').nth(i).click(); await page.waitForTimeout(150); }
+        const whistlePlays = (await page.evaluate(() => window.__echoPlays)) - p0;
+        if (c.tag === 'default') await page.locator('#whistle').screenshot({ path: `artifacts/explainer/final2-whistle-${vp.n}-${theme}.png` });
         // 1 wall: slider + drag + clap
         await page.locator('#wall [data-in="dist"]').fill('40');
         const wallReadout = await page.locator('#wall [data-out="readout"]').innerText();
@@ -45,7 +53,7 @@ async (page0) => {
         const negReadout = await page.locator('#groove [data-out="readout"]').innerText();
         await page.click('#groove [data-act="target"]');
         await page.click('#groove [data-act="clap"]');
-        if (c.tag === 'default') await page.locator('#groove').screenshot({ path: `artifacts/explainer/final-groove-${vp.n}-${theme}.png` });
+        if (c.tag === 'default') await page.locator('#groove').screenshot({ path: `artifacts/explainer/final2-groove-${vp.n}-${theme}.png` });
         await page.click('#groove [data-target="bird"]');
         await page.click('#groove [data-mode="real"]');
         const realReadout = await page.locator('#groove [data-out="readout"]').innerText();
@@ -61,7 +69,7 @@ async (page0) => {
         await page.click('#rings [data-act="scatter"]');
         await page.click('#rings [data-act="rings"]');
         await page.click('#rings [data-act="target"]');
-        if (c.tag === 'default') await page.locator('#rings').screenshot({ path: `artifacts/explainer/final-rings-${vp.n}-${theme}.png` });
+        if (c.tag === 'default') await page.locator('#rings').screenshot({ path: `artifacts/explainer/final2-rings-${vp.n}-${theme}.png` });
         // thicker air cartoon
         await page.locator('#thick [data-in="radius"]').fill('8');
         await page.locator('#thick [data-in="half"]').fill('5');
@@ -69,7 +77,7 @@ async (page0) => {
         const thickReadout = await page.locator('#thick [data-out="readout"]').innerText();
         for (const b of await page.locator('#thick [data-cal]:visible').all()) await b.click();
         const thickReal = await page.locator('#thick [data-out="real"]').innerText();
-        if (c.tag === 'default') await page.locator('#thick').screenshot({ path: `artifacts/explainer/final-thick-${vp.n}-${theme}.png` });
+        if (c.tag === 'default') await page.locator('#thick').screenshot({ path: `artifacts/explainer/final2-thick-${vp.n}-${theme}.png` });
         const fine = await page.locator('details.fine summary').count();
         if (fine) await page.locator('details.fine summary').first().click();
         // 5 size
@@ -77,7 +85,20 @@ async (page0) => {
         const sizeReadout = await page.locator('#size [data-out="readout"]').innerText();
         // results audio
         const wavButtons = await page.locator('[data-wav]').count();
-        for (let i = 0; i < wavButtons; i++) { await page.locator('[data-wav]').nth(i).click(); await page.waitForTimeout(80); }
+        const p1 = await page.evaluate(() => window.__echoPlays);
+        for (let i = 0; i < wavButtons; i++) { await page.locator('[data-wav]').nth(i).click(); await page.waitForTimeout(120); }
+        await page.waitForTimeout(300);
+        const wavPlays = (await page.evaluate(() => window.__echoPlays)) - p1;
+        const states = await page.evaluate(() => [...new Set([...document.querySelectorAll('[data-v]')].map((el) => el.dataset.v))].sort());
+        if (vp.n === 'desktop' || c.tag === 'default') {
+          await page.locator('#results').screenshot({ path: `artifacts/explainer/final2-results-${c.tag}-${vp.n}-${theme}.png` });
+          if (c.tag === 'default') {
+            await page.locator('#works').scrollIntoViewIfNeeded();
+            await page.screenshot({ path: `artifacts/explainer/final2-works-${vp.n}-${theme}.png` });
+            await page.locator('#try').scrollIntoViewIfNeeded();
+            await page.screenshot({ path: `artifacts/explainer/final2-try-${vp.n}-${theme}.png` });
+          }
+        }
         // theme toggle
         await page.click('#themeToggle');
         const toggled = await page.evaluate(() => document.documentElement.dataset.theme);
@@ -85,18 +106,23 @@ async (page0) => {
         const state = await page.evaluate(() => ({
           ctx: window.__echoCtx ? window.__echoCtx.state : 'none',
           plays: window.__echoPlays,
-          overflow: document.documentElement.scrollWidth - window.innerWidth,
+          overflow: Math.max(document.documentElement.scrollWidth - window.innerWidth,
+            ...[...document.querySelectorAll('body *')].map((el) => { const r = el.getBoundingClientRect(); return r.width ? Math.round(r.right - window.innerWidth) : -1; })),
           bg: getComputedStyle(document.body).backgroundColor,
           pending: document.querySelectorAll('.card.pending').length,
           cards: document.querySelectorAll('.card').length,
         }));
-        await page.screenshot({ path: `artifacts/explainer/final-${c.tag}-${vp.n}-${theme}.png`, fullPage: true });
-        out.push({ case: c.tag, vp: vp.n, theme, ctxBeforeGesture: before, ...state, toggled, dragged, wavButtons,
+        if (vp.n === 'desktop' && theme === 'light') await page.screenshot({ path: `artifacts/explainer/final2-${c.tag}-${vp.n}-${theme}.png`, fullPage: true });
+        out.push({ case: c.tag, vp: vp.n, theme, ctxBeforeGesture: before, ...state, toggled, dragged, wavButtons, wavPlays, wb, whistlePlays, states,
           ringsReadout, thickReadout, thickReal, status: await page.locator('[data-out="status"]').innerText(), wallReadout, rowReadout, negReadout, realReadout, clapReadout, sizeReadout });
       }
     }
   }
   await ctx.close();
-  const bad = out.filter((o) => o.ctxBeforeGesture !== 'none' || o.ctx !== 'running' || o.overflow > 0 || o.toggled === undefined);
-  return { errors, runs: out.length, bad, sample: out[0], statuses: [...new Set(out.map((o) => o.status))], rings: out[0].ringsReadout, thick: out[0].thickReadout, thickReal: out[0].thickReal, wavs: out.map((o) => o.wavButtons).join(',') };
+  const need = { fixture: ['ear:none', 'ear:pass', 'revised:fail', 'revised:none', 'revised:null', 'revised:pass', 'strict:fail', 'strict:pass'] };
+  const bad = out.filter((o) => o.ctxBeforeGesture !== 'none' || o.ctx !== 'running' || o.overflow > 0 || o.toggled === undefined
+    || o.wavPlays < o.wavButtons || o.whistlePlays < o.wb || (need[o.case] || []).some((s) => !o.states.includes(s)));
+  return { errors, runs: out.length, bad: bad.map((o) => ({ case: o.case, vp: o.vp, theme: o.theme, ctx: o.ctx, overflow: o.overflow, wavPlays: o.wavPlays, wavButtons: o.wavButtons, whistlePlays: o.whistlePlays, wb: o.wb, states: o.states })),
+    statuses: [...new Set(out.map((o) => o.status))], states: [...new Set(out.map((o) => `${o.case}: ${o.states.join(' ')}`))],
+    rings: out[0].ringsReadout, thick: out[0].thickReadout, thickReal: out[0].thickReal, wavs: out.map((o) => `${o.wavPlays}/${o.wavButtons}, whistle ${o.whistlePlays}/${o.wb}`).join('; ') };
 }

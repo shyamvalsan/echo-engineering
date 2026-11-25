@@ -99,6 +99,42 @@ def _extinction_file(runs_dir: Path, stage: str, run_id: str):
     return None
 
 
+def run_tag(run_id) -> str:
+    """'20261125-104529-s1' -> 's1' (the tag listen/ uses for a run)."""
+    parts = str(run_id or "").split("-", 2)
+    return parts[2] if len(parts) == 3 else str(run_id or "")
+
+
+def _tri(x):
+    return x if x is True or x is False else None
+
+
+def criteria_of(m: dict) -> dict:
+    """The three separate verdicts of one run, tolerating runs scored before the criteria keys existed.
+
+    strict: criteria.spec_v1.passed (else the top-level `passed`, which is spec_v1); revised: criteria.owner_v2.passed
+    (True / False / None = "not established"), `revised_scored` False when the key is absent; ear: the recorded
+    listening verdict on this run, if any."""
+    crit = m.get("criteria") if isinstance(m.get("criteria"), dict) else {}
+    v1 = crit.get("spec_v1") if isinstance(crit.get("spec_v1"), dict) else None
+    v2 = crit.get("owner_v2") if isinstance(crit.get("owner_v2"), dict) else None
+    lv = m.get("listening_verdict") if isinstance(m.get("listening_verdict"), dict) else None
+    ctrl = (v2 or {}).get("controls") or []
+    return {
+        "strict": _tri(v1.get("passed")) if v1 else (_tri(m.get("passed")) if m else None),
+        "revised_scored": v2 is not None,
+        "revised": _tri(v2.get("passed")) if v2 else None,
+        "revised_note": (v2 or {}).get("note"),
+        "revised_rests_on": (v2 or {}).get("rests_on"),
+        "revised_metrics": [{k: x.get(k) for k in ("id", "value", "threshold", "used")}
+                            for x in ((v2 or {}).get("metrics") or [])],
+        "controls_total": len(ctrl) if v2 else None,
+        "controls_rejected": sum(1 for c in ctrl if c.get("pass") is False) if v2 else None,
+        "ear": None if not lv else {"verdict": lv.get("verdict"), "by": lv.get("by"), "date": lv.get("date"),
+                                    "blind": lv.get("blind"), "quote": lv.get("quote")},
+    }
+
+
 def run_entry(runs_dir: Path, rec: dict, problems: list, light: bool = False) -> dict:
     d = runs_dir / rec.get("path", f"{rec.get('stage')}/{rec.get('run_id')}")
     man = read_json(d / "manifest.json") or {}
@@ -131,6 +167,8 @@ def run_entry(runs_dir: Path, rec: dict, problems: list, light: bool = False) ->
         "allm": allm,
         "headline": {k: head.get(k) for k in ("echo_level_db_re_direct", "echo_spl_db", "depth_m", "post_count",
                                               "tier_gap_db")},
+        "crit": criteria_of(m),
+        "tag": run_tag(rec.get("run_id")),
     }
     if light:
         e["design"] = {"realization": cfg.get("realization") or "sampling", "stretch": bool(cfg.get("stretch_comp"))}
@@ -222,13 +260,19 @@ def _variant(rec, man):
     return "", ""
 
 
+def is_test_stage(stage: str) -> bool:
+    """Stages shown as tests. Build pilots, custom designs, validation and helper folders are not tests."""
+    st = str(stage)
+    return not (st.startswith(("_", "build", "custom", "validation")))
+
+
 def results(runs_dir: Path):
     problems: list[str] = []
     index = read_json(runs_dir / "index.json")
     recs = (index or {}).get("runs") or []
     keyed: dict[tuple, list] = {}  # (stage id, sub, target) -> finals, newest first
     for rec in sorted(recs, key=lambda r: str(r.get("created", "")), reverse=True):
-        if rec.get("status") != "final" or not rec.get("stage"):
+        if rec.get("status") != "final" or not rec.get("stage") or not is_test_stage(rec["stage"]):
             continue
         man = read_json(runs_dir / rec.get("path", "") / "manifest.json") or {}
         sub, tgt = _variant(rec, man)
@@ -250,7 +294,8 @@ def results(runs_dir: Path):
     for prefix, sid, name, blurb in STAGES:
         keys = [k for k in keyed if k[0] == sid or (k[0].startswith(prefix) and k not in claimed)]
         claimed.update(keys)
-        others = [r for r in recs if r.get("status") != "final" and str(r.get("stage", "")).startswith(prefix)]
+        others = [r for r in recs if r.get("status") != "final" and str(r.get("stage", "")).startswith(prefix)
+                  and is_test_stage(r.get("stage", ""))]
         latest = max(others, key=lambda r: str(r.get("created", "")), default=None)
         groups.append({"key": sid, "name": name, "blurb": blurb,
                        "latest_other": latest.get("status") if latest else None, "subs": subs_for(keys)})
@@ -301,36 +346,183 @@ def build_pilot(runs_dir: Path):
             "echo_spl_db": h.get("echo_spl_db")}
 
 
-def status_line(res) -> str:
-    """One quiet line for the top of the page, from the newest final runs."""
-    if not res["index_found"]:
-        return "Interim: the simulations are still running; no stage has a result yet."
-    main4 = res["groups"][:4]
-    done = sum(1 for g in main4 if g["subs"])
-    tests = scoreboard(res)
-    passed = [t for t in tests if t["passed"]]
-    head = f"All {len(main4)} stages simulated" if done == len(main4) else f"Interim: {done} of {len(main4)} stages simulated"
-    which = " (" + ", ".join(t["name"] for t in passed) + ")" if passed else ""
-    return f"{head}; {len(passed)} of {len(tests)} tests passed on the careful simulator{which}."
+TEST_NAMES = {"s1_bird": "the whistle", "s2_motif": "the four notes", "100ms": "the tune (100 ms notes)",
+              "60ms": "the tune (60 ms notes)", "4a": 'the vowel "ah"', "4c": '"hello"'}
 
 
 def scoreboard(res):
-    """The tests, counted as the report counts them: one per stage, and one per speech sub-stage (4a, 4b, 4c).
+    """One test per designed target: the whistle, the four notes, each note length of the tune, and each speech target.
 
-    A stage's test is its headline run (the 100 ms melody for stage 3); a sub-stage passes only if every one of
-    its targets passes on the careful simulator."""
-    names = {"s1_bird": "the whistle", "s2_motif": "the four notes", "s3_melody": "the tune", "4a": 'the vowel "ah"',
-             "4b": "the syllables", "4c": 'the word "hello"'}
+    Each test carries three separate verdicts, never merged: strict (spec_v1, on the newest final run), revised
+    (owner_v2, on the newest final run: True / False / None = not established; `revised_scored` False when no run of
+    the test has the key) and ear (the listening verdict recorded on any final run of the test, with the run it is on)."""
     out = []
     for g in res["groups"][:4]:
-        if not g["subs"]:
-            continue
-        speech = g["key"].startswith("s4")
-        for s in (g["subs"] if speech else g["subs"][:1]):
-            key = s["key"] if speech else g["key"]
-            ok = all(e.get("passed") and e.get("verified") for e in s["entries"])
-            out.append({"key": key, "name": names.get(key, s["heading"] or g["name"]), "passed": ok})
+        for s in g["subs"]:
+            for e in s["entries"]:
+                runs = [e] + list(e.get("earlier") or [])
+                key = s["key"] if s["key"] else g["key"]
+                tname = e.get("target_name")
+                if s["key"] == "4b" and tname:
+                    name = f'the syllable "{tname}"'
+                else:
+                    name = TEST_NAMES.get(key) or (f'"{tname}"' if tname else (s["heading"] or g["name"]))
+                c = e.get("crit") or {}
+                ear_run = next((r for r in runs if (r.get("crit") or {}).get("ear")), None)
+                ear = (ear_run or {}).get("crit", {}).get("ear") if ear_run else None
+                out.append({
+                    "key": key, "group": g["key"], "run_id": e.get("run_id"), "name": name,
+                    "strict": c.get("strict") if e.get("has_metrics") else None,
+                    "revised_scored": bool(c.get("revised_scored")),
+                    "revised": c.get("revised"),
+                    "ear": None if not ear else ear.get("verdict"),
+                    "ear_blind": None if not ear else ear.get("blind"),
+                    "ear_run": None if not ear_run else ear_run.get("run_id"),
+                    "ear_on_newest": bool(ear_run) and ear_run is e,
+                    "n_designs": len(runs),
+                })
     return out
+
+
+def verdict_counts(tests):
+    n = len(tests)
+    strict = [t for t in tests if t["strict"] is True]
+    scored = [t for t in tests if t["revised_scored"]]
+    rev_yes = [t for t in scored if t["revised"] is True]
+    rev_no = [t for t in scored if t["revised"] is False]
+    rev_null = [t for t in scored if t["revised"] is None]
+    ear = [t for t in tests if t["ear"] == "pass"]
+    blind = any(t["ear_blind"] for t in ear)
+    return {"n": n, "strict": [t["name"] for t in strict], "revised_scored": len(scored),
+            "revised_yes": [t["name"] for t in rev_yes], "revised_no": [t["name"] for t in rev_no],
+            "revised_null": [t["name"] for t in rev_null], "ear": [t["name"] for t in ear], "ear_blind": blind}
+
+
+def _join(names):
+    return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1] if names else ""
+
+
+def status_line(res, counts) -> str:
+    """One quiet line for the top of the page: the three verdicts, each in its own words."""
+    if not res["index_found"]:
+        return "Interim: the simulations are still running; no test has a result yet."
+    n = counts["n"]
+    if not n:
+        return "Interim: no test has a final result yet."
+    bits = [f"{n} echoes designed and simulated."]
+    ear = counts["ear"]
+    if ear:
+        who = "all" if len(ear) == n else f"{len(ear)} of"
+        bits.append(f"By ear: {who} {n} accepted ({'blind' if counts['ear_blind'] else 'the owner, who knew each target; not a blind test'}).")
+    st = counts["strict"]
+    bits.append(f"Strict tests set beforehand: {len(st)} of {n} pass{'es' if len(st) == 1 else ''}"
+                f"{' (' + _join(st) + ')' if st and len(st) < 4 else ''}.")
+    if counts["revised_scored"]:
+        y, nn, no = counts["revised_yes"], counts["revised_null"], counts["revised_no"]
+        tail = [f"{len(y)} confirmed" + (f" ({_join(y)})" if y and len(y) < 4 else "")]
+        if no:
+            tail.append(f"{len(no)} not passed")
+        if nn:
+            tail.append(f"{len(nn)} not established")
+        if counts["revised_scored"] < n:
+            tail.append(f"{n - counts['revised_scored']} not scored yet")
+        bits.append("Revised tests: " + ", ".join(tail) + ".")
+    return " ".join(bits)
+
+
+def listen_levels(root: Path):
+    """listen/README.md table: run tag -> true echo level re clap (dB) and the boost used in the boosted file."""
+    try:
+        text = (root / "listen" / "README.md").read_text()
+    except OSError:
+        return {}
+    out = {}
+    for line in text.splitlines():
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) < 6 or not cells[2].startswith("`"):
+            continue
+        try:
+            out[cells[2].strip("`")] = {"true_db": float(cells[3]), "boost_db": float(cells[4])}
+        except ValueError:
+            continue
+    return out
+
+
+def whistle_audio(root: Path, runs_dir: Path, res, levels):
+    """The featured whistle: the newest final stage-1 run, with listen/ files when they exist (else the run's own)."""
+    g = next((g for g in res["groups"] if g["key"] == "s1_bird"), None)
+    if not g or not g["subs"] or not g["subs"][0]["entries"]:
+        return None
+    e = g["subs"][0]["entries"][0]
+    tag = e.get("tag") or ""
+    run_dir = runs_dir / e["path"]
+    audio = {}
+    for key, f in (("target", root / "listen" / f"{tag}_target.wav"), ("echo", root / "listen" / f"{tag}_echo_only.wav"),
+                   ("boosted", root / "listen" / f"{tag}_clap_then_echo_boosted.wav"), ("true", run_dir / "as_heard.wav")):
+        b = wav_b64(f)
+        if b:
+            audio[key] = b
+    for key, fallback in (("target", "target.wav"), ("echo", "echo_tier1.wav")):
+        if key not in audio:
+            b = wav_b64(run_dir / fallback)
+            if b:
+                audio[key] = b
+    lv = levels.get(tag) or {}
+    return {"run_id": e.get("run_id"), "audio": audio, "true_db": lv.get("true_db"),
+            "boost_db": lv.get("boost_db") if "boosted" in audio else None}
+
+
+def custom_example(runs_dir: Path):
+    """The newest structure designed from a supplied sound (runs/custom), if any."""
+    best = None
+    for f in sorted((runs_dir / "custom").glob("*/manifest.json")):
+        man = read_json(f) or {}
+        if best is None or str(man.get("created", "")) > str(best[0].get("created", "")):
+            best = (man, read_json(f.parent / "metrics.json") or {})
+    if best is None:
+        return None
+    man, met = best
+    h = met.get("headline") or {}
+    return {"title": man.get("title"), "verified": man.get("verified", met.get("verified")),
+            "depth_m": _num(h.get("depth_m")), "post_count": _num(h.get("post_count")),
+            "echo_spl_db": _num(h.get("echo_spl_db"))}
+
+
+def build_costs(root: Path):
+    """Cost column of BUILD.md's decision ladder, by phase id (e.g. '3a' -> '~€0.2–0.5k (est.)')."""
+    try:
+        text = (root / "BUILD.md").read_text()
+    except OSError:
+        return {}
+    out = {}
+    for line in text.splitlines():
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) >= 4 and cells[0][:2] in ("2a", "2b", "2c", "3a", "3b", "4.") and "€" in cells[2]:
+            out[cells[0][:2].rstrip(".")] = cells[2]
+    return out
+
+
+def live_image(root: Path):
+    """One Live-mode screenshot as an inline JPEG data URI (about 1000 px wide), or None."""
+    src = root / "artifacts" / "viewer" / "live-lab-replay.png"
+    if not src.exists():
+        cands = sorted((root / "artifacts" / "viewer").glob("live-*replay*.png"))
+        if not cands:
+            return None
+        src = cands[0]
+    try:
+        import io
+
+        from PIL import Image
+        im = Image.open(src).convert("RGB")
+        w = 1100
+        im = im.resize((w, round(im.height * w / im.width)), Image.LANCZOS)
+        buf = io.BytesIO()
+        im.save(buf, "JPEG", quality=72, optimize=True, progressive=True)
+        return {"uri": "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode("ascii"),
+                "w": im.width, "h": im.height}
+    except Exception:  # noqa: BLE001 - the page works without the picture
+        return None
 
 
 def clean(x):
@@ -362,8 +554,20 @@ def main(argv=None):
         "signals": signals(),
         "results": results(runs_dir),
     }
-    data["status"] = status_line(data["results"])
     data["scoreboard"] = scoreboard(data["results"])
+    data["counts"] = verdict_counts(data["scoreboard"])
+    data["status"] = status_line(data["results"], data["counts"])
+    levels = listen_levels(ROOT) if real else {}
+    data["listen"] = {"levels": levels,
+                      "range": [min(v["true_db"] for v in levels.values()), max(v["true_db"] for v in levels.values())]
+                      if levels else None}
+    data["whistle"] = whistle_audio(ROOT, runs_dir, data["results"], levels)
+    data["custom"] = custom_example(runs_dir)
+    data["costs"] = build_costs(ROOT)
+    data["blind_kit"] = (runs_dir / "_criteria" / "blind_test").is_dir()
+    data["listening"] = next((x.get("crit", {}).get("ear") for g in data["results"]["groups"] for s in g["subs"]
+                              for e in s["entries"] for x in [e] + e.get("earlier", []) if x.get("crit", {}).get("ear")), None)
+    data["live_img"] = live_image(ROOT)
     data["calibration"] = calibration(runs_dir, data["results"], data["results"]["problems"])
     data["pilot"] = build_pilot(runs_dir)
     data = clean(data)
