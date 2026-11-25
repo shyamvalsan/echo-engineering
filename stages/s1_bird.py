@@ -18,8 +18,11 @@ CONFIG = StageConfig(
     half_angle_deg=20.0,
     catalog=RADII,
     a_ref=0.01,
-    target_fill=0.01,
-    correction_rounds=5,
+    target_fill=0.01,  # superseded by the density sweep below
+    # Density sweep on Tier 1 (fd8-3), picked by Tier 1 spectrogram loss only: 1 % fill showed a ~15 dB fade across
+    # the note (extinction by the post field), so sparser fills are tried.
+    fill_candidates=(0.01, 0.0035, 0.0015),
+    correction_rounds=3,  # Tier 1 runs in the loop (round 0 reuses the sweep's pick); budget: ~3 min per run
     robustness=True,
 )
 

@@ -11,6 +11,7 @@ import torch
 from contract_check import check_run_folder
 from echo.scene import FS, Scene
 from echo.tier0 import post_transfer
+from echo.tier1 import PPW_DEFAULT
 from stages.common import Tier1Hooks, run_stage, verify
 from stages.s1_bird import CONFIG
 
@@ -28,7 +29,7 @@ def _fake_run(scene, f_max, t_end, listeners=None, c=343.0, record_field=False, 
         fld = {"frames": np.random.default_rng(0).standard_normal((8, 20, 40)).astype(np.float16), "t0": 0.0,
                "dt_frame": field_dt, "extent": [0.0, 4.0, -1.0, 1.0]}
     return SimpleNamespace(ir=np.array(irs), listeners=np.asarray(listeners), solver="fdtd", device="cpu",
-                           dx=0.009375, dt=7.8e-6, grid=(10, 10), f_lo=300.0, f_max=f_max, ppw=9.0, wall_s=0.0, c=c,
+                           dx=0.009375, dt=7.8e-6, grid=(10, 10), f_lo=300.0, f_max=f_max, ppw=PPW_DEFAULT, wall_s=0.0, c=c,
                            field=fld, extra={"empty_cached": True}, fs=FS)
 
 
@@ -49,7 +50,7 @@ def test_stage_driver_with_stand_in_tier1(tmp_path):
     assert man["status"] == "intermediate" and man["solver"]["tier1"] == "fdtd" and man["field"]["file"] == "field.webm"
     assert m["verification"]["radii_used"] == [0.01] and man["solver"]["engine"]
     # verified iff the real validation file matches this engine and passed (true at the time of writing)
-    assert m["verified"] == m["verification"]["validation_passed"]
+    assert m["verified"] == (m["verification"]["validation_passed"] and m["verification"]["radii_ok"])
     cases = [c["case"] for c in m["robustness"]]
     assert cases[:3] == ["nominal", "listener_side_1m", "listener_back_1m"] and "jitter" in cases
     assert {"c_331", "c_349", "clap_0", "clap_1"} <= set(cases)
@@ -78,15 +79,22 @@ def test_verify_requires_validated_radius_at_grid(tmp_path):
     assert verify(cfg, posts[:1], 9.0, v)[0]
     assert not verify(cfg, posts[:1], 12.0, v)[0]  # other ppw: no entry, no config fallback
     assert verify(replace(cfg, validated_radii=(0.02,)), posts[:1], 12.0, v)[1]["source"].startswith("config")
-    # engine version must match the validation's, and every check in the file must pass
+    # engine version must match; beyond-spec failed checks do not block (top-level `passed` is the spec's checks)
     v.write_text(json.dumps({"passed": True, "solver": {"ppw": 9.0, "engine": "fd8-2"}, "checks": {"cylinder": {
         "g2": {"f_max": 2000, "per_radius": {"0.02": {"pass": True}}}, "pass": True},
-        "dense_field": {"pass": False}}}))
-    assert not verify(cfg, posts[:1], 9.0, v, engine="fd8-2")[0]
-    v.write_text(json.dumps({"passed": True, "solver": {"ppw": 9.0, "engine": "fd8-2"}, "checks": {"cylinder": {
-        "g2": {"f_max": 2000, "per_radius": {"0.02": {"pass": True}}}, "pass": True}}}))
+        "angular": {"pass": False}}}))
     assert verify(cfg, posts[:1], 9.0, v, engine="fd8-2")[0]
     assert not verify(cfg, posts[:1], 9.0, v, engine="fd8-3")[0]
+    # new layout: validated_radii_backscatter gates; missing from validated_radii_all_angles -> caveat, still verified
+    v.write_text(json.dumps({"passed": True, "solver": {"ppw": 10.0, "engine": "fd8-3"},
+                             "caveats": ["1-2 cm dipole ~10 % strong off backscatter"],
+                             "checks": {"cylinder": {"grids": {"g4": {"f_max": 2000, "ppw": 10.0,
+                                                                      "validated_radii_backscatter": [0.01, 0.02],
+                                                                      "validated_radii_all_angles": [0.04]}}}}}))
+    ok, info = verify(cfg, posts, 10.0, v, engine="fd8-3")
+    assert ok and info["caveats"][0] == "1-2 cm dipole ~10 % strong off backscatter" and len(info["caveats"]) == 2
+    ok, info = verify(cfg, np.array([[4.0, 0.0, 0.04]]), 10.0, v, engine="fd8-3")
+    assert not ok  # 4 cm not validated for backscatter here
     v.write_text(json.dumps({"passed": False, "solver": {"ppw": 9.0}, "checks": {"cylinder": {
         "g2": {"f_max": 2000, "per_radius": {"0.02": {"pass": True}}}}}}))
     assert not verify(cfg, posts[:1], 9.0, v)[0]

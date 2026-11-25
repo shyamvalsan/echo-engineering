@@ -6,8 +6,9 @@ writes a tier0_only run without importing it.
 
 Verification rule: a run is `verified` only if `runs/validation/metrics.json` says `passed: true` at run time AND
 it was produced by the same Tier 1 engine version (`echo.tier1.ENGINE_VERSION`, recorded as
-`manifest.solver.engine`) with every check in it passing, AND every radius the design uses is validated at the
-Tier 1 grid used (same f_max and ppw as a validated grid there; if
+`manifest.solver.engine`), AND every radius the design uses is in that grid's `validated_radii_backscatter` (a
+radius missing from `validated_radii_all_angles` keeps the run verified but copies the file's caveats into
+`metrics.caveats` / `manifest.caveats`), at the Tier 1 grid used (same f_max and ppw as a validated grid there; if
 the validation file has no entry for that grid, `cfg.validated_radii` is used and the manifest says so).
 """
 
@@ -135,16 +136,29 @@ def build_design(cfg: StageConfig, profile, claps, band, n_out, seed=None) -> De
 VALIDATION_FILE = export.RUNS / "validation" / "metrics.json"
 
 
-def validated_radii(cfg: StageConfig, ppw, path=None, engine=None) -> dict:
-    """Read the solver validation at run time. Returns {validation_passed, radii (validated at this grid) or None,
-    source ("runs/validation/metrics.json:<grid key>" | "config" | None), path, engine, validation_engine}.
+def _grid_entries(d):
+    """Yield (path, dict) for every dict in the validation file that describes a grid (has an `f_max`)."""
+    stack = [("", d)]
+    while stack:
+        p, o = stack.pop()
+        if isinstance(o, dict):
+            if "f_max" in o:
+                yield p, o
+            for k, v in o.items():
+                stack.append((f"{p}.{k}" if p else k, v))
 
-    validation_passed requires: top-level `passed: true`, every check present with a `pass` flag passing (this
-    includes a dense-field check when the file has one), and -- when `engine` is given -- the file's
-    `solver.engine` equal to it (a validation made with another engine version does not count)."""
+
+def validated_radii(cfg: StageConfig, ppw, path=None, engine=None) -> dict:
+    """Read the solver validation at run time (re-read at the end of every run).
+
+    Returns {validation_passed, radii (validated for BACKSCATTER at this grid) or None, radii_all_angles or None,
+    caveats (the file's top-level `caveats`, verbatim), source, path, engine, validation_engine}.
+    validation_passed: top-level `passed: true` (the spec's checks) and, when `engine` is given, the file's
+    `solver.engine` equal to it. Grid: an entry with the same f_max (and the file's ppw equal to the run's ppw)
+    carrying `validated_radii_backscatter` (preferred) or, in the older layout, `per_radius` pass flags."""
     path = Path(path or VALIDATION_FILE)
-    out = {"validation_passed": False, "radii": None, "source": None, "path": str(path), "engine": engine,
-           "validation_engine": None}
+    out = {"validation_passed": False, "radii": None, "radii_all_angles": None, "caveats": [], "source": None,
+           "path": str(path), "engine": engine, "validation_engine": None}
     try:
         d = json.loads(path.read_text())
     except Exception:
@@ -152,18 +166,33 @@ def validated_radii(cfg: StageConfig, ppw, path=None, engine=None) -> dict:
     if d is not None:
         v_eng = (d.get("solver") or {}).get("engine")
         out["validation_engine"] = v_eng
-        checks = d.get("checks") or {}
-        failed = [k for k, v in checks.items() if isinstance(v, dict) and "pass" in v and not v["pass"]]
-        out["failed_checks"] = failed
-        out["validation_passed"] = bool(d.get("passed", False)) and not failed and (engine is None or v_eng == engine)
+        out["validation_passed"] = bool(d.get("passed", False)) and (engine is None or v_eng == engine)
+        cav = d.get("caveats") or []
+        out["caveats"] = list(cav) if isinstance(cav, list) else [cav]
         v_ppw = (d.get("solver") or {}).get("ppw")
-        cyl = (d.get("checks") or {}).get("cylinder") or {}
-        for key, g in cyl.items():
-            if isinstance(g, dict) and "per_radius" in g and g.get("f_max") is not None \
-                    and abs(float(g["f_max"]) - cfg.f_max) < 1e-6 and v_ppw is not None \
-                    and abs(float(v_ppw) - float(ppw)) < 1e-9:
+        same_ppw = v_ppw is not None and abs(float(v_ppw) - float(ppw)) < 1e-9
+        best = None
+        for key, g in _grid_entries(d):
+            try:
+                fm = float(g["f_max"])
+            except (TypeError, ValueError):
+                continue
+            g_ppw = g.get("ppw", v_ppw)
+            if abs(fm - cfg.f_max) > 1e-6 or g_ppw is None or abs(float(g_ppw) - float(ppw)) > 1e-9:
+                continue
+            if "validated_radii_backscatter" in g:
+                best = (2, key, g)
+            elif "per_radius" in g and (best is None or best[0] < 1) and "heldout" not in key and same_ppw:
+                best = (1, key, g)
+        if best is not None:
+            _, key, g = best
+            if "validated_radii_backscatter" in g:
+                out["radii"] = sorted(float(r) for r in g["validated_radii_backscatter"])
+                if g.get("validated_radii_all_angles") is not None:
+                    out["radii_all_angles"] = sorted(float(r) for r in g["validated_radii_all_angles"])
+            else:
                 out["radii"] = sorted(float(r) for r, v in g["per_radius"].items() if v.get("pass"))
-                out["source"] = f"{path.name}:checks.cylinder.{key} (f_max {g['f_max']} Hz, ppw {v_ppw})"
+            out["source"] = f"{path.name}:{key} (f_max {g['f_max']} Hz, ppw {g.get('ppw', v_ppw)})"
     if out["radii"] is None and cfg.validated_radii is not None:
         out["radii"] = sorted(float(r) for r in cfg.validated_radii)
         out["source"] = "config (StageConfig.validated_radii): no validation entry for this grid"
@@ -171,12 +200,23 @@ def validated_radii(cfg: StageConfig, ppw, path=None, engine=None) -> dict:
 
 
 def verify(cfg: StageConfig, posts, ppw, path=None, engine=None) -> tuple[bool, dict]:
-    """The verification rule (module docstring). Returns (verified, info)."""
+    """The verification rule (module docstring). Returns (verified, info). info["caveats"] lists, verbatim, the
+    validation file's caveats when a radius used is not in `validated_radii_all_angles` (the run stays verified)."""
     info = validated_radii(cfg, ppw, path, engine)
     used = sorted({round(float(r), 4) for r in np.asarray(posts).reshape(-1, 3)[:, 2]})
-    ok_r = info["radii"] is not None and all(any(abs(u - v) < 1e-6 for v in info["radii"]) for u in used)
+
+    def within(rs):
+        return rs is not None and all(any(abs(u - v) < 1e-6 for v in rs) for u in used)
+
+    ok_r = within(info["radii"])
     info["radii_used"] = used
     info["radii_ok"] = bool(ok_r)
+    file_caveats = info.pop("caveats")
+    info["caveats"] = []
+    if info["radii_all_angles"] is not None and not within(info["radii_all_angles"]):
+        miss = [u for u in used if not any(abs(u - v) < 1e-6 for v in info["radii_all_angles"])]
+        info["caveats"] = list(file_caveats) + [f"radii {miss} used by this design are validated for backscatter "
+                                                f"but not at all angles at this grid ({info['source']})"]
     return bool(info["validation_passed"] and ok_r), info
 
 
@@ -210,6 +250,13 @@ class Tier1Hooks:
             self.run = self.run or tier1.run_tier1
             self.echoes = self.echoes or tier1.echoes
         return self
+
+
+def _spec_corr_mean(e, target, t0, band):
+    """Mean log-mel correlation over claps (recorded in the density table for information; never used to choose)."""
+    from echo.metrics import echo_segment, spec_corr
+
+    return float(np.mean([spec_corr(s, target.audio, FS, band) for s in echo_segment(e, t0, len(target.audio))]))
 
 
 def tier1_engine():
@@ -295,19 +342,31 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
         t_loop = time.time()
         wall["realize_s"], wall["tier1_loop_s"] = 0.0, 0.0
 
+        memo = {}  # profile bytes -> design, design id -> Tier 1 (the sweep's pick is reused as correction round 0)
+        t1_runs = []
+
         def build(p):
+            key = np.asarray(p, dtype=float).tobytes()
+            if key in memo:
+                return memo[key]
             t = time.time()
             d = build_design(cfg, p, claps, band, n_out)
             wall["realize_s"] += time.time() - t
             say(f"  realized {len(d.posts)} posts ({time.time() - t:.0f} s)")
+            memo[key] = d
             return d
 
         def run1(d):
+            if id(d) in memo:
+                return memo[id(d)]
             t = time.time()
             r = t1(d.scene)
             wall["tier1_loop_s"] += time.time() - t
+            t1_runs.append({"what": "design", "wall_s": r.wall_s, "empty_cached": bool(r.extra.get("empty_cached")),
+                            "empty_s": r.extra.get("t_empty_s"), "scene_s": r.extra.get("t_scene_s")})
             say(f"  tier1 {r.wall_s:.0f} s (empty cached: {r.extra.get('empty_cached')})")
-            return r, e1_of(r)
+            memo[id(d)] = (r, e1_of(r))
+            return memo[id(d)]
 
         def evaluate(d, e1):
             m = t0_metrics(d, e1)
@@ -322,10 +381,14 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
                 d_f = build(p_f)
                 _, e_f = run1(d_f)
                 loss_f = window_loss(e_f, target.audio, band, cfg.r0, C0, claps.shape[1])
-                sweep_rows.append({"fill": float(fill), "posts": int(len(d_f.posts)), "loss_tier1": loss_f,
+                sweep_rows.append({"fill": float(fill), "posts": int(len(d_f.posts)),
+                                   "fill_realized": fill_fraction(d_f.scene), "loss_tier1": loss_f,
                                    "loss_tier0": window_loss(d_f.echo_t0_2d, target.audio, band, cfg.r0, C0,
                                                              claps.shape[1]),
                                    "tier_gap_db": float(np.mean(echo_level_db(e_f) - echo_level_db(d_f.echo_t0_2d))),
+                                   "echo_level_db_3d_corrected": float(np.mean(echo_level_db(d_f.echo_t0_3d)))
+                                   + float(np.mean(echo_level_db(e_f) - echo_level_db(d_f.echo_t0_2d))),
+                                   "spec_corr_tier1_info_only": _spec_corr_mean(e_f, target, t_echo0, band),
                                    "profile": p_f})
                 say(f"  density sweep fill {fill}: {len(d_f.posts)} posts, Tier 1 loss {loss_f:.4f}")
             pick = min(range(len(sweep_rows)), key=lambda i: sweep_rows[i]["loss_tier1"])
@@ -359,6 +422,7 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
                               "gating": {m["id"]: m["value"] for m in r.metrics["metrics"] if m["gating"]}}
                              for r in rounds]
         t1_info["best_round"] = ib
+        t1_info["tier1_runs"] = t1_runs
         if cfg.field:  # the final design once more, recording the field (deterministic: same ir)
             t = time.time()
             fres = t1(des.scene, record_field=True)
@@ -407,6 +471,7 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
         metrics["verified"] = verified
         metrics["passed"] = bool(metrics["passed"] and verified)
         metrics["verification"] = vinfo
+        metrics["caveats"] = vinfo["caveats"]
         metrics["fragile"] = bool(fragile)
         metrics["fragile_reason"] = fragile_why
         metrics["tier1_correction"] = t1_info
@@ -439,7 +504,7 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
                         "max_posts_applied": capped,
                         "solve_wall_s": res.history["wall_s"], "realize_wall_s": wall.get("realize_s"),
                         "total_wall_s": wall["total_s"]},
-             "wall_s": wall}
+             "wall_s": wall, "caveats": (metrics.get("caveats") or [])}
     run_dir = export.write_run(cfg.stage, cfg.tag, cfg.title, scene=sc, profile=profile_dict(des.profile, cfg.r0, cfg.dr),
                                target_audio=target.audio, t_echo0=t_echo0, claps=claps, echo_t0=des.echo_t0_2d,
                                echo_t1=des.echo_t1_2d, metrics=metrics, history=history, seed=cfg.seed,
