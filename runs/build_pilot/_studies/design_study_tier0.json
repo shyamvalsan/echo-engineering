@@ -1,0 +1,591 @@
+{
+ "what": "Tier 0 pilot candidate study (2D for losses / waveform correlation, 3D for level)",
+ "selection": "judge-free: among candidates with fill <= 0.35 % and posts <= cap, the target with the widest sideways listening spot (largest offset with waveform corr >= 0.95 vs the nominal listener), ties broken by the waveform correlation under 2 mm radial jitter, then by 3D level; within that target the count with the lowest Tier 0 spectrogram loss under 2 mm jitter. Judges are recorded for information only.",
+ "half_angle_deg": 10.0,
+ "post_cap": 500,
+ "fill_max": 0.0035,
+ "jitter": "radial Gaussian sigma (1.0, 2.0, 5.0) mm, seeds (11, 12, 13)",
+ "candidates": [
+  {
+   "candidate": "whistle80",
+   "band": [
+    898.4375,
+    4000.0
+   ],
+   "profile_best_loss": 1.4355489015579224,
+   "rows": [
+    {
+     "candidate": "whistle80",
+     "n_request": 300,
+     "n_posts": 301,
+     "dropped": 0,
+     "n_rings": 162,
+     "fill": 0.00202836986216077,
+     "min_gap_m": 0.05032163661396506,
+     "depth_m": 13.026749450128634,
+     "loss_tier0": 3.8507401943206787,
+     "echo_level_db_3d": -55.10353901325044,
+     "judges_tier0_info_only": {
+      "pitch_err_pct": 6.261534884360584,
+      "spec_corr": 0.6094908846872056
+     },
+     "jitter": [
+      {
+       "sigma_mm": 1.0,
+       "loss": 4.9765017827351885,
+       "wave_corr": 0.992716364879403,
+       "wave_corr_min": 0.9901951887198
+      },
+      {
+       "sigma_mm": 2.0,
+       "loss": 5.365946292877197,
+       "wave_corr": 0.9715852234605277,
+       "wave_corr_min": 0.9615516264298446
+      },
+      {
+       "sigma_mm": 5.0,
+       "loss": 6.0354377428690595,
+       "wave_corr": 0.8481215304240141,
+       "wave_corr_min": 0.7943595236792703
+      }
+     ],
+     "sweet_spot": [
+      {
+       "offset_m": [
+        0.0,
+        0.05
+       ],
+       "wave_corr_vs_nominal": 0.932999989699314,
+       "loss_tier0": 5.536029815673828
+      },
+      {
+       "offset_m": [
+        0.0,
+        0.1
+       ],
+       "wave_corr_vs_nominal": 0.7620460081103616,
+       "loss_tier0": 6.061718940734863
+      },
+      {
+       "offset_m": [
+        0.0,
+        0.2
+       ],
+       "wave_corr_vs_nominal": 0.3582255667856958,
+       "loss_tier0": 6.5792951583862305
+      },
+      {
+       "offset_m": [
+        0.0,
+        0.3
+       ],
+       "wave_corr_vs_nominal": 0.11929529953128477,
+       "loss_tier0": 6.762946128845215
+      },
+      {
+       "offset_m": [
+        -0.5,
+        0.0
+       ],
+       "wave_corr_vs_nominal": 0.9654653925029351,
+       "loss_tier0": 5.135445594787598
+      },
+      {
+       "offset_m": [
+        -1.0,
+        0.0
+       ],
+       "wave_corr_vs_nominal": 0.7228334899866733,
+       "loss_tier0": 5.508209228515625
+      }
+     ],
+     "sweet_spot_side_m": 0.0
+    },
+    {
+     "candidate": "whistle80",
+     "n_request": 500,
+     "n_posts": 500,
+     "dropped": 0,
+     "n_rings": 200,
+     "fill": 0.003366675900119556,
+     "min_gap_m": 0.05276753858458725,
+     "depth_m": 13.126180468910622,
+     "loss_tier0": 2.856299877166748,
+     "echo_level_db_3d": -53.28871133149429,
+     "judges_tier0_info_only": {
+      "pitch_err_pct": 2.4969994369998956,
+      "spec_corr": 0.8136899281944844
+     },
+     "jitter": [
+      {
+       "sigma_mm": 1.0,
+       "loss": 3.9137396812438965,
+       "wave_corr": 0.9955654226002323,
+       "wave_corr_min": 0.994809232699614
+      },
+      {
+       "sigma_mm": 2.0,
+       "loss": 4.406904697418213,
+       "wave_corr": 0.9822526388001204,
+       "wave_corr_min": 0.9795509695432234
+      },
+      {
+       "sigma_mm": 5.0,
+       "loss": 5.290481726328532,
+       "wave_corr": 0.8938863602769929,
+       "wave_corr_min": 0.8823398007432516
+      }
+     ],
+     "sweet_spot": [
+      {
+       "offset_m": [
+        0.0,
+        0.05
+       ],
+       "wave_corr_vs_nominal": 0.9634692918323031,
+       "loss_tier0": 4.514074802398682
+      },
+      {
+       "offset_m": [
+        0.0,
+        0.1
+       ],
+       "wave_corr_vs_nominal": 0.8626087899468662,
+       "loss_tier0": 5.170306205749512
+      },
+      {
+       "offset_m": [
+        0.0,
+        0.2
+       ],
+       "wave_corr_vs_nominal": 0.5468415731355911,
+       "loss_tier0": 6.004616737365723
+      },
+      {
+       "offset_m": [
+        0.0,
+        0.3
+       ],
+       "wave_corr_vs_nominal": 0.235863732733317,
+       "loss_tier0": 6.51059627532959
+      },
+      {
+       "offset_m": [
+        -0.5,
+        0.0
+       ],
+       "wave_corr_vs_nominal": 0.9674561322581523,
+       "loss_tier0": 4.032732963562012
+      },
+      {
+       "offset_m": [
+        -1.0,
+        0.0
+       ],
+       "wave_corr_vs_nominal": 0.7641126145048236,
+       "loss_tier0": 4.518261432647705
+      }
+     ],
+     "sweet_spot_side_m": 0.05
+    }
+   ]
+  },
+  {
+   "candidate": "whistle40",
+   "band": [
+    898.4375,
+    4000.0
+   ],
+   "profile_best_loss": 1.4458553791046143,
+   "rows": [
+    {
+     "candidate": "whistle40",
+     "n_request": 100,
+     "n_posts": 100,
+     "dropped": 0,
+     "n_rings": 59,
+     "fill": 0.002171649082923096,
+     "min_gap_m": 0.06403837743937701,
+     "depth_m": 6.012366071609101,
+     "loss_tier0": 5.196963310241699,
+     "echo_level_db_3d": -55.97482461433407,
+     "judges_tier0_info_only": {
+      "pitch_err_pct": 20.777401745523452,
+      "spec_corr": 0.5259986518809825
+     },
+     "jitter": [
+      {
+       "sigma_mm": 1.0,
+       "loss": 5.429550488789876,
+       "wave_corr": 0.9898070161976552,
+       "wave_corr_min": 0.9859121346528354
+      },
+      {
+       "sigma_mm": 2.0,
+       "loss": 5.580911318461101,
+       "wave_corr": 0.9606759236805494,
+       "wave_corr_min": 0.9470905621777519
+      },
+      {
+       "sigma_mm": 5.0,
+       "loss": 5.924314181009929,
+       "wave_corr": 0.8017921956726153,
+       "wave_corr_min": 0.7553564131324649
+      }
+     ],
+     "sweet_spot": [
+      {
+       "offset_m": [
+        0.0,
+        0.05
+       ],
+       "wave_corr_vs_nominal": 0.9067705389921462,
+       "loss_tier0": 5.581783294677734
+      },
+      {
+       "offset_m": [
+        0.0,
+        0.1
+       ],
+       "wave_corr_vs_nominal": 0.6978988902731329,
+       "loss_tier0": 5.792661666870117
+      },
+      {
+       "offset_m": [
+        0.0,
+        0.2
+       ],
+       "wave_corr_vs_nominal": 0.4961061054660759,
+       "loss_tier0": 6.012327194213867
+      },
+      {
+       "offset_m": [
+        0.0,
+        0.3
+       ],
+       "wave_corr_vs_nominal": 0.24576594419973263,
+       "loss_tier0": 6.131589889526367
+      },
+      {
+       "offset_m": [
+        -0.5,
+        0.0
+       ],
+       "wave_corr_vs_nominal": 0.9568304359113629,
+       "loss_tier0": 5.611575603485107
+      },
+      {
+       "offset_m": [
+        -1.0,
+        0.0
+       ],
+       "wave_corr_vs_nominal": 0.6429922309550974,
+       "loss_tier0": 5.864590644836426
+      }
+     ],
+     "sweet_spot_side_m": 0.0
+    },
+    {
+     "candidate": "whistle40",
+     "n_request": 170,
+     "n_posts": 170,
+     "dropped": 0,
+     "n_rings": 88,
+     "fill": 0.003680318913874174,
+     "min_gap_m": 0.050113147943964306,
+     "depth_m": 6.1311052195388,
+     "loss_tier0": 3.3462939262390137,
+     "echo_level_db_3d": -53.43635146227714,
+     "judges_tier0_info_only": {
+      "pitch_err_pct": 12.862119913438761,
+      "spec_corr": 0.7121593030672243
+     },
+     "jitter": [
+      {
+       "sigma_mm": 1.0,
+       "loss": 4.145544687906901,
+       "wave_corr": 0.9920813608488448,
+       "wave_corr_min": 0.9900461233363618
+      },
+      {
+       "sigma_mm": 2.0,
+       "loss": 4.485989252726237,
+       "wave_corr": 0.9697922485900983,
+       "wave_corr_min": 0.9613177928834507
+      },
+      {
+       "sigma_mm": 5.0,
+       "loss": 5.102511882781982,
+       "wave_corr": 0.847555379383813,
+       "wave_corr_min": 0.7972988113410768
+      }
+     ],
+     "sweet_spot": [
+      {
+       "offset_m": [
+        0.0,
+        0.05
+       ],
+       "wave_corr_vs_nominal": 0.9380159981565799,
+       "loss_tier0": 4.648535251617432
+      },
+      {
+       "offset_m": [
+        0.0,
+        0.1
+       ],
+       "wave_corr_vs_nominal": 0.7759190493891446,
+       "loss_tier0": 5.151060104370117
+      },
+      {
+       "offset_m": [
+        0.0,
+        0.2
+       ],
+       "wave_corr_vs_nominal": 0.49701374961868894,
+       "loss_tier0": 5.744677543640137
+      },
+      {
+       "offset_m": [
+        0.0,
+        0.3
+       ],
+       "wave_corr_vs_nominal": 0.19335481808283245,
+       "loss_tier0": 6.075123310089111
+      },
+      {
+       "offset_m": [
+        -0.5,
+        0.0
+       ],
+       "wave_corr_vs_nominal": 0.9562024065346078,
+       "loss_tier0": 4.3475446701049805
+      },
+      {
+       "offset_m": [
+        -1.0,
+        0.0
+       ],
+       "wave_corr_vs_nominal": 0.7119523983790136,
+       "loss_tier0": 4.7388153076171875
+      }
+     ],
+     "sweet_spot_side_m": 0.0
+    }
+   ]
+  },
+  {
+   "candidate": "ping40",
+   "band": [
+    898.4375,
+    4000.0
+   ],
+   "profile_best_loss": 1.3785076141357422,
+   "rows": [
+    {
+     "candidate": "ping40",
+     "n_request": 100,
+     "n_posts": 101,
+     "dropped": 0,
+     "n_rings": 60,
+     "fill": 0.0021214567207003057,
+     "min_gap_m": 0.052335706651248426,
+     "depth_m": 6.251477245857187,
+     "loss_tier0": 6.92222785949707,
+     "echo_level_db_3d": -55.73259038884315,
+     "judges_tier0_info_only": {
+      "pitch_err_pct": 4.151418264315523,
+      "spec_corr": 0.49924805932533844
+     },
+     "jitter": [
+      {
+       "sigma_mm": 1.0,
+       "loss": 7.320089975992839,
+       "wave_corr": 0.9886402976597003,
+       "wave_corr_min": 0.9836977360479782
+      },
+      {
+       "sigma_mm": 2.0,
+       "loss": 7.520489692687988,
+       "wave_corr": 0.9565158157759388,
+       "wave_corr_min": 0.9393100206504805
+      },
+      {
+       "sigma_mm": 5.0,
+       "loss": 7.91912857691447,
+       "wave_corr": 0.7859389632504875,
+       "wave_corr_min": 0.729836940368781
+      }
+     ],
+     "sweet_spot": [
+      {
+       "offset_m": [
+        0.0,
+        0.05
+       ],
+       "wave_corr_vs_nominal": 0.9018732479394064,
+       "loss_tier0": 7.522606372833252
+      },
+      {
+       "offset_m": [
+        0.0,
+        0.1
+       ],
+       "wave_corr_vs_nominal": 0.6841381318579807,
+       "loss_tier0": 7.747176170349121
+      },
+      {
+       "offset_m": [
+        0.0,
+        0.2
+       ],
+       "wave_corr_vs_nominal": 0.46180234188126235,
+       "loss_tier0": 7.955654144287109
+      },
+      {
+       "offset_m": [
+        0.0,
+        0.3
+       ],
+       "wave_corr_vs_nominal": 0.20499337757216987,
+       "loss_tier0": 8.11490535736084
+      },
+      {
+       "offset_m": [
+        -0.5,
+        0.0
+       ],
+       "wave_corr_vs_nominal": 0.9534029997920299,
+       "loss_tier0": 7.507091522216797
+      },
+      {
+       "offset_m": [
+        -1.0,
+        0.0
+       ],
+       "wave_corr_vs_nominal": 0.6327525990337609,
+       "loss_tier0": 7.814901828765869
+      }
+     ],
+     "sweet_spot_side_m": 0.0
+    },
+    {
+     "candidate": "ping40",
+     "n_request": 170,
+     "n_posts": 170,
+     "dropped": 0,
+     "n_rings": 87,
+     "fill": 0.0035576345864441693,
+     "min_gap_m": 0.057555526135851805,
+     "depth_m": 6.3203355892391615,
+     "loss_tier0": 3.8734850883483887,
+     "echo_level_db_3d": -53.405747775347606,
+     "judges_tier0_info_only": {
+      "pitch_err_pct": 0.9160080336499066,
+      "spec_corr": 0.703337053150468
+     },
+     "jitter": [
+      {
+       "sigma_mm": 1.0,
+       "loss": 5.791199207305908,
+       "wave_corr": 0.9864680828565993,
+       "wave_corr_min": 0.9828350565118444
+      },
+      {
+       "sigma_mm": 2.0,
+       "loss": 6.370089689890544,
+       "wave_corr": 0.9485455624843867,
+       "wave_corr_min": 0.936541815582747
+      },
+      {
+       "sigma_mm": 5.0,
+       "loss": 7.291871070861816,
+       "wave_corr": 0.76107204596725,
+       "wave_corr_min": 0.7286989560156039
+      }
+     ],
+     "sweet_spot": [
+      {
+       "offset_m": [
+        0.0,
+        0.05
+       ],
+       "wave_corr_vs_nominal": 0.8904072796966667,
+       "loss_tier0": 6.533053398132324
+      },
+      {
+       "offset_m": [
+        0.0,
+        0.1
+       ],
+       "wave_corr_vs_nominal": 0.6892328172616782,
+       "loss_tier0": 7.129345893859863
+      },
+      {
+       "offset_m": [
+        0.0,
+        0.2
+       ],
+       "wave_corr_vs_nominal": 0.4025075480034849,
+       "loss_tier0": 7.637843132019043
+      },
+      {
+       "offset_m": [
+        0.0,
+        0.3
+       ],
+       "wave_corr_vs_nominal": 0.18768473585639317,
+       "loss_tier0": 7.89813756942749
+      },
+      {
+       "offset_m": [
+        -0.5,
+        0.0
+       ],
+       "wave_corr_vs_nominal": 0.9372042511247562,
+       "loss_tier0": 6.225646018981934
+      },
+      {
+       "offset_m": [
+        -1.0,
+        0.0
+       ],
+       "wave_corr_vs_nominal": 0.6800694322766921,
+       "loss_tier0": 6.8110456466674805
+      }
+     ],
+     "sweet_spot_side_m": 0.0
+    }
+   ]
+  }
+ ],
+ "chosen": {
+  "candidate": "whistle80",
+  "n_posts": 500,
+  "fill": 0.003366675900119556,
+  "ranking": [
+   [
+    "whistle80",
+    500,
+    0.05,
+    0.9822526388001204,
+    -53.28871133149429
+   ],
+   [
+    "whistle40",
+    100,
+    0.0,
+    0.9606759236805494,
+    -55.97482461433407
+   ],
+   [
+    "ping40",
+    101,
+    0.0,
+    0.9565158157759388,
+    -55.73259038884315
+   ]
+  ]
+ },
+ "wall_s": 30.740047216415405
+}

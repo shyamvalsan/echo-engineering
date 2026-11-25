@@ -1,0 +1,7 @@
+whistle80  N= 301 fill=0.203% gap=5.0cm loss=3.851 L3d=-55.1 wc@1/2/5mm=0.993/0.972/0.848 side=0 m [info {'pitch_err_pct': 6.261534884360584, 'spec_corr': 0.6094908846872056}]
+whistle80  N= 500 fill=0.337% gap=5.3cm loss=2.856 L3d=-53.3 wc@1/2/5mm=0.996/0.982/0.894 side=0.05 m [info {'pitch_err_pct': 2.4969994369998956, 'spec_corr': 0.8136899281944844}]
+whistle40  N= 100 fill=0.217% gap=6.4cm loss=5.197 L3d=-56.0 wc@1/2/5mm=0.990/0.961/0.802 side=0 m [info {'pitch_err_pct': 20.777401745523452, 'spec_corr': 0.5259986518809825}]
+whistle40  N= 170 fill=0.368% gap=5.0cm loss=3.346 L3d=-53.4 wc@1/2/5mm=0.992/0.970/0.848 side=0 m [info {'pitch_err_pct': 12.862119913438761, 'spec_corr': 0.7121593030672243}]
+ping40     N= 101 fill=0.212% gap=5.2cm loss=6.922 L3d=-55.7 wc@1/2/5mm=0.989/0.957/0.786 side=0 m [info {'pitch_err_pct': 4.151418264315523, 'spec_corr': 0.49924805932533844}]
+ping40     N= 170 fill=0.356% gap=5.8cm loss=3.873 L3d=-53.4 wc@1/2/5mm=0.986/0.949/0.761 side=0 m [info {'pitch_err_pct': 0.9160080336499066, 'spec_corr': 0.703337053150468}]
+chosen: {'candidate': 'whistle80', 'n_posts': 500, 'fill': 0.003366675900119556, 'ranking': [('whistle80', 500, 0.05, 0.9822526388001204, -53.28871133149429), ('whistle40', 100, 0.0, 0.9606759236805494, -55.97482461433407), ('ping40', 101, 0.0, 0.9565158157759388, -55.73259038884315)]} (31 s)

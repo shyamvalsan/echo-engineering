@@ -1,0 +1,769 @@
+{
+ "stage": "build_pilot",
+ "passed": false,
+ "verified": true,
+ "fragile": false,
+ "headline": {
+  "echo_level_db_re_direct": -54.64284150467347,
+  "echo_level_db_re_direct_raw3d": -53.220029504674834,
+  "echo_spl_db": 55.81473340093328,
+  "depth_m": 13.09670815133099,
+  "post_count": 500,
+  "fill_fraction": 0.0033823323966615635,
+  "tier_gap_db": -1.4228119999986362,
+  "likely_inaudible_on_site": false,
+  "echo_level_db_re_direct_finite_height": -53.73736522036313,
+  "finite_height_m": 2.0
+ },
+ "metrics": [
+  {
+   "id": "pitch_err_pct",
+   "label": "Pitch error along the note, worst frame",
+   "value": 5.386756165168405,
+   "unit": "%",
+   "threshold": 3.0,
+   "comparator": "<=",
+   "pass": false,
+   "tier": "tier1",
+   "gating": true
+  },
+  {
+   "id": "pitch_err_mean_pct",
+   "label": "Pitch error along the note, mean",
+   "value": 1.726577878638666,
+   "unit": "%",
+   "threshold": null,
+   "comparator": null,
+   "pass": null,
+   "tier": "tier1",
+   "gating": false
+  },
+  {
+   "id": "pitch_err_median_pct",
+   "label": "Pitch error along the note, median (info)",
+   "value": 1.2011818065006086,
+   "unit": "%",
+   "threshold": null,
+   "comparator": null,
+   "pass": null,
+   "tier": "tier1",
+   "gating": false
+  },
+  {
+   "id": "spec_corr",
+   "label": "Spectrogram correlation, log-mel",
+   "value": 0.6113893079065842,
+   "unit": "",
+   "threshold": 0.8,
+   "comparator": ">=",
+   "pass": false,
+   "tier": "tier1",
+   "gating": true
+  },
+  {
+   "id": "pitch_err_pct",
+   "label": "Pitch error along the note, worst frame",
+   "value": 2.5975932557471575,
+   "unit": "%",
+   "threshold": 3.0,
+   "comparator": "<=",
+   "pass": true,
+   "tier": "tier0",
+   "gating": false
+  },
+  {
+   "id": "pitch_err_mean_pct",
+   "label": "Pitch error along the note, mean",
+   "value": 1.029835917769155,
+   "unit": "%",
+   "threshold": null,
+   "comparator": null,
+   "pass": null,
+   "tier": "tier0",
+   "gating": false
+  },
+  {
+   "id": "pitch_err_median_pct",
+   "label": "Pitch error along the note, median (info)",
+   "value": 0.9068508514016639,
+   "unit": "%",
+   "threshold": null,
+   "comparator": null,
+   "pass": null,
+   "tier": "tier0",
+   "gating": false
+  },
+  {
+   "id": "spec_corr",
+   "label": "Spectrogram correlation, log-mel",
+   "value": 0.8125648956109174,
+   "unit": "",
+   "threshold": 0.8,
+   "comparator": ">=",
+   "pass": true,
+   "tier": "tier0",
+   "gating": false
+  }
+ ],
+ "per_clap": [
+  {
+   "clap": 0,
+   "tier": "tier1",
+   "metrics": {
+    "pitch_err_pct": 1.8611515100773524,
+    "pitch_err_mean_pct": 0.652701921961921,
+    "pitch_err_median_pct": 0.43917062231488835,
+    "spec_corr": 0.6167156191104681
+   }
+  },
+  {
+   "clap": 1,
+   "tier": "tier1",
+   "metrics": {
+    "pitch_err_pct": 10.481928548318376,
+    "pitch_err_mean_pct": 2.5590614912885163,
+    "pitch_err_median_pct": 1.2744744479227244,
+    "spec_corr": 0.6372041662387489
+   }
+  },
+  {
+   "clap": 2,
+   "tier": "tier1",
+   "metrics": {
+    "pitch_err_pct": 3.248023265768929,
+    "pitch_err_mean_pct": 1.5648247341648802,
+    "pitch_err_median_pct": 1.339032725157785,
+    "spec_corr": 0.609700795123816
+   }
+  },
+  {
+   "clap": 3,
+   "tier": "tier1",
+   "metrics": {
+    "pitch_err_pct": 8.043759118716398,
+    "pitch_err_mean_pct": 2.604271155458007,
+    "pitch_err_median_pct": 1.8343566198194772,
+    "spec_corr": 0.6121756310953431
+   }
+  },
+  {
+   "clap": 4,
+   "tier": "tier1",
+   "metrics": {
+    "pitch_err_pct": 3.298918382960969,
+    "pitch_err_mean_pct": 1.2520300903200057,
+    "pitch_err_median_pct": 1.118874617288168,
+    "spec_corr": 0.5811503279645448
+   }
+  },
+  {
+   "clap": 0,
+   "tier": "tier0",
+   "metrics": {
+    "pitch_err_pct": 2.4512271578789324,
+    "pitch_err_mean_pct": 0.778054410722473,
+    "pitch_err_median_pct": 0.5810947353210083,
+    "spec_corr": 0.8204573933170444
+   }
+  },
+  {
+   "clap": 1,
+   "tier": "tier0",
+   "metrics": {
+    "pitch_err_pct": 2.109786012900816,
+    "pitch_err_mean_pct": 0.9235801225720547,
+    "pitch_err_median_pct": 1.0012982116283764,
+    "spec_corr": 0.8285373382454936
+   }
+  },
+  {
+   "clap": 2,
+   "tier": "tier0",
+   "metrics": {
+    "pitch_err_pct": 1.4312816213556068,
+    "pitch_err_mean_pct": 0.774565549524857,
+    "pitch_err_median_pct": 0.8195902110393893,
+    "spec_corr": 0.810186995312924
+   }
+  },
+  {
+   "clap": 3,
+   "tier": "tier0",
+   "metrics": {
+    "pitch_err_pct": 4.109270075231919,
+    "pitch_err_mean_pct": 1.4692328267697694,
+    "pitch_err_median_pct": 1.1567171178917368,
+    "spec_corr": 0.8100658122180743
+   }
+  },
+  {
+   "clap": 4,
+   "tier": "tier0",
+   "metrics": {
+    "pitch_err_pct": 2.886401411368511,
+    "pitch_err_mean_pct": 1.2037466792566212,
+    "pitch_err_median_pct": 0.975553981127808,
+    "spec_corr": 0.7935769389610501
+   }
+  }
+ ],
+ "robustness": [
+  {
+   "case": "nominal",
+   "label": "Nominal design",
+   "metrics": {
+    "pitch_err_pct": 5.386756165168405,
+    "pitch_err_mean_pct": 1.726577878638666,
+    "pitch_err_median_pct": 1.2011818065006086,
+    "spec_corr": 0.6113893079065842
+   },
+   "delta": {
+    "pitch_err_pct": 0.0,
+    "pitch_err_mean_pct": 0.0,
+    "pitch_err_median_pct": 0.0,
+    "spec_corr": 0.0
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "pitch_err_pct": 2.5975932557471575,
+    "pitch_err_mean_pct": 1.029835917769155,
+    "pitch_err_median_pct": 0.9068508514016639,
+    "spec_corr": 0.8125648956109174
+   }
+  },
+  {
+   "case": "listener_side_1m",
+   "label": "Listener moved 1 m sideways",
+   "metrics": {
+    "pitch_err_pct": 49.09940868762769,
+    "pitch_err_mean_pct": 35.72160828351505,
+    "pitch_err_median_pct": 35.0839274344483,
+    "spec_corr": 0.35302370679104267
+   },
+   "delta": {
+    "pitch_err_pct": 43.71265252245928,
+    "pitch_err_mean_pct": 33.99503040487639,
+    "pitch_err_median_pct": 33.88274562794769,
+    "spec_corr": -0.2583656011155415
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "pitch_err_pct": 48.347299545996066,
+    "pitch_err_mean_pct": 33.29835255040338,
+    "pitch_err_median_pct": 32.62639944617398,
+    "spec_corr": 0.36737137343786874
+   },
+   "listener": [
+    0.0,
+    1.3
+   ],
+   "window_shift_ms": 0.23411598203088657
+  },
+  {
+   "case": "listener_back_1m",
+   "label": "Listener moved 1 m back",
+   "metrics": {
+    "pitch_err_pct": 10.032597212674478,
+    "pitch_err_mean_pct": 2.911738713327559,
+    "pitch_err_median_pct": 1.7661927149435708,
+    "spec_corr": 0.5635241383971826
+   },
+   "delta": {
+    "pitch_err_pct": 4.645841047506073,
+    "pitch_err_mean_pct": 1.1851608346888929,
+    "pitch_err_median_pct": 0.5650109084429622,
+    "spec_corr": -0.04786516950940156
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "pitch_err_pct": 3.979357535821518,
+    "pitch_err_mean_pct": 1.3570591627888908,
+    "pitch_err_median_pct": 1.083256045967893,
+    "spec_corr": 0.6679582305075005
+   },
+   "listener": [
+    -1.0,
+    0.3
+   ],
+   "window_shift_ms": 2.9142410121482203
+  },
+  {
+   "case": "jitter",
+   "label": "Posts jittered 5 mm, radii 1 mm (uniform)",
+   "metrics": {
+    "pitch_err_pct": 10.18308491040816,
+    "pitch_err_mean_pct": 3.2734306388321905,
+    "pitch_err_median_pct": 2.0219367038382785,
+    "spec_corr": 0.586151135231036
+   },
+   "delta": {
+    "pitch_err_pct": 4.796328745239755,
+    "pitch_err_mean_pct": 1.5468527601935245,
+    "pitch_err_median_pct": 0.8207548973376699,
+    "spec_corr": -0.025238172675548176
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "pitch_err_pct": 4.7320039617232945,
+    "pitch_err_mean_pct": 1.554341085848566,
+    "pitch_err_median_pct": 1.174560167503047,
+    "spec_corr": 0.6358349543310056
+   },
+   "jitter": {
+    "distribution": "uniform",
+    "pos_half_width_m": 0.005,
+    "rad_half_width_m": 0.001,
+    "seed": 1000,
+    "max_abs_dxy_m": 0.004998492790987408,
+    "max_abs_dr_m": 0.0009949556829962625,
+    "min_gap_m": 0.05186854759254572
+   },
+   "tier1_wall_s": 581.7449655532837
+  },
+  {
+   "case": "clap_0",
+   "label": "Clap variant 0 alone",
+   "metrics": {
+    "pitch_err_pct": 1.8611515100773524,
+    "pitch_err_mean_pct": 0.652701921961921,
+    "pitch_err_median_pct": 0.43917062231488835,
+    "spec_corr": 0.6167156191104681
+   },
+   "delta": {
+    "pitch_err_pct": -3.525604655091053,
+    "pitch_err_mean_pct": -1.073875956676745,
+    "pitch_err_median_pct": -0.7620111841857202,
+    "spec_corr": 0.005326311203883938
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "pitch_err_pct": 2.4512271578789324,
+    "pitch_err_mean_pct": 0.778054410722473,
+    "pitch_err_median_pct": 0.5810947353210083,
+    "spec_corr": 0.8204573933170444
+   }
+  },
+  {
+   "case": "clap_1",
+   "label": "Clap variant 1 alone",
+   "metrics": {
+    "pitch_err_pct": 10.481928548318376,
+    "pitch_err_mean_pct": 2.5590614912885163,
+    "pitch_err_median_pct": 1.2744744479227244,
+    "spec_corr": 0.6372041662387489
+   },
+   "delta": {
+    "pitch_err_pct": 5.09517238314997,
+    "pitch_err_mean_pct": 0.8324836126498503,
+    "pitch_err_median_pct": 0.07329264142211578,
+    "spec_corr": 0.02581485833216468
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "pitch_err_pct": 2.109786012900816,
+    "pitch_err_mean_pct": 0.9235801225720547,
+    "pitch_err_median_pct": 1.0012982116283764,
+    "spec_corr": 0.8285373382454936
+   }
+  },
+  {
+   "case": "clap_2",
+   "label": "Clap variant 2 alone",
+   "metrics": {
+    "pitch_err_pct": 3.248023265768929,
+    "pitch_err_mean_pct": 1.5648247341648802,
+    "pitch_err_median_pct": 1.339032725157785,
+    "spec_corr": 0.609700795123816
+   },
+   "delta": {
+    "pitch_err_pct": -2.1387328993994763,
+    "pitch_err_mean_pct": -0.16175314447378586,
+    "pitch_err_median_pct": 0.13785091865717636,
+    "spec_corr": -0.001688512782768159
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "pitch_err_pct": 1.4312816213556068,
+    "pitch_err_mean_pct": 0.774565549524857,
+    "pitch_err_median_pct": 0.8195902110393893,
+    "spec_corr": 0.810186995312924
+   }
+  },
+  {
+   "case": "clap_3",
+   "label": "Clap variant 3 alone",
+   "metrics": {
+    "pitch_err_pct": 8.043759118716398,
+    "pitch_err_mean_pct": 2.604271155458007,
+    "pitch_err_median_pct": 1.8343566198194772,
+    "spec_corr": 0.6121756310953431
+   },
+   "delta": {
+    "pitch_err_pct": 2.657002953547993,
+    "pitch_err_mean_pct": 0.8776932768193411,
+    "pitch_err_median_pct": 0.6331748133188686,
+    "spec_corr": 0.0007863231887589306
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "pitch_err_pct": 4.109270075231919,
+    "pitch_err_mean_pct": 1.4692328267697694,
+    "pitch_err_median_pct": 1.1567171178917368,
+    "spec_corr": 0.8100658122180743
+   }
+  },
+  {
+   "case": "clap_4",
+   "label": "Clap variant 4 alone",
+   "metrics": {
+    "pitch_err_pct": 3.298918382960969,
+    "pitch_err_mean_pct": 1.2520300903200057,
+    "pitch_err_median_pct": 1.118874617288168,
+    "spec_corr": 0.5811503279645448
+   },
+   "delta": {
+    "pitch_err_pct": -2.087837782207436,
+    "pitch_err_mean_pct": -0.4745477883186604,
+    "pitch_err_median_pct": -0.08230718921244051,
+    "spec_corr": -0.03023897994203939
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "pitch_err_pct": 2.886401411368511,
+    "pitch_err_mean_pct": 1.2037466792566212,
+    "pitch_err_median_pct": 0.975553981127808,
+    "spec_corr": 0.7935769389610501
+   }
+  }
+ ],
+ "failure_cause": "Tier 1 pitch error along the note, worst frame = 5.39% misses <= 3.0% (judge floor on a perfect echo: 2.53%); Tier 1 spectrogram correlation, log-mel = 0.611 misses >= 0.8 (judge floor on a perfect echo: 0.976)",
+ "judge_floor": {
+  "per_clap": [
+   {
+    "clap": 0,
+    "metrics": {
+     "pitch_err_pct": 1.874012689422444,
+     "pitch_err_mean_pct": 0.8771996468471185,
+     "pitch_err_median_pct": 0.8726529562873564,
+     "spec_corr": 0.9786403610941443
+    }
+   },
+   {
+    "clap": 1,
+    "metrics": {
+     "pitch_err_pct": 1.8611515100773524,
+     "pitch_err_mean_pct": 0.7875720393132141,
+     "pitch_err_median_pct": 0.7553628459211481,
+     "spec_corr": 0.9865748462465177
+    }
+   },
+   {
+    "clap": 2,
+    "metrics": {
+     "pitch_err_pct": 1.9989956640641293,
+     "pitch_err_mean_pct": 0.6253737051671974,
+     "pitch_err_median_pct": 0.48358685341407526,
+     "spec_corr": 0.9711721873730482
+    }
+   },
+   {
+    "clap": 3,
+    "metrics": {
+     "pitch_err_pct": 3.8557668840569326,
+     "pitch_err_mean_pct": 1.3617213150490948,
+     "pitch_err_median_pct": 1.065682350342434,
+     "spec_corr": 0.9861251812530419
+    }
+   },
+   {
+    "clap": 4,
+    "metrics": {
+     "pitch_err_pct": 3.062879176709088,
+     "pitch_err_mean_pct": 1.205870860602344,
+     "pitch_err_median_pct": 1.0756589685545714,
+     "spec_corr": 0.9565058304678823
+    }
+   }
+  ],
+  "mean": {
+   "pitch_err_pct": 2.5305611848659892,
+   "pitch_err_mean_pct": 0.9715475133957938,
+   "pitch_err_median_pct": 0.850588794903917,
+   "spec_corr": 0.975803681286927
+  },
+  "note": "metrics of target * clap (band-limited): the floor set by the judge and the clap, not the design"
+ },
+ "verification": {
+  "validation_passed": true,
+  "radii": [
+   0.01,
+   0.02,
+   0.04,
+   0.08
+  ],
+  "radii_all_angles": [
+   0.04,
+   0.08
+  ],
+  "source": "metrics.json:checks.cylinder.stage1_grid (f_max 4000.0 Hz, ppw 10.0)",
+  "path": "/home/shyam/projects/echo/runs/validation/metrics.json",
+  "engine": "fd8-3",
+  "validation_engine": "fd8-3",
+  "radii_used": [
+   0.01
+  ],
+  "radii_ok": true,
+  "caveats": [
+   "1 cm and 2 cm posts: forward/side scattering off the analytic cylinder at the 4 kHz grid (1 cm forward 1.04 dB, 90-degree 1.77 dB; 2 cm forward 1.47 dB, 90-degree 0.43 dB) (backscatter within 1 dB; cause measured at the 4 kHz grid: dipole part ~10 % strong for sub-cell posts); effect on dense-field echoes is not bounded; shadowing and multiple scattering are checked by self-convergence only, not against an exact solution",
+   "1 cm and 2 cm posts: forward/side scattering off the analytic cylinder at the 2.5 kHz grid (1 cm forward 2.61 dB, 90-degree 0.51 dB; 2 cm forward 1.73 dB, 90-degree 1.65 dB) (backscatter within 1 dB; cause measured at the 4 kHz grid: dipole part ~10 % strong for sub-cell posts); effect on dense-field echoes is not bounded; shadowing and multiple scattering are checked by self-convergence only, not against an exact solution",
+   "1 cm posts at the 2.5 kHz grid (r/dx 0.73) pass backscatter at the 3 fixed offsets only: below the calibrated sub-cell range (area factor clamped), no held-out offsets checked there",
+   "1 cm posts fail backscatter at the 2 kHz grid: not validated there",
+   "the 1 cm backscatter match depends on an area factor fitted to backscatter (area factor 0.908; held-out offsets confirm backscatter only)",
+   "radii [0.01] used by this design are validated for backscatter but not at all angles at this grid (metrics.json:checks.cylinder.stage1_grid (f_max 4000.0 Hz, ppw 10.0))"
+  ],
+  "reason": "validation passed and every radius used is validated at this grid"
+ },
+ "caveats": [
+  "1 cm and 2 cm posts: forward/side scattering off the analytic cylinder at the 4 kHz grid (1 cm forward 1.04 dB, 90-degree 1.77 dB; 2 cm forward 1.47 dB, 90-degree 0.43 dB) (backscatter within 1 dB; cause measured at the 4 kHz grid: dipole part ~10 % strong for sub-cell posts); effect on dense-field echoes is not bounded; shadowing and multiple scattering are checked by self-convergence only, not against an exact solution",
+  "1 cm and 2 cm posts: forward/side scattering off the analytic cylinder at the 2.5 kHz grid (1 cm forward 2.61 dB, 90-degree 0.51 dB; 2 cm forward 1.73 dB, 90-degree 1.65 dB) (backscatter within 1 dB; cause measured at the 4 kHz grid: dipole part ~10 % strong for sub-cell posts); effect on dense-field echoes is not bounded; shadowing and multiple scattering are checked by self-convergence only, not against an exact solution",
+  "1 cm posts at the 2.5 kHz grid (r/dx 0.73) pass backscatter at the 3 fixed offsets only: below the calibrated sub-cell range (area factor clamped), no held-out offsets checked there",
+  "1 cm posts fail backscatter at the 2 kHz grid: not validated there",
+  "the 1 cm backscatter match depends on an area factor fitted to backscatter (area factor 0.908; held-out offsets confirm backscatter only)",
+  "radii [0.01] used by this design are validated for backscatter but not at all angles at this grid (metrics.json:checks.cylinder.stage1_grid (f_max 4000.0 Hz, ppw 10.0))"
+ ],
+ "fragile_reason": "0/5 clap variants pass on their own; 0/3 listener positions pass (nominal, 1 m sideways, 1 m back)",
+ "robust_summary": "fails everywhere",
+ "tier1_correction": {
+  "rounds": [
+   {
+    "round": 0,
+    "loss": 5.484373569488525,
+    "score": -0.7955853883894685,
+    "posts": 500,
+    "stretch_eps_applied": -0.002245307966734221,
+    "stretch_fit": {
+     "eps": -0.0023000000000000342,
+     "tau_s": 3.4e-05,
+     "corr": 0.9365940299948589
+    },
+    "gains_next": [
+     0.512705500764082,
+     0.7463109539995826,
+     0.9971821491332801,
+     1.0754148680199633,
+     1.1165867851526163,
+     1.1027462804518757,
+     1.2876773772055534,
+     1.2357027525498885,
+     1.0
+    ],
+    "tier_gap_db": -1.4228119999986362,
+    "wall_s": 877.7914493083954,
+    "gating": {
+     "pitch_err_pct": 5.386756165168405,
+     "spec_corr": 0.6113893079065842
+    }
+   }
+  ],
+  "best_round": 0,
+  "tier1_runs": [
+   {
+    "what": "design",
+    "wall_s": 542.8960347175598,
+    "stretch_eps_applied": -0.002245307966734221,
+    "stretch_eps_measured": -0.0023000000000000342,
+    "stretch_timing_residual": -5.4815110069217354e-05,
+    "stretch_corr": 0.9365940299948589,
+    "empty_cached": false,
+    "empty_s": 279.62149310112,
+    "scene_s": 262.52860856056213
+   }
+  ],
+  "stretch": {
+   "enabled": true,
+   "stretch_per_fill_prior": -0.68,
+   "definition": "Tier 1 echo(t) ~ Tier 0 echo of the same posts at t (1 + eps_measured) (the medium's stretch); ranges scaled by 1 + eps_applied; timing residual = (1 + eps_measured) / (1 + eps_applied) - 1; refit after each Tier 1 run",
+   "final_applied": -0.002245307966734221,
+   "final_measured": -0.0023000000000000342,
+   "final_timing_residual": -5.4815110069217354e-05
+  },
+  "field_colour": {
+   "limit": 0.00043658413148266087,
+   "percentile": 99.97,
+   "direct_excluded_halfwidth_m": 1.2,
+   "compress": "asinh",
+   "compress_k": 2.0,
+   "level_decay_exponent": -2.2569310566387037,
+   "time_gain_exponent": 1.0,
+   "t_ref_s": 0.06212499999999999,
+   "zero_rgb": "#0e1620",
+   "crf": 49,
+   "bytes": 10408100
+  }
+ },
+ "pilot": {
+  "audibility": {
+   "what": "Tier 0 3D, free field, infinite posts, clap family mean peak, dB re the direct clap at the ear; fast model only (no extinction: coverage above the stage-1 value adds extinction the fast model does not see)",
+   "start_range": [
+    {
+     "start_rho_m": 3.4601724157360643,
+     "first_echo_ms": 20.17593245327151,
+     "last_echo_ms": 96.54157765053677,
+     "far_edge_m": 16.57579430572574,
+     "level_db": -53.22002950467485,
+     "delta_db": 0.0,
+     "posts_to_recover_level": 500
+    },
+    {
+     "start_rho_m": 6.0,
+     "first_echo_ms": 34.98542274052478,
+     "last_echo_ms": 111.35106793779002,
+     "far_edge_m": 19.11579974015958,
+     "level_db": -58.20877030396848,
+     "delta_db": -4.98874079929363,
+     "posts_to_recover_level": 888
+    },
+    {
+     "start_rho_m": 10.0,
+     "first_echo_ms": 58.309037900874635,
+     "last_echo_ms": 134.6746830981399,
+     "far_edge_m": 23.1160004588963,
+     "level_db": -62.57105434779179,
+     "delta_db": -9.351024843116939,
+     "posts_to_recover_level": 1467
+    },
+    {
+     "start_rho_m": 15.0,
+     "first_echo_ms": 87.46355685131195,
+     "last_echo_ms": 163.8292020485772,
+     "far_edge_m": 28.116170931013407,
+     "level_db": -66.41571191129519,
+     "delta_db": -13.195682406620342,
+     "posts_to_recover_level": 2284
+    }
+   ],
+   "population": [
+    {
+     "factor": 1,
+     "posts": 500,
+     "level_db": -53.22002950467485,
+     "fill": 0.0033823323966615617,
+     "delta_db": 0.0
+    },
+    {
+     "factor": 2,
+     "posts": 1000,
+     "level_db": -47.19942912829878,
+     "fill": 0.006764007224544119,
+     "delta_db": 6.020600376376066
+    },
+    {
+     "factor": 4,
+     "posts": 2000,
+     "level_db": -41.17882736277929,
+     "fill": 0.013525387343697324,
+     "delta_db": 12.04120214189556
+    }
+   ]
+  },
+  "candidate": "whistle80",
+  "target_is_stage1_whistle": true,
+  "judge_stage": "s1_bird",
+  "reference_thresholds": {
+   "pitch_err_pct": [
+    3.0,
+    "<="
+   ],
+   "spec_corr": [
+    0.8,
+    ">="
+   ]
+  },
+  "reference_values": {
+   "pitch_err_pct": {
+    "threshold": 3.0,
+    "comparator": "<=",
+    "value": 5.386756165168405,
+    "meets": false
+   },
+   "spec_corr": {
+    "threshold": 0.8,
+    "comparator": ">=",
+    "value": 0.6113893079065842,
+    "meets": false
+   }
+  },
+  "verdict": "passed computed against the stage-1 thresholds (the target is stage 1's whistle)",
+  "post_count": 500,
+  "fill_fraction": 0.0033823323966615635,
+  "min_gap_m": 0.052604486312456074,
+  "half_angle_deg": 10.0,
+  "sweet_spot_map": {
+   "x_back_m": [
+    -1.0,
+    -0.5,
+    -0.25,
+    0.0
+   ],
+   "y_side_m": [
+    -0.3,
+    -0.2,
+    -0.1,
+    -0.05,
+    0.0,
+    0.05,
+    0.1,
+    0.2,
+    0.3
+   ],
+   "wave_corr": [
+    [
+     0.147,
+     0.482,
+     0.581,
+     0.679,
+     0.764,
+     0.829,
+     0.864,
+     0.794,
+     0.507
+    ],
+    [
+     0.147,
+     0.511,
+     0.831,
+     0.927,
+     0.967,
+     0.945,
+     0.863,
+     0.672,
+     0.386
+    ],
+    [
+     0.155,
+     0.496,
+     0.706,
+     0.824,
+     0.903,
+     0.93,
+     0.897,
+     0.664,
+     0.309
+    ],
+    [
+     null,
+     0.501,
+     0.857,
+     0.963,
+     1.0,
+     0.964,
+     0.863,
+     0.547,
+     0.235
+    ]
+   ],
+   "mode": "tier0 2d",
+   "what": "waveform correlation (clap-family mean) of the echo at a moved listener vs the nominal listener, after removing the on-axis delay change"
+  }
+ }
+}

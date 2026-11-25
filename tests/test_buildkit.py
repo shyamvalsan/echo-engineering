@@ -404,9 +404,10 @@ def test_summary_block_multiple_runs_substages_and_floor(tmp_path):
     # every final run is listed, newest first, with the judge floor beside the judged value
     assert blk.index("120000-s1") < blk.index("100000-s1") < blk.index("090000-s1")
     assert "spec_corr 0.73 (>= 0.8, fail) [floor 0.9]" in blk
-    assert "s4_speech (4b)" in blk and "not run on the full-wave solver" in blk
-    assert "Tonal targets (bird, motif, melody): 2 full-wave runs, 0 passed." in blk
-    assert "latest run 20261125-120000-s1" in blk  # the near miss is the newest stage-1 run
+    assert "not run on the full-wave solver" in blk  # the Tier-0-only stage-1 run, in the whistle table
+    # other stages are one line each, below the whistle table, with their verdict as recorded
+    assert blk.index("**Other stages**") < blk.index("s4_speech (4b)") and "FAILED" in blk.split("**Other stages**")[1]
+    assert "Latest stage-1 whistle 20261125-120000-s1" in blk  # the newest stage-1 run
     # simulation verdicts use the spec thresholds only: no margin bands anywhere
     assert "INCONCLUSIVE" not in blk and "REPEAT" not in blk
 

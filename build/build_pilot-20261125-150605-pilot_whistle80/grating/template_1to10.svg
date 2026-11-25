@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1220.0mm" height="440.0mm" viewBox="0 0 1220.0 440.0">
+<g transform="translate(30.000,299.863) scale(1,-1)">
+<rect x="-20.00" y="-130.14" width="600.00" height="400.00" fill="none" stroke="#888" stroke-width="0.5"/>
+<rect x="580.00" y="-130.14" width="600.00" height="400.00" fill="none" stroke="#888" stroke-width="0.5"/>
+<circle cx="489.411" cy="-86.296" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="500.951" cy="-52.652" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="510.160" cy="-17.815" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="516.923" cy="18.051" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="521.137" cy="54.774" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="522.710" cy="92.168" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="523.217" cy="-92.257" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="535.090" cy="-56.240" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="544.467" cy="-19.013" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="551.230" cy="19.249" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="555.275" cy="58.362" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="556.513" cy="98.128" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="557.020" cy="-98.218" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="569.227" cy="-59.828" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="578.770" cy="-20.211" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="585.533" cy="20.447" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="589.411" cy="61.950" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="590.314" cy="104.088" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="590.821" cy="-104.178" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="603.361" cy="-63.416" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="613.071" cy="-21.409" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="619.833" cy="21.645" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="623.543" cy="65.537" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="624.113" cy="110.048" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="624.618" cy="-110.137" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="637.492" cy="-67.003" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="647.369" cy="-22.607" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="654.131" cy="22.843" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="657.674" cy="69.124" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<circle cx="657.910" cy="116.007" r="1.000" fill="none" stroke="#000" stroke-width="0.1"/>
+<path d="M-6.00,0.00H6.00M0.00,-6.00V6.00" stroke="#c00" stroke-width="0.4"/>
+<path d="M-6.00,30.00H6.00M0.00,24.00V36.00" stroke="#c00" stroke-width="0.4"/>
+</g>
+<text x="15.0" y="425.0" font-size="8" fill="#888">R0C0</text>
+<text x="615.0" y="425.0" font-size="8" fill="#888">R0C1</text>
+<text x="34.0" y="295.9" font-size="6" fill="#c00">S clap/emitter</text>
+<text x="34.0" y="265.9" font-size="6" fill="#c00">L mic</text>
+<text x="5" y="432.0" font-size="7">Composed Echo 1:10 template, grating 3000Hz-30posts. 1 unit = 1 mm at 1:1 print. Viewed from the TOP face (pins come out towards you), NOT mirrored. Hole circles at nominal rod diameter; apply kerf/fit offset on the machine.</text>
+<path d="M5,420.0h100" stroke="#000" stroke-width="0.6"/><text x="5" y="418.0" font-size="5">100 mm check bar</text>
+</svg>

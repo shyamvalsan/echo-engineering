@@ -329,10 +329,12 @@ def gating_text(met):
         ft = "" if not isinstance(f, (int, float)) or isinstance(f, bool) else f" [floor {f:.3g}]"
         out.append(f"{m['id']} {vt} ({m['comparator']} {m['threshold']:g}, {'pass' if m.get('pass') else 'fail'}){ft}")
     if not out and met.get("pilot"):
+        how = ("fast model only, no full-wave verdict" if met["pilot"].get("target_is_stage1_whistle")
+               else "reference only")
         for k, d in met["pilot"]["reference_values"].items():
             f = fl.get(k)
             ft = "" if not isinstance(f, (int, float)) else f" [floor {f:.3g}]"
-            out.append(f"{k} {d['value']:.3g} (reference only: {d['comparator']} {d['threshold']:g}){ft}")
+            out.append(f"{k} {_f(d['value'], '{:.3g}')} ({how}: {d['comparator']} {d['threshold']:g}){ft}")
     return "; ".join(out) or "-"
 
 
@@ -367,43 +369,46 @@ def summary_block(index_rows, s1=None, pilot=None) -> str:
     """The one-screen evidence summary at the top of BUILD.md: every number generated, each with its source.
 
     index_rows: [(row, run_dir)]; s1 / pilot: (row, run_dir, pack_dir) or None."""
-    L = [SUMMARY_BEGIN, "", "**Every run that reached the end of its stage** (status final; newest first; verdicts are the "
-         "spec's pass marks on the full-wave solver, nothing else):", ""]
-    L += run_table(index_rows)
     mets = [(row, rd, json.loads((rd / "metrics.json").read_text())) for row, rd in index_rows]
-    tonal = [x for x in mets if x[0]["stage"] in ("s1_bird", "s2_motif", "s3_melody") and x[2].get("verified")]
-    L += ["", "**Key numbers** (generated; each with its source file):", ""]
-    L.append(f"- Tonal targets (bird, motif, melody): {len(tonal)} full-wave runs, "
-             f"{sum(bool(m.get('passed')) for _, _, m in tonal)} passed.")
-    s1runs = [x for x in tonal if x[0]["stage"] == "s1_bird"]
+    whistle = [(row, rd) for row, rd, m in mets if row["stage"] == "s1_bird" or row["stage"].startswith("build_")]
+    other = [(row, rd, m) for row, rd, m in mets if (row, rd) not in whistle]
+    L = [SUMMARY_BEGIN, "", "**The ring-layout whistle** (stage-1 design family and the build pilot; every final run, newest "
+         "first; the verdict column is the spec's automated pass marks on the full-wave solver, exactly as the files have "
+         "them, with the judge floor -- the score of a physically perfect echo -- beside each value):", ""]
+    L += run_table(whistle)
+    L += ["", "Audio to play (full-wave echo alone, and as heard after the clap at its predicted level): " + "; ".join(
+        f"`{_rel(rd / 'echo_tier1.wav')}`, `{_rel(rd / 'as_heard.wav')}`" for row, rd in whistle[:1]
+        + [w for w in whistle if w[0]["stage"].startswith("build_")][:1]) + "."]
+    newest = {}
+    for row, rd in whistle:
+        newest.setdefault(row["stage"], (row, rd))
+    for row, rd in newest.values():
+        if True:
+            m = json.loads((rd / "metrics.json").read_text())
+            spl = m["headline"].get("echo_spl_db")
+            if spl is not None:
+                L.append(f"- Level, {row['stage']} {row['run_id']}: echo peak {spl:.1f} dB SPL for a 100 dB clap at 1 m "
+                         f"({_f(m['headline'].get('echo_level_db_re_direct'))} dB re the direct clap at the ear); "
+                         f"{spl - 35:+.1f} dB over the spec's 35 dB line; against a quiet rural / suburban / urban-park "
+                         f"background of 25 / 35 / 45 dB(A): {spl - 25:+.0f} / {spl - 35:+.0f} / {spl - 45:+.0f} dB "
+                         f"(peak against a background level: optimistic). Source `{_rel(rd / 'metrics.json')}` `headline`.")
+    L += ["", "**Other stages** (not on the build path; one line each, verdicts exactly as in the files):", ""]
+    for row, rd, m in other:
+        hl = m.get("headline", {})
+        verdict = ("**PASSED**" if m.get("passed") else "FAILED") if m.get("verified") else "not run on Tier 1"
+        tn = f' "{m["target_name"]}"' if m.get("target_name") else ""
+        L.append(f"- {_stage_label(row, m)}{tn} "
+                 f"{row['run_id']}: {verdict}; {gating_text(m)}; {_f(hl.get('depth_m'))} m deep, "
+                 f"{hl.get('post_count')} posts, {_f(hl.get('echo_spl_db'))} dB SPL; robustness "
+                 f"{m.get('robust_summary') or '-'}. `{_rel(rd / 'metrics.json')}`.")
+    L += ["", "**Key numbers for the whistle** (generated; each with its source file):", ""]
+    s1runs = [x for x in mets if x[0]["stage"] == "s1_bird" and x[2].get("verified")]
     if s1runs:
         row, rd, m = s1runs[0]
-        L.append(f"- Nearest miss, the stage-1 whistle (latest run {row['run_id']}): {gating_text(m)}; "
-                 f"listener moved 1 m sideways: " + "; ".join(
+        L.append(f"- Latest stage-1 whistle {row['run_id']} against the automated marks: {gating_text(m)}; listener "
+                 f"moved 1 m: " + "; ".join(
                      f"{r['case']} {'pass' if r.get('pass') else 'fail'}" for r in m.get("robustness", [])
                      if r["case"].startswith("listener")) + f". Source `{_rel(rd / 'metrics.json')}`.")
-    for row, rd, m in mets:
-        if row["stage"] == "s4_speech" and m.get("passed"):
-            rob = {r["case"]: r for r in m.get("robustness", [])}
-            est = next((x["value"] for x in m["metrics"] if x["id"] == "estoi" and x["tier"] == "tier1"), None)
-            fe = _floor_mean(m).get("estoi")
-            L.append(f"- Speech {m.get('substage', '')} \"{m.get('target_name', '')}\" passed its recognizer test "
-                     f"({gating_text(m)}), but its intelligibility score ESTOI is {_f(est, '{:.3f}')} against "
-                     f"{_f(fe, '{:.3f}')} for a perfect echo, and for a listener 1 m sideways the word is "
-                     f"recognized for {_f((rob.get('listener_side_1m') or {}).get('metrics', {}).get('hello_hit'), '{:.0%}')} "
-                     f"of the claps (1 m back: {_f((rob.get('listener_back_1m') or {}).get('metrics', {}).get('hello_hit'), '{:.0%}')}). "
-                     f"Source `{_rel(rd / 'metrics.json')}`.")
-    latest = {}
-    for row, rd, m in mets:  # newest first: keep the latest run per stage / sub-stage
-        if m.get("verified"):
-            latest.setdefault(row["run_id"].split("-", 2)[-1], (row, rd, m))  # run tag, e.g. s1, s3_60ms, s4_4b_ma
-    lv = sorted(((m["headline"].get("depth_m") or 0, _stage_label(row, m) + (
-        f" \"{m['target_name']}\"" if m.get("target_name") else "") + f" [{row['run_id'].split('-', 2)[-1]}]", m["headline"].get("echo_spl_db"),
-        m["headline"].get("echo_level_db_re_direct"), rd) for row, rd, m in latest.values()))
-    L.append("- Echo level of the latest full-wave run per target (3D estimate corrected by the full-wave tier gap; 100 dB "
-             "clap at 1 m; 35 dB = the spec's 'likely lost on site' line), by structure depth: " + "; ".join(
-                 f"{lab} {d:.0f} m deep: {spl:.1f} dB SPL ({lvl:.1f} dB re the direct clap, {spl - 35:+.1f} dB over "
-                 f"the line)" for d, lab, spl, lvl, _ in lv) + ". Sources: each run's `metrics.json` `headline`.")
     ss, sp = _study("runs/s1_bird/_studies/design_study_tier0.json")
     if ss and ss.get("sweet_spot"):
         L += ["", f"Listening spot (stage-1 design study, Tier 0, {ss['sweet_spot'][0]['n_posts']} posts; waveform "
@@ -662,6 +667,24 @@ def pilot_lines(row, rd, pd, met) -> list[str]:
             vals = r.get("metrics") or {}
             L.append(f"| {r.get('label') or r['case']} | " + " | ".join(_f(vals.get(k), "{:.3g}") for k in _thr(met))
                      + f" | {'yes' if r.get('pass') else 'no'} |")
+    au = pl.get("audibility")
+    if au:
+        L += ["", f"**Audibility levers** (`{_rel(rd / 'metrics.json')}` key `pilot.audibility`; {au['what']}). Moving the "
+              "whole ring field outward delays the echo after the clap but costs level; the last column is the post "
+              "count that would restore the as-designed level at 6 dB per doubling of ring population:", "",
+              "| field starts at (bistatic range, m) | first echo after the clap (ms) | last echo (ms) | far edge (m) | "
+              "level (dB re direct) | change (dB) | dB SPL, 100 dB clap | posts to restore level |",
+              "|---|---|---|---|---|---|---|---|"]
+        for r in au["start_range"]:
+            L.append(f"| {r['start_rho_m']:.2f} | {r['first_echo_ms']:.1f} | {r['last_echo_ms']:.1f} | "
+                     f"{r['far_edge_m']:.1f} | {r['level_db']:.1f} | {r['delta_db']:+.1f} | {110.46 + r['level_db']:.1f} | "
+                     f"{r['posts_to_recover_level']} |")
+        L += ["", "Ring population (each post duplicated at a small bearing offset on its own ellipse; fast model, so the "
+              "extra extinction of the higher coverage is NOT included):", "",
+              "| population | posts | coverage | level (dB re direct) | change (dB) |", "|---|---|---|---|---|"]
+        for r in au["population"]:
+            L.append(f"| x{r['factor']} | {r['posts']} | {100 * r['fill']:.2f} % | {r['level_db']:.1f} | "
+                     f"{r['delta_db']:+.1f} |")
     sm = pl.get("sweet_spot_map")
     if sm:
         L += ["", f"Listening-spot map ({sm['mode']}: {sm['what']}); rows: metres back from the design listener, columns: "
