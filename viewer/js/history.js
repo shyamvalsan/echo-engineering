@@ -40,10 +40,11 @@ export class HistoryPanel {
     const axis = { stroke: C.dim, grid: { stroke: C.grid, width: 1 }, ticks: { stroke: C.grid, width: 1, size: 4 }, font: `10px ${font}`, labelFont: `11px ${font}` };
     const opts = {
       width: 300, height: 120, legend: { show: false }, cursor: { y: false, points: { size: 6, fill: C.accent } },
-      scales: { x: { time: false }, y: { distr: pos ? 3 : 1 }, ...(hasScore ? { s: { auto: true } } : {}) },
+      // a single point gets a small symmetric x range instead of uPlot's default 0..100
+      scales: { x: { time: false, ...(p.iters.length === 1 ? { range: [p.iters[0] - 1, p.iters[0] + 1] } : {}) }, y: { distr: pos ? 3 : 1 }, ...(hasScore ? { s: { auto: true } } : {}) },
       axes: [{ ...axis, label: p.x_label ?? "iteration", labelSize: 14, size: 22 },
         { ...axis, size: 38, values: (u, v) => v.map((x) => (x == null ? "" : num(x, x < 1 ? 2 : 1))) },
-        ...(hasScore ? [{ ...axis, side: 1, scale: "s", size: 30, grid: { show: false }, values: (u, v) => v.map((x) => num(x, 1)) }] : [])],
+        ...(hasScore ? [{ ...axis, side: 1, scale: "s", size: 46, grid: { show: false }, values: (u, v) => v.map((x) => num(x, 1)) }] : [])],
       series: [{}, { label: "loss", stroke: C.cool, width: 1.25 },
         { label: "saved", stroke: "transparent", paths: () => null, points: { show: true, size: 7, fill: C.accent, stroke: C.accent } },
         ...(hasScore ? [{ label: "score", scale: "s", stroke: C.text, width: 1, dash: [3, 3] }] : [])],

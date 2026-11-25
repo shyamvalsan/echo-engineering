@@ -48,6 +48,8 @@ select {
 .cmd code { padding: 2px 0 3px; font: 11.5px/1.4 "Plex Condensed", system-ui, sans-serif; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; }
 .cmd code::before { content: "$ "; color: var(--faint); }
 .links { display: flex; gap: 14px; }
+body.comparing #run, body.comparing #runB { max-width: 250px; }
+body.comparing .cmd { display: none; }
 .links a { color: var(--dim); text-decoration: none; border-bottom: 1px solid var(--line); white-space: nowrap; }
 .links a:hover { color: var(--text); border-color: var(--dim); }
 .truelevel { color: var(--faint); margin-left: 6px; }
@@ -73,7 +75,7 @@ main.compare { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
 .loading { color: var(--dim); position: absolute; left: 16px; top: 8px; margin: 0; }
 .fatal { color: var(--fail); max-width: 70ch; }
 
-.runview { height: 100%; display: grid; gap: var(--gap); grid-template-columns: minmax(0, 1.32fr) minmax(0, 1fr) 312px; min-height: 0; }
+.runview { height: 100%; display: grid; gap: var(--gap); grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 340px; min-height: 0; }
 .col { display: grid; gap: var(--gap); min-height: 0; min-width: 0; }
 .col-scene { grid-template-rows: minmax(0, 1fr); }
 .col-time { grid-template-rows: minmax(0, 1.25fr) minmax(0, 0.6fr) minmax(0, 0.95fr); }
@@ -140,12 +142,24 @@ main.compare { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
 .facts { display: grid; grid-template-columns: repeat(3, auto); grid-auto-flow: column; grid-template-rows: auto auto; gap: 0 12px; margin: 0 0 8px; justify-content: start; }
 .facts dt { color: var(--faint); font-size: 11.5px; }
 .facts dd { margin: 0; }
-.cause { color: var(--fail); margin: 4px 0 8px; max-width: 60ch; }
+.cause, .mechanism { color: var(--fail); margin: 4px 0 8px; max-width: 60ch; }
+.cause p, .mechanism p { margin: 0 0 4px; }
+.cause summary { cursor: pointer; color: var(--dim); }
+.mechanism { color: var(--dim); }
+.asr { margin: 4px 0 10px; }
+.sublbl { color: var(--faint); font-size: 11.5px; margin-bottom: 2px; }
+.cs td.win { color: var(--pass); }
+.cs td.lose { color: var(--fail); }
+.rsum { color: var(--dim); font-weight: 400; }
+tr.notrun td { color: var(--faint); }
+.links2 a, .caveats a { color: var(--dim); }
+.diag { margin: 4px 0; font-size: 12px; }
 .iternote { color: var(--accent); margin: 2px 0 8px; }
 table { border-collapse: collapse; width: 100%; }
 caption { text-align: left; color: var(--faint); font-size: 11.5px; padding: 2px 0; caption-side: top; }
 td { padding: 3px 4px 3px 0; border-top: 1px solid var(--grid); vertical-align: baseline; }
-td.mark span { display: inline-block; width: 40px; font-size: 11.5px; }
+td.mark span { display: inline-block; width: 38px; font-size: 11.5px; }
+.metrics td.val, .metrics td.thr { width: 1%; }
 td.mark .pass { color: var(--pass); }
 td.mark .fail { color: var(--fail); }
 td.mark .info { color: var(--faint); }

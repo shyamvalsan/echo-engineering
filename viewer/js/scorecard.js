@@ -4,13 +4,25 @@ import { el, num } from "./util.js";
 
 const CMP = { "<=": "≤", ">=": "≥", "==": "=" };
 const dec = (v) => (v == null ? 0 : Number.isInteger(v) ? 0 : Math.abs(v) < 10 ? 2 : Math.abs(v) < 100 ? 1 : 0);
-const withUnit = (v, u) => (v == null ? "—" : `${num(v, dec(v))}${u ? (u === "%" ? " %" : ` ${u}`) : ""}`);
+const unitStr = (u) => (u ? (u === "%" ? "\u2009%" : ` ${u}`) : "");
+// null = the judge returned nothing (e.g. a formant not found); strings and booleans are shown as given
+const withUnit = (v, u) => (v == null ? "not found" : typeof v === "number" ? (Number.isFinite(v) ? `${num(v, dec(v))}${unitStr(u)}` : "not found")
+  : typeof v === "boolean" ? (v ? "yes" : "no") : String(v));
+const thrUnit = (v, u) => (v == null ? "\u2014" : withUnit(v, u));
 
 // Tier 1 results say pass/fail in colour; Tier 0 or unverified results only "meets"/"misses".
 function markFor(pass, provisional) {
   if (pass == null) return el("span", { class: "info" }, "info");
   if (provisional) return el("span", { class: "prov", title: "Tier 0 result, not a pass" }, pass ? "meets" : "misses");
   return el("span", { class: pass ? "pass" : "fail" }, pass ? "pass" : "fail");
+}
+
+// long failure text: first two clauses visible, the rest one click away
+function longText(cls, text) {
+  const parts = String(text).split(/;\s+/);
+  if (text.length < 260 || parts.length < 3) return el("p", { class: cls }, text);
+  return el("div", { class: cls }, el("p", {}, parts.slice(0, 2).join("; ") + ";"),
+    el("details", {}, el("summary", {}, `${parts.length - 2} more clauses`), el("p", {}, parts.slice(2).join("; "))));
 }
 
 export function verdictOf(run, metrics = run.metrics) {
@@ -29,6 +41,7 @@ export class ScorePanel {
     this.body = el("div", { class: "scorebody" }); this.root.append(this.body); host.append(this.root);
   }
   setRun(run, metrics = run.metrics, note = null) {
+    this.dir = run.dir;
     const v = verdictOf(run, metrics); this.verdict.className = `verdict ${v.cls}`; this.verdict.textContent = v.text;
     const b = this.body; b.replaceChildren();
     if (note) b.append(el("p", { class: "iternote" }, note));
@@ -49,7 +62,24 @@ export class ScorePanel {
       el("dt", {}, "Tier gap"), el("dd", {}, H.tier_gap_db == null ? "no Tier 1" : `${num(H.tier_gap_db, 1)} dB`),
       el("dt", {}, "Raw 3D level"), el("dd", {}, H.echo_level_db_re_direct_raw3d == null ? "—" : `${num(H.echo_level_db_re_direct_raw3d, 1)} dB`),
       el("dt", {}, "Wedge filled"), el("dd", {}, H.fill_fraction == null ? "—" : `${num(H.fill_fraction * 100, 2)} %`)));
-    if (metrics.failure_cause) b.append(el("p", { class: "cause" }, metrics.failure_cause));
+    if (metrics.failure_cause) b.append(longText("cause", metrics.failure_cause));
+    if (metrics.failure_mechanism) b.append(longText("mechanism", typeof metrics.failure_mechanism === "string" ? metrics.failure_mechanism : JSON.stringify(metrics.failure_mechanism)));
+    if (metrics.diagnosis) b.append(el("details", { class: "caveats" }, el("summary", {}, "Diagnosis"),
+      el("p", { class: "diag" }, typeof metrics.diagnosis === "string" ? metrics.diagnosis : metrics.diagnosis.what ?? ""),
+      el("a", { href: `${this.dir}/metrics.json`, target: "_blank", rel: "noopener" }, "Full diagnosis in metrics.json")));
+    // stage 4c: the recognizer's transcript per clap
+    if (Array.isArray(metrics.recognized_text) && metrics.recognized_text.length) b.append(el("div", { class: "asr" },
+      el("div", { class: "sublbl" }, `Recognized text, Tier 1${metrics.target_name ? `, target "${metrics.target_name}"` : ""}`),
+      el("table", {}, el("tbody", {}, metrics.recognized_text.map((r) => el("tr", {},
+        el("td", { class: "mark" }, el("span", { class: r.hit ? "pass" : "fail" }, r.hit ? "hit" : "miss")),
+        el("td", { class: "label" }, `clap ${r.clap}`), el("td", { class: "val" }, `\u201c${r.transcript ?? ""}\u201d`)))))));
+    // stage 4b: closed-set distances, each echo against every target (lower is closer)
+    const cs = metrics.closed_set_3x3?.distances;
+    if (cs && typeof cs === "object") { const rowsK = Object.keys(cs), colsK = Object.keys(cs[rowsK[0]] ?? {});
+      b.append(el("div", { class: "asr" }, el("div", { class: "sublbl" }, "Closed set: distance of each echo to each target (lower is closer, diagonal should win)"),
+        el("table", { class: "cs" }, el("thead", {}, el("tr", {}, el("th", {}, "echo of"), colsK.map((c) => el("th", { class: "val" }, c)))),
+          el("tbody", {}, rowsK.map((r) => { const vals = colsK.map((c) => cs[r][c]), mn = Math.min(...vals.filter((v) => v != null));
+            return el("tr", {}, el("td", { class: "label" }, r), colsK.map((c, i) => el("td", { class: "val" + (vals[i] === mn ? (c === r ? " win" : " lose") : "") }, vals[i] == null ? "\u2014" : num(vals[i], 1)))); }))))); }
     if (metrics.caveats?.length) b.append(el("details", { class: "caveats" }, el("summary", {}, `Caveats (${metrics.caveats.length})`),
       el("ul", {}, metrics.caveats.map((c) => el("li", {}, c)))));
     // judge floor: what the judge scores on a perfect echo (target * clap), mean over the clap family
@@ -59,21 +89,32 @@ export class ScorePanel {
       el("td", { class: "label" }, m.label ?? m.id, el("span", { class: "tier" }, m.tier === "tier1" ? "T1" : "T0"),
         m.gating && floor?.[m.id] != null ? el("div", { class: "floor", title: metrics.judge_floor.note ?? "" }, `judge floor on a perfect echo: ${num(floor[m.id], Math.abs(floor[m.id]) < 1 ? 3 : 2)}${m.unit ? (m.unit === "%" ? "\u2009%" : ` ${m.unit}`) : ""}`) : null),
       el("td", { class: "val" }, withUnit(m.value, m.unit)),
-      el("td", { class: "thr" }, m.comparator ? `${CMP[m.comparator] ?? m.comparator} ${withUnit(m.threshold, m.unit)}` : "")));
+      el("td", { class: "thr" }, m.comparator ? `${CMP[m.comparator] ?? m.comparator} ${thrUnit(m.threshold, m.unit)}` : "")));
     b.append(el("table", { class: "metrics" }, el("caption", {}, "Metrics: gating rows in bold, information rows dimmed"), el("tbody", {}, rows)));
     if (this.compact) return;
     const rob = metrics.robustness ?? [];
-    b.append(el("h3", {}, "Robustness", metrics.fragile ? el("span", { class: "fragile" }, "fragile") : null));
+    b.append(el("h3", {}, "Robustness", metrics.fragile ? el("span", { class: "fragile" }, "fragile") : null,
+      metrics.robust_summary ? el("span", { class: "rsum" }, String(metrics.robust_summary)) : null));
     if (metrics.fragile_reason) b.append(el("p", { class: metrics.fragile ? "fragnote warn" : "fragnote" }, metrics.fragile_reason));
-    if (!rob.length) { b.append(el("p", { class: "empty" }, "No robustness sweep in this run.")); return; }
+    const notRun = metrics.robustness_not_run ?? [];
+    if (!rob.length && !notRun.length) { b.append(el("p", { class: "empty" }, "No robustness sweep in this run.")); this._links(b, metrics); return; }
     // one column per gating metric (else every metric in the deltas), showing how far it moved
     const seen = new Map(); for (const m of metrics.metrics ?? []) if (m.gating && !seen.has(m.id)) seen.set(m.id, m);
-    let ids = [...seen.keys()]; if (!ids.length) ids = [...new Set(rob.flatMap((r) => Object.keys(r.delta ?? {})))];
+    const inDelta = new Set(rob.flatMap((r) => Object.keys(r.delta ?? {})));
+    let ids = [...seen.keys()].filter((id) => inDelta.has(id)); if (!ids.length) ids = [...inDelta].slice(0, 3);
     const short = (id) => (seen.get(id)?.label ?? id).split(",")[0].replace(/_/g, " ");
     b.append(el("table", { class: "robust" },
       el("thead", {}, el("tr", {}, el("th", {}), el("th", {}, "Case"), ids.map((id) => el("th", { class: "val", title: seen.get(id)?.label ?? id }, `\u0394 ${short(id)}`)))),
       el("tbody", {}, rob.map((r) => el("tr", {}, el("td", { class: "mark" }, markFor(r.pass, unverified)),
         el("td", { class: "label" }, r.label ?? r.case),
-        ids.map((id) => { const d = r.delta?.[id]; return el("td", { class: "val" }, d == null ? "\u2014" : `${d > 0 ? "+" : ""}${withUnit(d, seen.get(id)?.unit ?? "")}`); }))))));
+        ids.map((id) => { const d = r.delta?.[id]; return el("td", { class: "val" }, d == null ? "\u2014" : `${d > 0 ? "+" : ""}${withUnit(d, seen.get(id)?.unit ?? "")}`); }))),
+        notRun.map((r) => el("tr", { class: "notrun", title: metrics.robustness_not_run_reason ?? "" }, el("td", { class: "mark" }, el("span", { class: "info" }, "\u2014")),
+          el("td", { class: "label" }, r.label ?? r.case), el("td", { class: "val", colspan: Math.max(1, ids.length) }, r.status ?? "not run"))))));
+    if (notRun.length && metrics.robustness_not_run_reason) b.append(el("p", { class: "fragnote" }, `Not run: ${metrics.robustness_not_run_reason}`));
+    this._links(b, metrics);
+  }
+  _links(b, metrics) {
+    if (!metrics.design_study) return;
+    b.append(el("p", { class: "links2" }, el("a", { href: `${this.dir}/metrics.json`, target: "_blank", rel: "noopener" }, "Design study (JSON, in metrics.json)")));
   }
 }

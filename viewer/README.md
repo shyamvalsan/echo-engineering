@@ -50,6 +50,16 @@ may keep serving the old JavaScript modules.
   frame corners) so faint scattering shows beside the direct front; Follow keeps the outgoing front centred while
   zoomed in, which is how a 140 m strip is best watched. Outside the video's time span the nearest frame is
   shown dimmed with a note.
+- Long strips: when posts are confined by `manifest.design.config.max_half_width_m`, the wedge is cut to that
+  strip and rings are labelled on its edge; "Fit height" fills the panel with the strip and turns on Follow.
+- Playback: while playing, the field video plays natively with `playbackRate` matched to the timeline when the
+  rate is within 0.0625..16 and needs at most about 120 decoded frames per second, re-seeking only when it drifts by
+  more than a frame; otherwise, and when paused or scrubbing, exact frames are seeked.
+- Run switcher: runs read "HH:MM, verdict, design tag: title" and are grouped by sub-stage (4a/4b/4c, from
+  `manifest.substage` or the run_id). Default run: newest final run that passed, else newest final, else newest.
+- Scorecard extras when present: `recognized_text` (per-clap transcripts), `closed_set_3x3.distances`,
+  `failure_mechanism`, `diagnosis`, `robust_summary`, `robustness_not_run` (shown as "not run (cost)" rows, not
+  failures), and a link to the run's metrics.json for `design_study`. Null metric values read "not found".
 - Groove and Echo share one time window: wheel zooms it, double-click resets.
 - History: phase tabs; click a saved iteration chip (or its marker on the curve) to load its scene, profile,
   echo and metrics; "Final" goes back.

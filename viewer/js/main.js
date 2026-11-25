@@ -19,7 +19,11 @@ function stageName(s) {
 // stages in run order, then build pilots, then anything else
 const stageRank = (s) => { const m = /^s(\d+)([a-z]?)_/.exec(s); return m ? +m[1] * 10 + (m[2] ? m[2].charCodeAt(0) - 96 : 0) : s.startsWith("build_") ? 1000 : 2000; };
 // default run of a stage: the newest final run, else the newest run (index is newest first)
-const defaultRun = (runs) => runs.find((r) => r.status === "final") ?? runs[0];
+// headline run of a set: newest final run that passed, else newest final run, else newest run
+const defaultRun = (runs) => runs.find((r) => r.status === "final" && r.passed) ?? runs.find((r) => r.status === "final") ?? runs[0];
+const SUBSTAGES = { "4a": "4a Vowel", "4b": "4b Syllables", "4c": "4c Word" };
+const metaOf = (r) => state.meta?.get(r.path) ?? {};
+const substageOf = (r) => metaOf(r).substage ?? /_(\d[a-z])_/.exec(r.run_id ?? "")?.[1] ?? null;
 const hhmm = (iso) => { const m = /T(\d\d:\d\d)/.exec(iso ?? ""); return m ? m[1] : ""; };
 
 const state = { base: null, runs: [], a: null, b: null, views: [], kind: "as_heard", side: 0, cache: new Map() };
@@ -36,8 +40,17 @@ function fillSwitcher(stageSel, runSel, current, onPick) {
   const stages = [...new Set(state.runs.map((r) => r.stage))].sort((a, b) => stageRank(a) - stageRank(b) || a.localeCompare(b));
   stageSel.replaceChildren(...stages.map((s) => el("option", { value: s, selected: s === current.stage }, stageName(s))));
   const runsOf = (s) => state.runs.filter((r) => r.stage === s);
-  const fillRuns = (s, sel) => runSel.replaceChildren(...runsOf(s).map((r) => el("option", { value: r.path, selected: r.path === sel, title: r.path },
-    `${r.title ?? r.run_id}, ${r.status === "intermediate" ? "intermediate" : !r.verified ? "unverified" : r.passed ? "passed" : "failed"}${hhmm(r.created) ? `, ${hhmm(r.created)}` : ""}`)));
+  // what tells runs apart goes first (time, verdict, design tag), then the title
+  const label = (r) => { const m = metaOf(r), tag = m.realization ? m.realization.replace(/_/g, " ") : "", hm = hhmm(r.created);
+    const verdict = r.status === "intermediate" ? "intermediate" : !r.verified ? "unverified" : r.passed ? "passed" : "failed";
+    return `${hm ? `${hm}, ` : ""}${verdict}${tag ? `, ${tag}` : ""}: ${r.title ?? r.run_id}`; };
+  const opt = (r, sel) => el("option", { value: r.path, selected: r.path === sel, title: r.path }, label(r));
+  // runs grouped by sub-stage (4a/4b/4c) when a stage has them; failures stay listed
+  const fillRuns = (s, sel) => { const rs = runsOf(s), subs = [...new Set(rs.map(substageOf).filter(Boolean))].sort();
+    if (!subs.length) return runSel.replaceChildren(...rs.map((r) => opt(r, sel)));
+    const groups = subs.map((k) => el("optgroup", { label: SUBSTAGES[k] ?? k }, rs.filter((r) => substageOf(r) === k).map((r) => opt(r, sel))));
+    const rest = rs.filter((r) => !substageOf(r));
+    runSel.replaceChildren(...groups, ...(rest.length ? [el("optgroup", { label: "Other" }, rest.map((r) => opt(r, sel)))] : [])); };
   fillRuns(current.stage, current.path);
   stageSel.onchange = () => { const r = defaultRun(runsOf(stageSel.value)); fillRuns(stageSel.value, r.path); onPick(r); };
   runSel.onchange = () => onPick(state.runs.find((r) => r.path === runSel.value));
@@ -111,7 +124,7 @@ function setTrack() {
 async function show() {
   const main = $("main"); clock.pause();
   for (const v of state.views) v.destroy(); state.views = [];
-  main.classList.toggle("compare", !!state.b);
+  main.classList.toggle("compare", !!state.b); document.body.classList.toggle("comparing", !!state.b);
   $("loading").hidden = false;
   try {
     const runs = await Promise.all([state.a, state.b].filter(Boolean).map(getRun));
@@ -135,7 +148,7 @@ function runInfo() {
   $("truelevel").textContent = lv == null ? "" : `as heard at true level: echo ${num(-lv, 0)} dB below the clap`;
 }
 
-function onTime() { const t = clock.t; for (const v of state.views) v.setTime(t); transport.time(t); }
+function onTime() { const t = clock.t; for (const v of state.views) v.setTime(t, clock.playing, clock.speed); transport.time(t); }
 let wasPlaying = null;
 clock.on(() => { onTime(); if (wasPlaying !== clock.playing) { wasPlaying = clock.playing; transport.sync(); } });
 
@@ -175,6 +188,11 @@ async function boot() {
   const sp = +params.get("speed"); clock.speed = SPEEDS.some((s) => s.v === sp) ? sp : 0.1; transport.sync();
   const idx = await loadIndex(params.get("runs") ?? "../runs");
   state.base = idx.base; state.runs = idx.runs;
+  // small per-run facts for the switcher (sub-stage, realization tag); failures to load are ignored
+  state.meta = new Map(await Promise.all(state.runs.map(async (r) => {
+    try { const m = await (await fetch(`${state.base}/${r.path}/manifest.json`, { cache: "no-cache" })).json();
+      return [r.path, { substage: m.substage ?? null, realization: m.design?.config?.realization ?? null }]; }
+    catch { return [r.path, {}]; } })));
   $("source").textContent = idx.fallback ? `Fixture data: no runs in ${idx.requested}/index.json yet` : idx.base === "fixtures/runs" ? "Fixture data" : "";
   $("source").title = `Runs read from ${idx.base}/index.json`;
   $("source").classList.toggle("warn", idx.base === "fixtures/runs");

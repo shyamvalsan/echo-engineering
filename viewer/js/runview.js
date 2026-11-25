@@ -48,6 +48,6 @@ export class RunView {
     if (kind === "as_heard") return a.asHeard;
     return this.echo.track();
   }
-  setTime(t) { this.scene.setTime(t); this.groove.setTime(t); this.echo.setTime(t); this.spectro?.setTime(t); }
+  setTime(t, playing = false, speed = 1) { this.scene.setTime(t, playing, speed); this.groove.setTime(t); this.echo.setTime(t); this.spectro?.setTime(t); }
   destroy() { this.scene.destroy(); this.root.remove(); }
 }

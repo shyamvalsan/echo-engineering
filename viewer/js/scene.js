@@ -18,8 +18,9 @@ export class ScenePanel {
     // field gain: stretches the frame about its zero colour so faint scattering shows next to the direct front
     this.gain = 1;
     this.gainBtn = el("button", { class: "tool", title: "Field gain: amplify faint pressure (stretch about zero)", onclick: () => this.cycleGain() }, "Gain \u00d71");
+    this.fitHBtn = el("button", { class: "tool", hidden: true, title: "Fill the height with the strip and follow the front along it", onclick: () => this.fitHeight() }, "Fit height");
     this.followBtn = el("button", { class: "tool toggle", "aria-pressed": "false", title: "Keep the outgoing front centred while zoomed in", onclick: () => this.toggleFollow() }, "Follow");
-    this.root.append(el("header", {}, el("h2", {}, "Scene"), this.title, el("div", { class: "tools" }, this.fieldBtn, this.gainBtn, this.ringBtn, this.followBtn, this.fitBtn)));
+    this.root.append(el("header", {}, el("h2", {}, "Scene"), this.title, el("div", { class: "tools" }, this.fieldBtn, this.gainBtn, this.ringBtn, this.followBtn, this.fitHBtn, this.fitBtn)));
     this.stage = el("div", { class: "stage" });
     this.canvas = el("canvas", { "aria-label": "Plan view of the source, listener and posts" });
     this.tip = el("div", { class: "tip", hidden: true });
@@ -31,7 +32,7 @@ export class ScenePanel {
 
     this.video = el("video", { muted: true, playsinline: true, preload: "auto" }); this.video.muted = true;
     this.video.addEventListener("loadeddata", () => { this.videoReady = true; this._seekFor(this.t, true); this.ac.request(); });
-    this.video.addEventListener("seeked", () => { this.shownFrame = this.seekingFrame; this.seekingFrame = null; this.ac.request();
+    this.video.addEventListener("seeked", () => { if (this.native) return; this.shownFrame = this.seekingFrame; this.seekingFrame = null; this.ac.request();
       if (this.wantFrame != null && this.wantFrame !== this.shownFrame) this._seek(this.wantFrame); });
 
     this.t = 0; this.view = null; this.hover = null; this.mouse = null; this.staticDirty = true;
@@ -50,6 +51,9 @@ export class ScenePanel {
   setRun(run, scene = run.scene, label = null) {
     const keepView = this.run === run && this.view;
     this.run = run; this.scene = scene; this.c = run.c;
+    // posts confined to |y| <= max_half_width_m inside the wedge (long stages): draw and fit that strip
+    const mhw = run.manifest?.design?.config?.max_half_width_m, wdg = scene?.wedge;
+    this.strip = mhw && wdg && mhw < wdg.r_max * Math.sin(wdg.half_angle_deg * DEG) ? mhw : null;
     this.title.textContent = label ? `plan view, to scale, ${label}` : "plan view, to scale";
     const posts = scene?.posts ?? [], n = posts.length;
     const S = scene?.source ?? [0, 0], L = scene?.listener ?? [0, 0.3];
@@ -68,6 +72,7 @@ export class ScenePanel {
     // field video
     const f = run.manifest.field;
     if (run.fieldUrl !== this.fieldUrl) {
+      this.native = false; if (!this.video.paused) this.video.pause();
       this.fieldUrl = run.fieldUrl; this.videoReady = false; this.fieldError = false; this.shownFrame = null; this.seekingFrame = null; this.wantFrame = null;
       if (this.blobUrl) { URL.revokeObjectURL(this.blobUrl); this.blobUrl = null; }
       this.video.removeAttribute("src");
@@ -86,7 +91,31 @@ export class ScenePanel {
     this.hover = null; this.tip.hidden = true; this.staticDirty = true; this.ac.request();
   }
 
-  setTime(t) { this.t = t; this._seekFor(t); if (this.follow) this._follow(); this.ac.request(); }
+  // playing: drive the video natively at a matched playbackRate when the browser allows it (0.0625..16),
+  // re-seeking only when it drifts by more than a frame; otherwise (and when paused) seek exact frames.
+  setTime(t, playing = false, speed = 1) {
+    this.t = t;
+    const f = this.field;
+    if (f && this.videoReady && playing && this.layers.field) {
+      const rate = speed / (f.sim_seconds_per_frame * f.fps), vt = (t - f.t0_s) / f.sim_seconds_per_frame / f.fps;
+      const inRange = vt >= 0 && vt < f.n_frames / f.fps;
+      // native only where the decoder can keep up: playbackRate within the browser's 0.0625..16 and at most
+      // ~120 decoded frames per second; above that, exact-frame seeks (dropping frames) are no worse
+      if (rate >= 0.0625 && rate <= 16 && rate * f.fps <= 120 && inRange) {
+        this.native = true; this.wantFrame = null; this.seekingFrame = null;
+        if (Math.abs(this.video.playbackRate - rate) > 1e-6) this.video.playbackRate = rate;
+        if (Math.abs(this.video.currentTime - vt) > 1 / f.fps && !this.video.seeking) this.video.currentTime = vt;
+        if (this.video.paused) this.video.play().catch(() => {});
+      } else this._stopNative();
+    } else this._stopNative();
+    if (!this.native) this._seekFor(t);
+    if (this.follow) this._follow(); this.ac.request();
+  }
+  _stopNative() {
+    if (!this.native) return;
+    this.native = false; if (!this.video.paused) this.video.pause();
+    this.shownFrame = null; this.seekingFrame = null; this._seekFor(this.t, true);
+  }
 
   cycleGain() { this.gain = { 1: 2, 2: 4, 4: 8, 8: 1 }[this.gain]; this.gainBtn.textContent = `Gain \u00d7${this.gain}`;
     this.gainBtn.classList.toggle("on", this.gain > 1); this.gainKey = null; this.ac.request(); }
@@ -129,12 +158,21 @@ export class ScenePanel {
   fit() {
     const w = this.ac.w, h = this.ac.h, wd = this.scene?.wedge ?? { half_angle_deg: 20, r_min: 3, r_max: 15 };
     const rmax = Math.max(wd.r_max, ...(this.P?.n ? [this.P.dist[this.byDist[this.P.n - 1]]] : [0]));
-    const ys = rmax * Math.sin(wd.half_angle_deg * DEG);
+    const ys = Math.min(rmax * Math.sin(wd.half_angle_deg * DEG), this.strip ?? Infinity);
+    this.fitHBtn.hidden = !(rmax / (2 * ys) > 8);
     // pixel margins: room for the clap/listener labels on the left and ring labels on the right
     const x0 = -0.3, x1 = rmax + 0.3, y0 = -ys - 0.3, y1 = ys + 0.3, padL = 64, padR = 70, padY = this.compact ? 16 : 30;
     const s = Math.min((w - padL - padR) / (x1 - x0), (h - 2 * padY) / (y1 - y0));
     this.view = { s, ox: padL + (w - padL - padR - s * (x1 - x0)) / 2 - x0 * s, oy: h / 2 + ((y0 + y1) / 2) * s };
     this.fitScale = s; this.userView = false; this.staticDirty = true; this.ac.request();
+  }
+  // long strips: fill the panel height with the strip and follow the front along it
+  fitHeight() {
+    if (!this.view) this.fit();
+    const wd = this.scene?.wedge ?? { half_angle_deg: 20, r_max: 15 }, ys = Math.min(wd.r_max * Math.sin(wd.half_angle_deg * DEG), this.strip ?? Infinity);
+    const s = (this.ac.h - 60) / (2 * ys + 0.6); this.view = { s, ox: 0, oy: this.ac.h / 2 }; this.userView = true;
+    if (!this.follow) this.toggleFollow(); else this._follow();
+    this.staticDirty = true; this.ac.request();
   }
   toScreen(x, y) { const v = this.view; return [v.ox + x * v.s, v.oy - y * v.s]; }
   toWorld(sx, sy) { const v = this.view; return [(sx - v.ox) / v.s, (v.oy - sy) / v.s]; }
@@ -198,7 +236,9 @@ export class ScenePanel {
     const C = colors(); this.C = C;
     if (this.staticDirty || this.off.width !== this.canvas.width || this.off.height !== this.canvas.height) this._drawStatic(w, h);
     // 1. pressure field
-    const f = this.field, showField = f && this.layers.field && this.videoReady && this.shownFrame != null;
+    const f = this.field;
+    if (f && this.native) this.shownFrame = Math.min(f.n_frames - 1, Math.floor(this.video.currentTime * f.fps + 1e-6));
+    const showField = f && this.layers.field && this.videoReady && this.shownFrame != null;
     if (showField) {
       const [x0, x1, y0, y1] = f.extent_m, [sx, sy] = this.toScreen(x0, y1);
       // plain source-over, full opacity: nothing dims the frame except outside the video's time span
@@ -230,13 +270,17 @@ export class ScenePanel {
     const ha = wd.half_angle_deg * DEG, [Sx, Sy] = this.toScreen(...this.S);
     const fieldOn = this.field && this.layers.field;
     ctx.font = `11px ${getComputedStyle(document.body).fontFamily}`;
-    // wedge
+    // wedge (cut to the strip when posts are confined to one)
+    ctx.save(); this._clipStrip(ctx, w);
     ctx.strokeStyle = C.faint; ctx.lineWidth = 1; ctx.setLineDash([]);
     ctx.beginPath();
     for (const a of [-ha, ha]) { const [ax, ay] = this.toScreen(wd.r_min * Math.cos(a), wd.r_min * Math.sin(a)), [bx, by] = this.toScreen(wd.r_max * Math.cos(a), wd.r_max * Math.sin(a)); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); }
     ctx.moveTo(...this.toScreen(wd.r_min * Math.cos(ha), wd.r_min * Math.sin(ha))); ctx.arc(Sx, Sy, wd.r_min * s, -ha, ha);
     ctx.moveTo(...this.toScreen(wd.r_max * Math.cos(ha), wd.r_max * Math.sin(ha))); ctx.arc(Sx, Sy, wd.r_max * s, -ha, ha);
-    ctx.stroke();
+    ctx.stroke(); ctx.restore();
+    if (this.strip) { const x0 = Math.max(wd.r_min, this.strip / Math.tan(ha)), x1 = Math.sqrt(wd.r_max ** 2 - this.strip ** 2);
+      ctx.strokeStyle = C.faint; ctx.beginPath();
+      for (const y of [-this.strip, this.strip]) { ctx.moveTo(...this.toScreen(x0, y)); ctx.lineTo(...this.toScreen(x1, y)); } ctx.stroke(); }
     // equal-delay rings: confocal ellipses with foci S and L, sum of distances = 2 rho
     if (this.layers.rings) this._drawRings(ctx, w, h, wd, C);
     // posts
@@ -264,12 +308,18 @@ export class ScenePanel {
     this.staticDirty = false;
   }
 
+  _clipStrip(ctx, w) {
+    if (!this.strip) return; const [, y0] = this.toScreen(0, this.strip);
+    ctx.beginPath(); ctx.rect(-10, y0, w + 20, 2 * this.strip * this.view.s); ctx.clip();
+  }
+
   _drawRings(ctx, w, h, wd, C) {
     const s = this.view.s, ha = wd.half_angle_deg * DEG, step = niceStep(110 / s, 1);
     const fx = (this.S[0] + this.L[0]) / 2, fy = (this.S[1] + this.L[1]) / 2, fc = Math.hypot(this.L[0] - this.S[0], this.L[1] - this.S[1]) / 2;
     const rot = Math.atan2(this.L[1] - this.S[1], this.L[0] - this.S[0]); // major axis along S->L
     const [cx, cy] = this.toScreen(fx, fy), [Sx, Sy] = this.toScreen(...this.S), reach = wd.r_max + 0.6 * step;
     ctx.save();
+    this._clipStrip(ctx, w);
     ctx.beginPath(); ctx.moveTo(Sx, Sy); ctx.arc(Sx, Sy, reach * s, -ha - 0.02, ha + 0.02); ctx.closePath(); ctx.clip();
     const fieldOn = this.field && this.layers.field;
     ctx.strokeStyle = fieldOn ? C.dim : C.grid; ctx.globalAlpha = fieldOn ? 0.45 : 1; ctx.lineWidth = 1;
@@ -295,13 +345,14 @@ export class ScenePanel {
     const ok = ([x, y]) => x >= -20 && x <= w - 40 && y >= 24 && y <= h - 4;
     for (const rho of labels) {
       const dth = 6 / (this.view.s * rho); // about 6 px outside the wedge edge at any zoom
-      let [lx, ly] = at(rho, ha + dth);
+      let [lx, ly] = this.strip ? [NaN, NaN] : at(rho, ha + dth);
       if (!ok([lx, ly])) {
-        // zoomed in: the wedge edge is off screen, so label where the ring crosses the top of the view
-        let lo = -ha - dth, hi = ha + dth; const yTop = 44;
+        // strip: label where the ring meets the strip's upper edge; zoomed in: where it crosses the top of the view
+        const ySt = this.strip ? this.toScreen(0, this.strip)[1] - 2 : -Infinity;
+        let lo = -ha - dth, hi = ha + dth; const yTop = Math.max(44, ySt);
         if ((at(rho, lo)[1] - yTop) * (at(rho, hi)[1] - yTop) > 0) continue;
         for (let k = 0; k < 40; k++) { const mid = (lo + hi) / 2; if ((at(rho, mid)[1] - yTop) * (at(rho, lo)[1] - yTop) <= 0) hi = mid; else lo = mid; }
-        [lx, ly] = at(rho, (lo + hi) / 2); lx += 4; ly += 14;
+        [lx, ly] = at(rho, (lo + hi) / 2); lx += 4; if (yTop !== ySt) ly += 14;
         if (!ok([lx, ly])) continue;
       }
       // outward of the wedge edge, knocked out of whatever is behind
@@ -329,7 +380,7 @@ export class ScenePanel {
     if (rh > (wd?.r_min ?? 0) - 0.5 && rh < (wd?.r_max ?? 1e9) + 0.5) {
       const fx = (this.S[0] + this.L[0]) / 2, fy = (this.S[1] + this.L[1]) / 2, fc = Math.hypot(this.L[0] - this.S[0], this.L[1] - this.S[1]) / 2;
       const [cx, cy] = this.toScreen(fx, fy), ha = (wd?.half_angle_deg ?? 20) * DEG;
-      ctx.save(); ctx.beginPath(); ctx.moveTo(Sx, Sy); ctx.arc(Sx, Sy, (rh + 1) * s, -ha - 0.03, ha + 0.03); ctx.closePath(); ctx.clip();
+      ctx.save(); this._clipStrip(ctx, w); ctx.beginPath(); ctx.moveTo(Sx, Sy); ctx.arc(Sx, Sy, (rh + 1) * s, -ha - 0.03, ha + 0.03); ctx.closePath(); ctx.clip();
       ctx.setLineDash([4, 4]); ctx.strokeStyle = C.text; ctx.globalAlpha = 0.6; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.ellipse(cx, cy, rh * s, Math.sqrt(Math.max(0, rh * rh - fc * fc)) * s, -Math.atan2(this.L[1] - this.S[1], this.L[0] - this.S[0]), 0, 2 * Math.PI); ctx.stroke();
       ctx.restore(); ctx.setLineDash([]);
