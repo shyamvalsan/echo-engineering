@@ -1,0 +1,194 @@
+{
+ "run_id": "20261125-033940-s1",
+ "stage": "s1_bird",
+ "title": "Bird note, 3.5 to 2.0 kHz whistle, 80 ms",
+ "created": "2026-11-25T03:40:34+02:00",
+ "seed": 0,
+ "git_commit": "d2e62b7",
+ "git_dirty": false,
+ "git_dirty_paths": [],
+ "git_untracked_paths": [],
+ "status": "final",
+ "verified": true,
+ "passed": false,
+ "fs": 16000,
+ "c": 343.0,
+ "duration_s": 0.12,
+ "t_direct_s": 0.0008746355685131195,
+ "command": "uv run python -m stages.s1_bird",
+ "solver": {
+  "tier1": "fdtd",
+  "device": "cpu",
+  "dx": 0.008571428571428572,
+  "dt": 7.8125e-06,
+  "grid": [
+   2266,
+   1567
+  ],
+  "f_lo": 300.0,
+  "f_max": 4000.0,
+  "ppw": 10.0,
+  "wall_s": 257.09406208992004,
+  "listeners": [
+   [
+    0.0,
+    0.3
+   ],
+   [
+    0.0,
+    1.3
+   ],
+   [
+    -1.0,
+    0.3
+   ],
+   [
+    2.8190778623577253,
+    -5.773300019337289
+   ],
+   [
+    2.8190778623577253,
+    5.773300019337289
+   ],
+   [
+    16.880000000000003,
+    -5.773300019337289
+   ],
+   [
+    16.880000000000003,
+    5.773300019337289
+   ]
+  ],
+  "engine": "fd8-3"
+ },
+ "field": {
+  "file": "field.webm",
+  "fps": 30,
+  "n_frames": 351,
+  "t0_s": -0.010117187500000001,
+  "sim_seconds_per_frame": 0.0003828125,
+  "extent_m": [
+   -1.5042857142857142,
+   17.524285714285714,
+   -6.51857142857143,
+   6.51
+  ],
+  "width": 1110,
+  "height": 760
+ },
+ "audio": {
+  "echo_gain_db": {
+   "tier0": 36.063028591623286,
+   "tier1": 36.23577293614184
+  },
+  "target_gain_db": -0.9999999999999997,
+  "as_heard_echo_level_db": -53.75467278955795,
+  "clap_variant": 0
+ },
+ "notes": "Exported audio uses clap variant 0; metrics average 5 clap variants. Echoes band-limited to the loss band 898-4000 Hz (clap band within the design band). Profile solve: 6.5 s, 300 Adam steps, loss 2.362 -> 1.445. Realization: 1060 posts, 0 shadow violations, 0 dropped, post-vs-profile echo mismatch -16.4 dB. Tier 1 correction: 3 rounds, best r1.",
+ "design": {
+  "config": {
+   "stage": "s1_bird",
+   "title": "Bird note, 3.5 to 2.0 kHz whistle, 80 ms",
+   "tag": "s1",
+   "duration_s": 0.12,
+   "n_claps": 5,
+   "seed": 0,
+   "r0": 3.06,
+   "dr": 0.01,
+   "a_ref": 0.01,
+   "target_fill": 0.01,
+   "steps": 300,
+   "lr": 0.02,
+   "w_mel": 1.0,
+   "shadow_depth": 0.5,
+   "refine_steps": 100,
+   "max_posts": 40000,
+   "threads": 8,
+   "notes": "",
+   "f_max": 4000.0,
+   "ppw": null,
+   "half_angle_deg": 20.0,
+   "catalog": [
+    0.01,
+    0.02,
+    0.04,
+    0.08
+   ],
+   "validated_radii": null,
+   "note_s": null,
+   "correction_rounds": 3,
+   "correction_power": 1.0,
+   "robustness": true,
+   "field": true,
+   "field_dt": 0.00025,
+   "post_height_m": 2.0,
+   "fill_candidates": [
+    0.01,
+    0.0035,
+    0.0015
+   ],
+   "status": null
+  },
+  "loss_band_hz": [
+   898.4375,
+   4000.0
+  ],
+  "t_echo0_s": 0.0178125,
+  "realization": {
+   "n_posts": 1060,
+   "by_radius": {
+    "0.01": 1060,
+    "0.02": 0,
+    "0.04": 0,
+    "0.08": 0
+   },
+   "weights": {
+    "0.01": 1.0,
+    "0.02": 2.268217837750326,
+    "0.04": 3.691533957523355,
+    "0.08": 5.0527682031222785
+   },
+   "requested_mass": 1059.988222222222,
+   "realized_mass": 1060.0,
+   "dropped": 0,
+   "shadow_violations": 0,
+   "shadow_depth_m": 0.5,
+   "min_gap_m": 0.05085509224455349,
+   "profile_rel_err": 0.03579481266279106,
+   "refine_steps": 100,
+   "refine_transfer_err_db": [
+    -9.431275995081235,
+    -16.433211742479525
+   ],
+   "refine_skipped": null,
+   "post_vs_profile_mismatch_db": -16.431521658601902,
+   "post_vs_profile_level_db": 0.5606093576336975
+  },
+  "max_posts_applied": null,
+  "solve_wall_s": 6.52317214012146,
+  "realize_wall_s": 53.634145736694336,
+  "total_wall_s": 3321.0217921733856
+ },
+ "wall_s": {
+  "profile_solve_s": 7.793999910354614,
+  "realize_s": 53.634145736694336,
+  "tier1_loop_s": 1434.7273423671722,
+  "density_sweep_s": 979.7997045516968,
+  "correction_loop_s": 1490.9579029083252,
+  "tier1_field_run_s": 257.0941047668457,
+  "robustness_s": 1510.3184225559235,
+  "robustness_detail_s": {
+   "c_331": 500.42369174957275,
+   "c_349": 442.13812136650085,
+   "jitter": 563.713475227356
+  },
+  "field_video_s": 53.85007572174072,
+  "total_s": 3321.0217921733856
+ },
+ "caveats": [
+  "1 cm and 2 cm posts: forward/side scattering off the analytic cylinder at the 4 kHz grid (1 cm forward 1.04 dB, 90-degree 1.77 dB; 2 cm forward 1.47 dB, 90-degree 0.43 dB) (dipole part ~10 % strong for sub-cell posts; backscatter within 1 dB); its effect on dense-field echoes is bounded at 0.36 dB by the dense convergence check (checks.grid_convergence.dense)",
+  "1 cm posts fail backscatter at the 2 kHz grid: not validated there",
+  "radii [0.01] used by this design are validated for backscatter but not at all angles at this grid (metrics.json:checks.cylinder.stage1_grid (f_max 4000.0 Hz, ppw 10.0))"
+ ]
+}

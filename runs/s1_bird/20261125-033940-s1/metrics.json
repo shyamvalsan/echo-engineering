@@ -1,0 +1,748 @@
+{
+ "stage": "s1_bird",
+ "passed": false,
+ "verified": true,
+ "fragile": false,
+ "headline": {
+  "echo_level_db_re_direct": -53.03588698246861,
+  "echo_level_db_re_direct_raw3d": -52.055362066865584,
+  "echo_spl_db": 57.42168792313814,
+  "depth_m": 13.518408541057449,
+  "post_count": 1060,
+  "fill_fraction": 0.003509168839521126,
+  "tier_gap_db": -0.9805249156030242,
+  "likely_inaudible_on_site": false,
+  "echo_level_db_re_direct_finite_height": -52.405901143409636,
+  "finite_height_m": 2.0
+ },
+ "metrics": [
+  {
+   "id": "pitch_err_pct",
+   "label": "Pitch error along the note, worst frame",
+   "value": 5.591412930106299,
+   "unit": "%",
+   "threshold": 3.0,
+   "comparator": "<=",
+   "pass": false,
+   "tier": "tier1",
+   "gating": true
+  },
+  {
+   "id": "pitch_err_mean_pct",
+   "label": "Pitch error along the note, mean",
+   "value": 1.8271580473744629,
+   "unit": "%",
+   "threshold": null,
+   "comparator": null,
+   "pass": null,
+   "tier": "tier1",
+   "gating": false
+  },
+  {
+   "id": "pitch_err_median_pct",
+   "label": "Pitch error along the note, median (info)",
+   "value": 1.5870949820977343,
+   "unit": "%",
+   "threshold": null,
+   "comparator": null,
+   "pass": null,
+   "tier": "tier1",
+   "gating": false
+  },
+  {
+   "id": "spec_corr",
+   "label": "Spectrogram correlation, log-mel",
+   "value": 0.6403939292086029,
+   "unit": "",
+   "threshold": 0.8,
+   "comparator": ">=",
+   "pass": false,
+   "tier": "tier1",
+   "gating": true
+  },
+  {
+   "id": "pitch_err_pct",
+   "label": "Pitch error along the note, worst frame",
+   "value": 2.4529922059681275,
+   "unit": "%",
+   "threshold": 3.0,
+   "comparator": "<=",
+   "pass": true,
+   "tier": "tier0",
+   "gating": false
+  },
+  {
+   "id": "pitch_err_mean_pct",
+   "label": "Pitch error along the note, mean",
+   "value": 1.0102826323906196,
+   "unit": "%",
+   "threshold": null,
+   "comparator": null,
+   "pass": null,
+   "tier": "tier0",
+   "gating": false
+  },
+  {
+   "id": "pitch_err_median_pct",
+   "label": "Pitch error along the note, median (info)",
+   "value": 0.9507990735654271,
+   "unit": "%",
+   "threshold": null,
+   "comparator": null,
+   "pass": null,
+   "tier": "tier0",
+   "gating": false
+  },
+  {
+   "id": "spec_corr",
+   "label": "Spectrogram correlation, log-mel",
+   "value": 0.8097602705432918,
+   "unit": "",
+   "threshold": 0.8,
+   "comparator": ">=",
+   "pass": true,
+   "tier": "tier0",
+   "gating": false
+  }
+ ],
+ "per_clap": [
+  {
+   "clap": 0,
+   "tier": "tier1",
+   "metrics": {
+    "pitch_err_pct": 3.0447210791338053,
+    "pitch_err_mean_pct": 0.9517274389291583,
+    "pitch_err_median_pct": 0.7288588367839521,
+    "spec_corr": 0.6641234011051131
+   }
+  },
+  {
+   "clap": 1,
+   "tier": "tier1",
+   "metrics": {
+    "pitch_err_pct": 10.481928548318376,
+    "pitch_err_mean_pct": 2.287407716562851,
+    "pitch_err_median_pct": 1.926083769607878,
+    "spec_corr": 0.6620606366876164
+   }
+  },
+  {
+   "clap": 2,
+   "tier": "tier1",
+   "metrics": {
+    "pitch_err_pct": 2.599890712709718,
+    "pitch_err_mean_pct": 0.9761231558056802,
+    "pitch_err_median_pct": 0.9234360451054746,
+    "spec_corr": 0.640806213653803
+   }
+  },
+  {
+   "clap": 3,
+   "tier": "tier1",
+   "metrics": {
+    "pitch_err_pct": 8.669650248040517,
+    "pitch_err_mean_pct": 3.5395408291545354,
+    "pitch_err_median_pct": 3.0447210791338053,
+    "spec_corr": 0.6283909725934931
+   }
+  },
+  {
+   "clap": 4,
+   "tier": "tier1",
+   "metrics": {
+    "pitch_err_pct": 3.1608740623290776,
+    "pitch_err_mean_pct": 1.3809910964200902,
+    "pitch_err_median_pct": 1.3123751798575611,
+    "spec_corr": 0.6065884220029895
+   }
+  },
+  {
+   "clap": 0,
+   "tier": "tier0",
+   "metrics": {
+    "pitch_err_pct": 1.874012689422444,
+    "pitch_err_mean_pct": 0.8084120867755463,
+    "pitch_err_median_pct": 0.6554655999191028,
+    "spec_corr": 0.8204535617370943
+   }
+  },
+  {
+   "clap": 1,
+   "tier": "tier0",
+   "metrics": {
+    "pitch_err_pct": 1.6131224253867815,
+    "pitch_err_mean_pct": 0.7447131271720309,
+    "pitch_err_median_pct": 0.6815984862796998,
+    "spec_corr": 0.8506006365173517
+   }
+  },
+  {
+   "clap": 2,
+   "tier": "tier0",
+   "metrics": {
+    "pitch_err_pct": 2.0356576196059684,
+    "pitch_err_mean_pct": 0.8210662963420725,
+    "pitch_err_median_pct": 0.7077244983038855,
+    "spec_corr": 0.7812399281428699
+   }
+  },
+  {
+   "clap": 3,
+   "tier": "tier0",
+   "metrics": {
+    "pitch_err_pct": 3.8557668840569326,
+    "pitch_err_mean_pct": 1.4208751434276483,
+    "pitch_err_median_pct": 1.403632155617096,
+    "spec_corr": 0.8428276156413745
+   }
+  },
+  {
+   "clap": 4,
+   "tier": "tier0",
+   "metrics": {
+    "pitch_err_pct": 2.886401411368511,
+    "pitch_err_mean_pct": 1.2563465082358007,
+    "pitch_err_median_pct": 1.305574627707351,
+    "spec_corr": 0.753679610677768
+   }
+  }
+ ],
+ "robustness": [
+  {
+   "case": "nominal",
+   "label": "Nominal design",
+   "metrics": {
+    "pitch_err_pct": 5.591412930106299,
+    "pitch_err_mean_pct": 1.8271580473744629,
+    "pitch_err_median_pct": 1.5870949820977343,
+    "spec_corr": 0.6403939292086029
+   },
+   "delta": {
+    "pitch_err_pct": 0.0,
+    "pitch_err_mean_pct": 0.0,
+    "pitch_err_median_pct": 0.0,
+    "spec_corr": 0.0
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "pitch_err_pct": 2.4529922059681275,
+    "pitch_err_mean_pct": 1.0102826323906196,
+    "pitch_err_median_pct": 0.9507990735654271,
+    "spec_corr": 0.8097602705432918
+   }
+  },
+  {
+   "case": "listener_side_1m",
+   "label": "Listener moved 1 m sideways",
+   "metrics": {
+    "pitch_err_pct": 47.31320344713242,
+    "pitch_err_mean_pct": 35.43272071309514,
+    "pitch_err_median_pct": 34.87395462171223,
+    "spec_corr": 0.3519102512397304
+   },
+   "delta": {
+    "pitch_err_pct": 41.72179051702612,
+    "pitch_err_mean_pct": 33.605562665720676,
+    "pitch_err_median_pct": 33.2868596396145,
+    "spec_corr": -0.28848367796887253
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "pitch_err_pct": 49.592779151656956,
+    "pitch_err_mean_pct": 32.85588803552968,
+    "pitch_err_median_pct": 31.93323820809773,
+    "spec_corr": 0.3437651720571092
+   },
+   "listener": [
+    0.0,
+    1.3
+   ],
+   "window_shift_ms": 0.23411598203088657
+  },
+  {
+   "case": "listener_back_1m",
+   "label": "Listener moved 1 m back",
+   "metrics": {
+    "pitch_err_pct": 25.238581762245524,
+    "pitch_err_mean_pct": 9.822911409141968,
+    "pitch_err_median_pct": 8.12173900820534,
+    "spec_corr": 0.5138056674164402
+   },
+   "delta": {
+    "pitch_err_pct": 19.647168832139226,
+    "pitch_err_mean_pct": 7.995753361767505,
+    "pitch_err_median_pct": 6.534644026107606,
+    "spec_corr": -0.12658826179216276
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "pitch_err_pct": 25.24582446396257,
+    "pitch_err_mean_pct": 9.95700062324081,
+    "pitch_err_median_pct": 8.166773594036005,
+    "spec_corr": 0.5120672733107883
+   },
+   "listener": [
+    -1.0,
+    0.3
+   ],
+   "window_shift_ms": 2.9142410121482203
+  },
+  {
+   "case": "c_331",
+   "label": "Speed of sound 331 m/s",
+   "metrics": {
+    "pitch_err_pct": 7.035842367596949,
+    "pitch_err_mean_pct": 2.7197083409431757,
+    "pitch_err_median_pct": 2.5295980955173514,
+    "spec_corr": 0.6385177156659029
+   },
+   "delta": {
+    "pitch_err_pct": 1.4444294374906503,
+    "pitch_err_mean_pct": 0.8925502935687128,
+    "pitch_err_median_pct": 0.9425031134196171,
+    "spec_corr": -0.001876213542700067
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "pitch_err_pct": 4.5326847735718,
+    "pitch_err_mean_pct": 2.468653940907421,
+    "pitch_err_median_pct": 2.4528367166699816,
+    "spec_corr": 0.7719096235971129
+   },
+   "c": 331.0,
+   "pitch_shift_expected_pct": -3.498542274052474,
+   "pitch_shift_measured_pct": -1.8481935538310013,
+   "pitch_shift_nominal_pct": 0.23891210053528233,
+   "tier1_wall_s": 500.4236080646515,
+   "empty_cached": false
+  },
+  {
+   "case": "c_349",
+   "label": "Speed of sound 349 m/s",
+   "metrics": {
+    "pitch_err_pct": 6.408367693110511,
+    "pitch_err_mean_pct": 2.249281439180389,
+    "pitch_err_median_pct": 1.9191004089590535,
+    "spec_corr": 0.6337673396634781
+   },
+   "delta": {
+    "pitch_err_pct": 0.8169547630042127,
+    "pitch_err_mean_pct": 0.42212339180592595,
+    "pitch_err_median_pct": 0.3320054268613193,
+    "spec_corr": -0.00662658954512485
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "pitch_err_pct": 3.6277290820422436,
+    "pitch_err_mean_pct": 1.474438474475992,
+    "pitch_err_median_pct": 1.329680335721919,
+    "spec_corr": 0.7985058321578083
+   },
+   "c": 349.0,
+   "pitch_shift_expected_pct": 1.7492711370262315,
+   "pitch_shift_measured_pct": 1.339032725157785,
+   "pitch_shift_nominal_pct": 0.23891210053528233,
+   "tier1_wall_s": 442.1380043029785,
+   "empty_cached": false
+  },
+  {
+   "case": "jitter",
+   "label": "Posts jittered 5 mm, radii 1 mm (uniform)",
+   "metrics": {
+    "pitch_err_pct": 8.801138209750235,
+    "pitch_err_mean_pct": 2.652217780827361,
+    "pitch_err_median_pct": 2.1355763213918766,
+    "spec_corr": 0.6180121822975002
+   },
+   "delta": {
+    "pitch_err_pct": 3.209725279643936,
+    "pitch_err_mean_pct": 0.825059733452898,
+    "pitch_err_median_pct": 0.5484813392941423,
+    "spec_corr": -0.02238174691110273
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "pitch_err_pct": 5.279679370897396,
+    "pitch_err_mean_pct": 1.8708699964379896,
+    "pitch_err_median_pct": 1.4942211115665849,
+    "spec_corr": 0.6444800642557067
+   },
+   "jitter": {
+    "distribution": "uniform",
+    "pos_half_width_m": 0.005,
+    "rad_half_width_m": 0.001,
+    "seed": 1000,
+    "max_abs_dxy_m": 0.004998492790987519,
+    "max_abs_dr_m": 0.0009991440724583783,
+    "min_gap_m": 0.04553743073701019
+   },
+   "tier1_wall_s": 563.7132601737976
+  },
+  {
+   "case": "clap_0",
+   "label": "Clap variant 0 alone",
+   "metrics": {
+    "pitch_err_pct": 3.0447210791338053,
+    "pitch_err_mean_pct": 0.9517274389291583,
+    "pitch_err_median_pct": 0.7288588367839521,
+    "spec_corr": 0.6641234011051131
+   },
+   "delta": {
+    "pitch_err_pct": -2.5466918509724934,
+    "pitch_err_mean_pct": -0.8754306084453045,
+    "pitch_err_median_pct": -0.8582361453137821,
+    "spec_corr": 0.0237294718965102
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "pitch_err_pct": 1.874012689422444,
+    "pitch_err_mean_pct": 0.8084120867755463,
+    "pitch_err_median_pct": 0.6554655999191028,
+    "spec_corr": 0.8204535617370943
+   }
+  },
+  {
+   "case": "clap_1",
+   "label": "Clap variant 1 alone",
+   "metrics": {
+    "pitch_err_pct": 10.481928548318376,
+    "pitch_err_mean_pct": 2.287407716562851,
+    "pitch_err_median_pct": 1.926083769607878,
+    "spec_corr": 0.6620606366876164
+   },
+   "delta": {
+    "pitch_err_pct": 4.890515618212077,
+    "pitch_err_mean_pct": 0.46024966918838794,
+    "pitch_err_median_pct": 0.33898878751014383,
+    "spec_corr": 0.021666707479013447
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "pitch_err_pct": 1.6131224253867815,
+    "pitch_err_mean_pct": 0.7447131271720309,
+    "pitch_err_median_pct": 0.6815984862796998,
+    "spec_corr": 0.8506006365173517
+   }
+  },
+  {
+   "case": "clap_2",
+   "label": "Clap variant 2 alone",
+   "metrics": {
+    "pitch_err_pct": 2.599890712709718,
+    "pitch_err_mean_pct": 0.9761231558056802,
+    "pitch_err_median_pct": 0.9234360451054746,
+    "spec_corr": 0.640806213653803
+   },
+   "delta": {
+    "pitch_err_pct": -2.9915222173965805,
+    "pitch_err_mean_pct": -0.8510348915687826,
+    "pitch_err_median_pct": -0.6636589369922596,
+    "spec_corr": 0.0004122844452000285
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "pitch_err_pct": 2.0356576196059684,
+    "pitch_err_mean_pct": 0.8210662963420725,
+    "pitch_err_median_pct": 0.7077244983038855,
+    "spec_corr": 0.7812399281428699
+   }
+  },
+  {
+   "case": "clap_3",
+   "label": "Clap variant 3 alone",
+   "metrics": {
+    "pitch_err_pct": 8.669650248040517,
+    "pitch_err_mean_pct": 3.5395408291545354,
+    "pitch_err_median_pct": 3.0447210791338053,
+    "spec_corr": 0.6283909725934931
+   },
+   "delta": {
+    "pitch_err_pct": 3.078237317934218,
+    "pitch_err_mean_pct": 1.7123827817800725,
+    "pitch_err_median_pct": 1.457626097036071,
+    "spec_corr": -0.012002956615109861
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "pitch_err_pct": 3.8557668840569326,
+    "pitch_err_mean_pct": 1.4208751434276483,
+    "pitch_err_median_pct": 1.403632155617096,
+    "spec_corr": 0.8428276156413745
+   }
+  },
+  {
+   "case": "clap_4",
+   "label": "Clap variant 4 alone",
+   "metrics": {
+    "pitch_err_pct": 3.1608740623290776,
+    "pitch_err_mean_pct": 1.3809910964200902,
+    "pitch_err_median_pct": 1.3123751798575611,
+    "spec_corr": 0.6065884220029895
+   },
+   "delta": {
+    "pitch_err_pct": -2.430538867777221,
+    "pitch_err_mean_pct": -0.44616695095437264,
+    "pitch_err_median_pct": -0.2747198022401731,
+    "spec_corr": -0.03380550720561348
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "pitch_err_pct": 2.886401411368511,
+    "pitch_err_mean_pct": 1.2563465082358007,
+    "pitch_err_median_pct": 1.305574627707351,
+    "spec_corr": 0.753679610677768
+   }
+  }
+ ],
+ "failure_cause": "Tier 1 pitch error along the note, worst frame = 5.59% misses <= 3.0% (judge floor on a perfect echo: 2.53%); Tier 1 spectrogram correlation, log-mel = 0.64 misses >= 0.8 (judge floor on a perfect echo: 0.976)",
+ "judge_floor": {
+  "per_clap": [
+   {
+    "clap": 0,
+    "metrics": {
+     "pitch_err_pct": 1.874012689422444,
+     "pitch_err_mean_pct": 0.8771996468471185,
+     "pitch_err_median_pct": 0.8726529562873564,
+     "spec_corr": 0.9786403610941443
+    }
+   },
+   {
+    "clap": 1,
+    "metrics": {
+     "pitch_err_pct": 1.8611515100773524,
+     "pitch_err_mean_pct": 0.7875720393132141,
+     "pitch_err_median_pct": 0.7553628459211481,
+     "spec_corr": 0.9865748462465177
+    }
+   },
+   {
+    "clap": 2,
+    "metrics": {
+     "pitch_err_pct": 1.9989956640641293,
+     "pitch_err_mean_pct": 0.6253737051671974,
+     "pitch_err_median_pct": 0.48358685341407526,
+     "spec_corr": 0.9711721873730482
+    }
+   },
+   {
+    "clap": 3,
+    "metrics": {
+     "pitch_err_pct": 3.8557668840569326,
+     "pitch_err_mean_pct": 1.3617213150490948,
+     "pitch_err_median_pct": 1.065682350342434,
+     "spec_corr": 0.9861251812530419
+    }
+   },
+   {
+    "clap": 4,
+    "metrics": {
+     "pitch_err_pct": 3.062879176709088,
+     "pitch_err_mean_pct": 1.205870860602344,
+     "pitch_err_median_pct": 1.0756589685545714,
+     "spec_corr": 0.9565058304678823
+    }
+   }
+  ],
+  "mean": {
+   "pitch_err_pct": 2.5305611848659892,
+   "pitch_err_mean_pct": 0.9715475133957938,
+   "pitch_err_median_pct": 0.850588794903917,
+   "spec_corr": 0.975803681286927
+  },
+  "note": "metrics of target * clap (band-limited): the floor set by the judge and the clap, not the design"
+ },
+ "verification": {
+  "validation_passed": true,
+  "radii": [
+   0.01,
+   0.02,
+   0.04,
+   0.08
+  ],
+  "radii_all_angles": [
+   0.04,
+   0.08
+  ],
+  "source": "metrics.json:checks.cylinder.stage1_grid (f_max 4000.0 Hz, ppw 10.0)",
+  "path": "/home/shyam/projects/echo/runs/validation/metrics.json",
+  "engine": "fd8-3",
+  "validation_engine": "fd8-3",
+  "radii_used": [
+   0.01
+  ],
+  "radii_ok": true,
+  "caveats": [
+   "1 cm and 2 cm posts: forward/side scattering off the analytic cylinder at the 4 kHz grid (1 cm forward 1.04 dB, 90-degree 1.77 dB; 2 cm forward 1.47 dB, 90-degree 0.43 dB) (dipole part ~10 % strong for sub-cell posts; backscatter within 1 dB); its effect on dense-field echoes is bounded at 0.36 dB by the dense convergence check (checks.grid_convergence.dense)",
+   "1 cm posts fail backscatter at the 2 kHz grid: not validated there",
+   "radii [0.01] used by this design are validated for backscatter but not at all angles at this grid (metrics.json:checks.cylinder.stage1_grid (f_max 4000.0 Hz, ppw 10.0))"
+  ],
+  "reason": "validation passed and every radius used is validated at this grid"
+ },
+ "caveats": [
+  "1 cm and 2 cm posts: forward/side scattering off the analytic cylinder at the 4 kHz grid (1 cm forward 1.04 dB, 90-degree 1.77 dB; 2 cm forward 1.47 dB, 90-degree 0.43 dB) (dipole part ~10 % strong for sub-cell posts; backscatter within 1 dB); its effect on dense-field echoes is bounded at 0.36 dB by the dense convergence check (checks.grid_convergence.dense)",
+  "1 cm posts fail backscatter at the 2 kHz grid: not validated there",
+  "radii [0.01] used by this design are validated for backscatter but not at all angles at this grid (metrics.json:checks.cylinder.stage1_grid (f_max 4000.0 Hz, ppw 10.0))"
+ ],
+ "fragile_reason": "0/5 clap variants pass on their own; 0/3 listener positions pass (nominal, 1 m sideways, 1 m back)",
+ "tier1_correction": {
+  "density_sweep": {
+   "rows": [
+    {
+     "fill": 0.01,
+     "posts": 3029,
+     "fill_realized": 0.009976580977717798,
+     "loss_tier1": 5.883479118347168,
+     "loss_tier0": 1.803344488143921,
+     "tier_gap_db": -5.997104916170751,
+     "echo_level_db_3d_corrected": -49.165638667533834,
+     "spec_corr_tier1_info_only": 0.629185692542215
+    },
+    {
+     "fill": 0.0035,
+     "posts": 1060,
+     "fill_realized": 0.0035126890548455225,
+     "loss_tier1": 5.652089595794678,
+     "loss_tier0": 2.7198503017425537,
+     "tier_gap_db": -1.6503480087817877,
+     "echo_level_db_3d_corrected": -52.84490779913641,
+     "spec_corr_tier1_info_only": 0.6271056379737814
+    },
+    {
+     "fill": 0.0015,
+     "posts": 454,
+     "fill_realized": 0.0015193066485036442,
+     "loss_tier1": 6.173378944396973,
+     "loss_tier0": 4.650960445404053,
+     "tier_gap_db": -0.2237512430656551,
+     "echo_level_db_3d_corrected": -52.878537771604144,
+     "spec_corr_tier1_info_only": 0.5590364072529728
+    }
+   ],
+   "picked_fill": 0.0035,
+   "selection": "lowest Tier 1 spectrogram loss (window_loss); judges not used"
+  },
+  "rounds": [
+   {
+    "round": 0,
+    "loss": 5.652089595794678,
+    "score": -1.528307401962411,
+    "posts": 1060,
+    "gains_next": [
+     0.57426017025377,
+     0.7279286032464723,
+     0.9061742795641569,
+     0.9872341279780532,
+     1.0860398496662145,
+     1.1564448148269093,
+     1.408947945409671,
+     1.2545954754119475,
+     1.0
+    ],
+    "tier_gap_db": -1.6503480087817877,
+    "wall_s": 0.5744731426239014,
+    "gating": {
+     "pitch_err_pct": 7.584922205887233,
+     "spec_corr": 0.6271056379737814
+    }
+   },
+   {
+    "round": 1,
+    "loss": 5.7007293701171875,
+    "score": -0.8638043100354329,
+    "posts": 1060,
+    "gains_next": [
+     0.7007574356456991,
+     1.0544545860760648,
+     0.9995332288726236,
+     0.9540749894116209,
+     1.0224492245934937,
+     1.0572802495347353,
+     1.0107546997683166,
+     1.122118219289345,
+     1.0
+    ],
+    "tier_gap_db": -0.9805249156030242,
+    "wall_s": 253.31727147102356,
+    "gating": {
+     "pitch_err_pct": 5.591412930106299,
+     "spec_corr": 0.6403939292086029
+    }
+   },
+   {
+    "round": 2,
+    "loss": 5.684783935546875,
+    "score": -0.9385577234880902,
+    "posts": 1060,
+    "gains_next": [
+     0.7624981544852525,
+     1.000495073023174,
+     0.9264719199444346,
+     1.0654079009233717,
+     0.9993895808842342,
+     1.0951291695498688,
+     1.02291177670894,
+     1.0259580727313475,
+     1.0
+    ],
+    "tier_gap_db": -1.1732453886867702,
+    "wall_s": 257.26590061187744,
+    "gating": {
+     "pitch_err_pct": 5.815673170464271,
+     "spec_corr": 0.6239933740555325
+    }
+   }
+  ],
+  "best_round": 1,
+  "tier1_runs": [
+   {
+    "what": "design",
+    "wall_s": 459.25048899650574,
+    "empty_cached": false,
+    "empty_s": 213.99238848686218,
+    "scene_s": 244.02878332138062
+   },
+   {
+    "what": "design",
+    "wall_s": 239.91094160079956,
+    "empty_cached": true,
+    "empty_s": 0.0,
+    "scene_s": 239.05604720115662
+   },
+   {
+    "what": "design",
+    "wall_s": 244.4620542526245,
+    "empty_cached": true,
+    "empty_s": 0.0,
+    "scene_s": 243.74356770515442
+   },
+   {
+    "what": "design",
+    "wall_s": 244.71525263786316,
+    "empty_cached": true,
+    "empty_s": 0.0,
+    "scene_s": 243.91294050216675
+   },
+   {
+    "what": "design",
+    "wall_s": 246.3883934020996,
+    "empty_cached": true,
+    "empty_s": 0.0,
+    "scene_s": 245.34782671928406
+   }
+  ],
+  "field_run_ir_max_abs_diff": 0.0,
+  "field_colour": {
+   "limit": 0.0006225244870121492,
+   "percentile": 99.97,
+   "direct_excluded_halfwidth_m": 1.2,
+   "compress": "asinh",
+   "compress_k": 2.0,
+   "level_decay_exponent": -1.6557128628394124,
+   "time_gain_exponent": 0.9934277177036475,
+   "t_ref_s": 0.062042968750000003,
+   "zero_rgb": "#0e1620",
+   "crf": 54,
+   "bytes": 11485996
+  }
+ }
+}
