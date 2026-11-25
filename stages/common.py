@@ -284,7 +284,8 @@ def failure_cause_text(metrics: dict) -> str | None:
     for m in metrics["metrics"]:
         if m["gating"] and not m["pass"]:
             floor = fl.get(m["id"])
-            parts.append(f"Tier 1 {m['label'].lower()} = {m['value']:.3g}{m['unit']} misses {m['comparator']} "
+            val = "n/a (judge returned no value)" if m["value"] is None else f"{m['value']:.3g}{m['unit']}"
+            parts.append(f"Tier 1 {m['label'].lower()} = {val} misses {m['comparator']} "
                          f"{m['threshold']}{m['unit']}" + (f" (judge floor on a perfect echo: {floor:.3g}{m['unit']})"
                                                            if floor is not None else ""))
     return "; ".join(parts) or None
