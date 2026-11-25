@@ -37,6 +37,7 @@ export class LiveEngine {
       const msg = e.name === "NotAllowedError" || e.name === "SecurityError"
         ? "Microphone blocked. Allow the microphone for this page (the icon at the left of the address bar), then press Start listening again. You can still use sound files below."
         : e.name === "NotFoundError" || e.name === "OverconstrainedError" ? "No microphone found. Plug one in and press Start listening again, or use a sound file below."
+        : e.name === "NotSupportedError" ? "This browser offers no microphone here (none found, or audio capture is not supported). Use a sound file below, or try current Chrome or Firefox."
         : e.name === "NotReadableError" ? "The microphone is in use by another program or could not be opened. Close it there and try again."
         : `The microphone could not be opened (${e.name}: ${e.message}).`;
       throw Object.assign(e, { userMessage: msg });

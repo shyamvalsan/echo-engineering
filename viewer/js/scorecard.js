@@ -49,7 +49,9 @@ export class ScorePanel {
     const unverified = v.cls === "unverified";
     if (unverified) b.append(el("p", { class: "unvnote" }, "Tier 0 only: numbers from the fast single-scattering model. A stage passes only on the full-wave Tier 1 solver, which has not run on this design."));
     if (!metrics) { b.append(el("p", { class: "empty" }, "This run has no metrics.json yet.")); return; }
-    const trio = verdicts(metrics); if (trio) b.append(trio);
+    const trio = verdicts(metrics);
+    if (trio) { b.append(...trio); // the header stamp then states only what the numbers rest on, not a verdict
+      this.verdict.className = `verdict ${v.cls === "unverified" ? "unverified" : "basis"}`; this.verdict.textContent = v.cls === "unverified" ? v.text : "Verified on Tier 1"; }
     const H = metrics.headline ?? {};
     const spl = H.echo_spl_db, quiet = H.likely_inaudible_on_site ?? (spl != null && spl < 35);
     b.append(el("div", { class: "headline" },
@@ -132,12 +134,19 @@ function verdicts(metrics) {
   else cells.push(cell("Original spec thresholds", "info", "not recorded"));
   if (o2) { const [k, t] = yesNo(o2.passed), ms = o2.metrics ?? [];
     cells.push(cell("Revised thresholds (listening-calibrated)", k, t,
-      ms.length ? el("ul", { class: "vlist" }, ms.map((m) => el("li", {}, el("span", { class: m.pass == null ? "info" : m.pass ? "pass" : "fail" }, m.pass == null ? "—" : m.pass ? "pass" : "fail"), ` ${m.label ?? m.id}: ${withUnit(m.value, m.unit)}${m.comparator ? ` (${CMP[m.comparator] ?? m.comparator} ${thrUnit(m.threshold, m.unit)})` : ""}`))) : null,
-      o2.controls?.length ? el("div", { class: "vd" }, `controls: ${o2.controls.filter((x) => x.pass).length} of ${o2.controls.length} pass${o2.controls_all_fail ? " (all fail, as they should)" : ""}`) : null,
-      o2.note ? el("div", { class: "vd" }, o2.note) : null)); }
+      ms.length ? el("div", { class: "vd" }, `${ms.filter((m) => m.pass).length} of ${ms.length} metrics pass`) : null,
+      o2.controls?.length ? el("div", { class: "vd" }, `controls: ${o2.controls.filter((x) => x.pass).length} of ${o2.controls.length} pass`) : null)); }
   else cells.push(cell("Revised thresholds (listening-calibrated)", "info", "not recorded"));
   if (lv) cells.push(cell("Owner's ear, 25 Nov", /^(pass|yes|heard|recogni)/i.test(lv.verdict ?? "") ? "pass" : /^(fail|no|not)/i.test(lv.verdict ?? "") ? "fail" : "info", lv.verdict ?? "—",
     lv.quote ? el("q", { class: "vq" }, lv.quote) : null, el("div", { class: "vd" }, [lv.by, lv.date, lv.basis].filter(Boolean).join(", "))));
   else cells.push(cell("Owner's ear, 25 Nov", "info", "not recorded"));
-  return el("div", { class: "verdicts" }, cells);
+  const out = [el("div", { class: "verdicts" }, cells)];
+  // the revised criterion's own numbers, one click away
+  if (o2 && ((o2.metrics ?? []).length || o2.note || o2.controls?.length)) out.push(el("details", { class: "caveats v2" }, el("summary", {}, "Revised thresholds: metrics and controls"),
+    el("ul", { class: "vlist" }, (o2.metrics ?? []).map((m) => el("li", {}, el("span", { class: m.pass == null ? "info" : m.pass ? "pass" : "fail" }, m.pass == null ? "—" : m.pass ? "pass" : "fail"),
+      ` ${m.label ?? m.id}: ${withUnit(m.value, m.unit)}${m.comparator ? ` (${CMP[m.comparator] ?? m.comparator} ${thrUnit(m.threshold, m.unit)})` : ""}`)),
+      (o2.controls ?? []).map((c) => el("li", {}, el("span", { class: c.pass ? "fail" : "pass" }, c.pass ? "passes" : "fails"), ` control "${c.name}"${c.kind ? ` (${c.kind})` : ""}`))),
+    o2.controls?.length ? el("p", { class: "diag" }, o2.controls_all_fail ? "Every control fails, as it should." : "Some controls pass: the criterion does not separate this echo from them.") : null,
+    o2.note ? el("p", { class: "diag" }, o2.note) : null));
+  return out;
 }

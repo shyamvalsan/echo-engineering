@@ -229,7 +229,7 @@ function setupCompare() {
 
 function keys() {
   window.addEventListener("keydown", (e) => {
-    if (e.target.closest("select, input")) return;
+    if (e.target.closest("select, input, .listen, .drop, .takelist li")) return;
     const f = state.views[0]?.run.manifest.field, step = (f ? f.sim_seconds_per_frame : 0.0005) * (e.shiftKey ? 10 : 1);
     if (e.code === "Space") { e.preventDefault(); clock.toggle(); }
     else if (e.key === "ArrowRight") { e.preventDefault(); clock.pause(); clock.seek(clock.t + step); }

@@ -336,3 +336,5 @@ body.live #compare, body.live #compareBox { display: none; }
 .vlist { list-style: none; margin: 2px 0 0; padding: 0; }
 .vlist .pass { color: var(--pass); } .vlist .fail { color: var(--fail); } .vlist .info { color: var(--faint); }
 .vq { display: block; color: var(--text); font-size: 11.5px; margin-top: 2px; }
+.verdict.basis { color: var(--dim); border-color: var(--line); font-weight: 500; }
+.v2 { margin-top: -4px; }

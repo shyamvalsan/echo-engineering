@@ -150,7 +150,8 @@ export class LiveView {
       };
       d.append(el("div", { class: "row" }, file), el("div", { class: "row" }, name),
         el("label", { class: "row check" }, verify, "also verify on full-wave (slow, minutes to hours)"),
-        el("div", { class: "row" }, go, el("span", { class: "hint" }, "fast model by default, about a minute")), bar, msg);
+        el("div", { class: "row" }, go, el("span", { class: "hint" }, "fast model by default: several minutes")), bar, msg);
+      if (LiveView.designMsg) msg.textContent = LiveView.designMsg;
     }
     // custom runs, hide-from-view only
     const hidden = LiveView.hiddenCustom();
@@ -168,7 +169,7 @@ export class LiveView {
       msg.textContent = `${j.stage ?? j.status}${j.message ? `: ${j.message}` : ""}${j.warnings?.length ? ` (${j.warnings.join("; ")})` : ""}, ${el_s < 60 ? `${el_s} s` : `${Math.floor(el_s / 60)} min ${el_s % 60} s`}`;
       if (j.status === "error") throw new Error(j.message ?? "the lab reported an error");
       if (j.status === "done") { bar.hidden = true;
-        msg.textContent = `Done${j.warnings?.length ? ` (${j.warnings.join("; ")})` : ""}. Opening the new design.`;
+        msg.textContent = LiveView.designMsg = `Done in ${Math.round(el_s / 60)} min${j.warnings?.length ? ` (${j.warnings.join("; ")})` : ""}: opened "${j.name ?? "the new design"}" (fast model only, not verified${j.tier1 ? " yet" : ""}).`;
         await this.reloadRuns?.(j.run?.path); return; }
       await new Promise((r) => setTimeout(r, 1000));
     }
@@ -250,7 +251,7 @@ export class LiveView {
       this._latencyUI();
       // output latency settles after the first callbacks: re-trim once
       setTimeout(async () => { if (this.engine.running) { await this.engine._loadConv(); this._latencyUI(); } }, 600);
-    } catch (e) { this._notice(e.userMessage ?? `Could not start: ${e.message}`); console.warn(e); this.engine.stop(); }
+    } catch (e) { this._notice(e.userMessage ?? `Could not start: ${e.message}`); if (!e.userMessage) console.warn(e); this.engine.stop(); }
     this._syncStart();
   }
   _syncStart() {
