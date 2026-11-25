@@ -2178,7 +2178,7 @@ Timeline from the controller's ledger (`.superpowers/sdd/plan/progress.md`), fir
 | 6 | Tasks 2/3/5 run in parallel after Task 1 (disjoint files, path-scoped commits); skill says serial | the night is 10 h and Tier 1 is the long pole | risk is an index.lock collision or a cross-commit, both recoverable. |
 | 7 | speech metrics/targets go in echo/metrics_speech.py and echo/targets_speech.py (spec lists only metrics.py/targets.py) | lets speech prep run alongside stages 2-3 without file conflicts | cosmetic layout deviation. |
 | 8 | stage-4 speech prep (Task 9) waits for the stage-1 gate | spec: no later-stage work before stage 1 passes on Tier 1. | not stated |
-| 9 | espeak-ng may be installed with passwordless sudo apt if no user-space package works | the spec names espeak-ng as the speech source — a system package the user did not explicitly approve; logged in DECISIONS.md. | not stated |
+| 9 | espeak-ng may be installed with sudo apt if no user-space package works | the spec names espeak-ng as the speech source — a system package the user did not explicitly approve; logged in DECISIONS.md. | not stated |
 | 10 | echo level = Tier 0 3D level corrected by the 2D tier gap | spec wants a 3D estimate but the referee is 2D — raw 3D number reported alongside. | not stated |
 | 11 | start viewer before Task 1 lands | it needs only the data contract | cost if wrong: fixture drift, caught when real run folder lands. |
 | 12 | build path = plan + fabrication data + build-optimized pilot design, no hardware (spec non-goal stands for tonight) | — | if wrong, owner wanted more/less depth; BUILD.md is easy to extend. |

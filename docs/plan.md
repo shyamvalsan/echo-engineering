@@ -284,7 +284,7 @@ transcribes using Tier 0, and state clearly that it is Tier 0.
 Box 45 min. Files: `echo/targets_speech.py`, `echo/metrics_speech.py`, tests, `artifacts/speech/`.
 Starts only after stage 1 has passed. `espeak-ng` targets ("ah" sustained 150 ms, "ma", "ba", "om" 200–250 ms,
 "hello" 400 ms), band-limited to the design band. Get espeak-ng from a user-space package if one works; otherwise
-`sudo -n apt-get install -y espeak-ng` (passwordless sudo is available) and log it. Metrics: formants by linear
+`sudo -n apt-get install -y espeak-ng` and log it. Metrics: formants by linear
 prediction (F1, F2), ESTOI via `pystoi`, closed-set nearest-target test, `faster-whisper` small model run locally
 (download it now). Tests on the clean targets: the judges must pass the targets themselves — if whisper does not
 return "hello" for the clean band-limited target, that is a finding to report, not something to tune.
