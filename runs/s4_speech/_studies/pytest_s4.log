@@ -1,0 +1,24 @@
+....F.........                                                           [100%]
+=================================== FAILURES ===================================
+_________________ test_configs_build_and_fit_budget[4c-hello] __________________
+
+sub = '4c', name = 'hello'
+
+    @pytest.mark.parametrize("sub,name", [("4a", "ah"), ("4b", "ma"), ("4b", "ba"), ("4b", "om"), ("4c", "hello")])
+    def test_configs_build_and_fit_budget(sub, name):
+        cfg = S.make_config(sub, name)
+        assert cfg.stage == S.SUBSTAGES[sub]["judge"] and cfg.stage in THRESHOLDS
+        assert cfg.band_min_hz == 500.0 and cfg.band_max_hz == cfg.f_max
+        assert cfg.tag.endswith(f"_{sub}_{name}") and cfg.a_ref in cfg.catalog
+        t = S.target_of(name)
+        # timeline covers first echo (2 * 3.06 / 343 = 17.8 ms) + target + 8 ms clap
+        assert cfg.duration_s >= 2 * cfg.r0 / 343.0 + len(t.audio) / 16000 + 0.008
+        plan = S.tier1_plan(cfg, t)
+>       assert plan["est_wall_s_idle_8_threads"] <= S.TIER1_BUDGET_S
+E       assert 832.8060620690909 <= 720.0
+E        +  where 720.0 = S.TIER1_BUDGET_S
+
+tests/test_s4_speech.py:29: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_s4_speech.py::test_configs_build_and_fit_budget[4c-hello]
+1 failed, 13 passed in 72.47s (0:01:12)

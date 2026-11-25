@@ -111,3 +111,19 @@ waiting for Tier 1 lock… (5647 s so far, /home/shyam/projects/echo/.cache/tier
 waiting for Tier 1 lock… (5707 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
 waiting for Tier 1 lock… (5767 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
 Tier 1 lock acquired after 5768 s
+  stretch: applied -0.00065, measured (medium) -0.00100 (corr 0.550), timing residual -0.00035
+  tier1 833 s (empty cached: False)
+correction round 0: loss 4.7146 score -0.0598 gains [0.5, 0.66, 1.46, 1.39, 1.27, 1.03, 1.29, 1.72, 0.99, 1.15, 0.96, 0.7, 0.6, 0.7, 0.5, 0.5, 0.57, 0.55, 0.5, 0.52, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0] (6705 s)
+
+=== s4b_syllables  FAILED  verified=True  fragile=False ===
+run: /home/shyam/projects/echo/.cache/s4_ow29qcss/s4b_syllables/20261125-135718-s4_4b_om
+  [tier1*] closed_set_correct     1.0                    thr >=1.0  pass True
+  [tier1 ] closed_set_margin      10.843274393352932     thr None  pass None
+  [tier1*] estoi                  0.4701152250042936     thr >=0.5  pass False
+  [tier0 ] closed_set_correct     1.0                    thr >=1.0  pass True
+  [tier0 ] estoi                  0.3033994698849224     thr >=0.5  pass False
+  judge floor (perfect echo): {'closed_set_correct': 1.0, 'closed_set_margin': 26.405, 'estoi': 0.818}
+  echo level -67.4 dB re direct (raw 3D -64.6, 2.0 m posts -66.4), SPL 43.1 dB, tier gap -2.708741954244573, depth 42.00 m, 1808 posts, fill 0.0008
+  failure cause: Tier 1 estoi vs target = 0.47 misses >= 0.5 (judge floor on a perfect echo: 0.818)
+  wall: {'profile_solve_s': 773.3, 'realize_s': 101.1, 'tier1_loop_s': 6601.7, 'tier1_lock_wait_s': 5768.0, 'correction_loop_s': 6704.7, 'total_s': 7479.2}
+[4b om] wrote /home/shyam/projects/echo/runs/s4_speech/20261125-135718-s4_4b_om: passed False verified True

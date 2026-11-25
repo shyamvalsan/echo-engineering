@@ -15,3 +15,5 @@ step  300 loss 2.8490 (stft 1.7671 mel 1.0819) 23.5s
   realized 1499 posts, range scale 1-0.00195 (53 s)
 waiting for Tier 1 lock… (0 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
 waiting for Tier 1 lock… (60 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (120 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (180 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
