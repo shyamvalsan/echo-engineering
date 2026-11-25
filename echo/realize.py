@@ -72,7 +72,7 @@ def _arc_len(rho, half_angle_deg):
 def realize(profile, scene_cfg: Scene | None = None, seed=0, *, r0, dr=DR_PROFILE, a_ref=0.02, radii=RADII,
             band=BAND, gap=MIN_GAP, shadow_depth=0.5, n_try=48, smooth_m=0.10, claps=None, refine_steps=0,
             polish_max_posts=POLISH_MAX_POSTS, angle_jitter=0.15, mode="sampling", posts_per_period=1,
-            n_posts=None, fractional=True, range_scale=1.0):
+            n_posts=None, fractional=True, range_scale=1.0, max_half_width_m=None):
     """Turn a profile into posts. Returns (posts ndarray[N, 3] (x, y, radius), stats dict).
 
     stats: n_posts, by_radius, requested_mass, realized_mass, dropped (posts), shadow_violations, min_gap_m,
@@ -96,7 +96,9 @@ def realize(profile, scene_cfg: Scene | None = None, seed=0, *, r0, dr=DR_PROFIL
                                     gap=gap, shadow_depth=shadow_depth, n_try=n_try, smooth_m=smooth_m,
                                     angle_jitter=angle_jitter, posts_per_period=posts_per_period, n_posts=n_posts,
                                     fractional=fractional and mode == "phase_locked", range_scale=range_scale,
-                                    uniform=mode == "phase_locked_uniform")
+                                    uniform=mode == "phase_locked_uniform", max_half_width_m=max_half_width_m)
+    if max_half_width_m is not None:
+        raise ValueError("max_half_width_m is implemented for the phase-locked modes only")
     if mode != "sampling":
         raise ValueError(f"mode must be 'sampling' or 'phase_locked', got {mode!r}")
     scene = scene_cfg if scene_cfg is not None else Scene()
@@ -195,12 +197,15 @@ def realize(profile, scene_cfg: Scene | None = None, seed=0, *, r0, dr=DR_PROFIL
 
 
 def place_on_arcs(rhos, rads, scene: Scene, rng, *, r0, dr=DR_PROFILE, radii=RADII, gap=MIN_GAP, shadow_depth=0.5,
-                  n_try=48, angle_jitter=0.15):
+                  n_try=48, angle_jitter=0.15, max_half_width_m=None):
     """Phase C of `realize`: place posts (sorted by rho) on their equal-delay ellipses inside the wedge, golden-ratio
     angles + seeded jitter, minimum gap hard, shadowing avoided when possible. Returns (posts[N,3], shadow
-    violations, dropped)."""
+    violations, dropped).
+    max_half_width_m: optional lateral clip (a constant-width strip inside the wedge): candidate angles are drawn so
+    |y - y_axis| <= max_half_width_m as well (y_axis = the source's y); None = the wedge only (unchanged)."""
     half = scene.half_angle_deg
-    th_max = math.radians(half) - 1e-6
+    th_max_w = math.radians(half) - 1e-6
+    th_max = th_max_w
     dropped = 0
     placed_rho, placed = [], []  # sorted by rho
     shadow_viol = 0
@@ -208,10 +213,14 @@ def place_on_arcs(rhos, rads, scene: Scene, rng, *, r0, dr=DR_PROFILE, radii=RAD
     a_max = max(radii)
     for rho, a in zip(rhos, rads):
         rho, a = float(rho), float(a)
+        if max_half_width_m is not None:  # angle at which the ellipse point (~ radius rho about the source) reaches it
+            th_max = min(th_max_w, math.asin(min(1.0, max(float(max_half_width_m) - a, 0.0) / max(rho, 1e-9))))
         u = (g + GOLDEN * np.arange(1, n_try + 1) + angle_jitter * rng.standard_normal(n_try)) % 1.0
         th = (2.0 * u - 1.0) * th_max
         xy = ellipse_point(rho, th, scene.source, scene.listener)
         ok_w = in_wedge(xy, half, rho_min=r0 - dr, source=scene.source, listener=scene.listener)
+        if max_half_width_m is not None:
+            ok_w = ok_w & (np.abs(xy[:, 1] - scene.source[1]) + a <= float(max_half_width_m) + 1e-9)
         # neighbours: rho is 1-Lipschitz, so gap conflicts lie within rho - (a + a_max + gap). "Nearer" (shadowing)
         # is measured in rho, the placement order, consistently with the window.
         j0 = bisect.bisect_left(placed_rho, rho - max(shadow_depth, a + a_max + gap))
@@ -385,7 +394,7 @@ def phase_locked_ranges(profile, n_posts, band, *, r0, dr=DR_PROFILE, c=343.0, p
 def realize_phase_locked(profile, scene_cfg: Scene | None = None, seed=0, *, r0, dr=DR_PROFILE, a_ref=0.01,
                          radii=RADII, band=BAND, gap=MIN_GAP, shadow_depth=0.5, n_try=48, smooth_m=0.10,
                          angle_jitter=0.15, posts_per_period=1, n_posts=None, fractional=True, range_scale=1.0,
-                         uniform=False):
+                         uniform=False, max_half_width_m=None):
     """Phase-locked realization (see `phase_locked_ranges`): every post radius a_ref, exactly on its ring's
     equal-delay ellipse, spread across the wedge by `place_on_arcs`. n_posts None: the profile mass (profile units
     are a_ref posts). Returns (posts, stats) with the same keys as `realize` plus rings / posts_per_period / mode."""
@@ -402,7 +411,8 @@ def realize_phase_locked(profile, scene_cfg: Scene | None = None, seed=0, *, r0,
     rhos = rhos * range_scale
     rads = np.full(len(rhos), float(a_ref))
     posts, shadow_viol, dropped = place_on_arcs(rhos, rads, scene, rng, r0=r0, dr=dr, radii=radii, gap=gap,
-                                                shadow_depth=shadow_depth, n_try=n_try, angle_jitter=angle_jitter)
+                                                shadow_depth=shadow_depth, n_try=n_try, angle_jitter=angle_jitter,
+                                                max_half_width_m=max_half_width_m)
     real = np.zeros(n)
     if len(posts):
         rr = bistatic_range(posts[:, :2], scene.source, scene.listener)

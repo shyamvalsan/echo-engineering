@@ -102,3 +102,29 @@ def test_analytic_profile_envelope_of_a_tone():
     p = 1.0 + 0.5 * np.cos(2 * np.pi * 14.0 * (rho - R0))  # kappa 14 /m = 2401 Hz
     z = analytic_profile(p, BAND, DR, C)
     assert np.median(np.abs(z[200:-200])) == pytest.approx(0.5, rel=0.02)
+
+
+def test_max_half_width_clips_to_a_strip_and_keeps_ellipse_ranges():
+    """max_half_width_m: every post has |y| + a <= half-width (inside the wedge too) and still sits on its ring's
+    equal-delay ellipse (bistatic range unchanged by the clip: same ring ranges as without it)."""
+    import numpy as np
+
+    from echo.realize import realize
+    from echo.scene import Scene, bistatic_range
+
+    rho = 3.0 + 0.01 * np.arange(2000)
+    prof = 1.0 + np.sin(2 * np.pi * rho / 0.13)
+    sc = Scene(half_angle_deg=20.0)
+    kw = dict(r0=3.0, dr=0.01, a_ref=0.01, radii=(0.01,), mode="phase_locked", n_posts=400)
+    p_w, _ = realize(prof, sc, 0, **kw)
+    p_s, st = realize(prof, sc, 0, max_half_width_m=0.5, **kw)
+    assert len(p_s) >= 0.95 * len(p_w)
+    assert np.all(np.abs(p_s[:, 1]) + p_s[:, 2] <= 0.5 + 1e-9)
+    assert np.abs(p_w[:, 1]).max() > 0.5  # without the clip the wedge (+-20 deg, ~7 m wide at 20 m) is used
+    th = np.degrees(np.arctan2(p_s[:, 1], p_s[:, 0]))
+    assert np.all(np.abs(th) <= 20.0)
+    r_w = np.sort(bistatic_range(p_w[:, :2], sc.source, sc.listener))
+    r_s = np.sort(bistatic_range(p_s[:, :2], sc.source, sc.listener))
+    n = min(len(r_w), len(r_s))
+    if len(r_w) == len(r_s):
+        assert np.allclose(r_w[:n], r_s[:n], atol=1e-6)

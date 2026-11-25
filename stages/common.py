@@ -90,6 +90,8 @@ class StageConfig:
     robustness_c_cases: tuple | None = None  # speed-of-sound cases to run (None: echo.robustness.C_CASES, the spec's
     #   331 and 349 m/s); () skips them (each costs an empty-scene run + a full run) and records them as not run
     robustness_jitter: bool = True  # run the jitter case (one Tier 1 rerun); False records it as not run
+    max_half_width_m: float | None = None  # optional lateral clip: posts in a constant-width strip |y| <= this inside
+    #   the wedge (phase-locked realizations); the Tier 1 anchors and the stretch prior's area follow it. None = wedge
     profile_transform: Callable | None = None  # optional physics pre-compensation of the physical-scale profile
     #   (cfg, profile) -> profile, applied right after scale_profile (incl. the density sweep); None = unchanged.
     #   Stage 3 uses it for an extinction pre-compensation (judge-free); it must not consult any judge
@@ -142,7 +144,8 @@ def build_design(cfg: StageConfig, profile, claps, band, n_out, seed=None, range
     posts, st = realize(profile, sc, cfg.seed if seed is None else seed, r0=cfg.r0, dr=cfg.dr, a_ref=cfg.a_ref,
                         radii=tuple(cfg.catalog), band=band, shadow_depth=cfg.shadow_depth, claps=claps,
                         refine_steps=0 if pl else cfg.refine_steps, mode=cfg.realization,
-                        posts_per_period=cfg.posts_per_period, range_scale=range_scale)
+                        posts_per_period=cfg.posts_per_period, range_scale=range_scale,
+                        **({} if cfg.max_half_width_m is None else {"max_half_width_m": cfg.max_half_width_m}))
     sc = stage_scene(cfg, posts)
     cl = torch.as_tensor(claps)
     e2 = post_echo(posts, cl, sc, mode="2d", n_out=n_out, band=band).numpy()
@@ -317,6 +320,8 @@ def stage_listeners(cfg: StageConfig, target):
     r_hi = cfg.r0 + C0 * len(target.audio) / FS / 2.0 + 0.1
     th = np.radians(cfg.half_angle_deg)
     x_lo, y_hi = stage_scene(cfg).r_min * np.cos(th), r_hi * np.sin(th)  # bounding rectangle of the wedge
+    if cfg.max_half_width_m is not None:  # strip: the bounding rectangle of the clipped wedge
+        y_hi = min(y_hi, float(cfg.max_half_width_m))
     anchors = np.array([[x, y] for x in (x_lo, r_hi) for y in (-y_hi, y_hi)])
     return np.vstack([robustness_listeners(stage_scene(cfg)), anchors])
 
@@ -458,6 +463,9 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
         # of the stage and the cached empty-scene run is reused across correction rounds (sensors only record).
         lis = stage_listeners(cfg, target)
         wedge_area_m2 = wedge_area(stage_scene(cfg).r_min, cfg.r0 + C0 * len(target.audio) / FS / 2.0, cfg.half_angle_deg)
+        if cfg.max_half_width_m is not None:  # strip: area of the clipped wedge (upper bound: the full strip)
+            wedge_area_m2 = min(wedge_area_m2, 2.0 * cfg.max_half_width_m
+                                * (cfg.r0 + C0 * len(target.audio) / FS / 2.0 - stage_scene(cfg).r_min))
 
         def t1(scene, c=C0, record_field=False):
             # every Tier 1 solve of the driver (incl. the robustness reruns, which call this) holds the machine-wide
