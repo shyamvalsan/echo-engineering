@@ -20,7 +20,7 @@ import json
 import shlex
 import sys
 import time
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Callable
@@ -470,8 +470,11 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
 
         def t1(scene, c=C0, record_field=False):
             # every Tier 1 solve of the driver (incl. the robustness reruns, which call this) holds the machine-wide
-            # lock and uses all cores while it does
-            with tier1_lock(log=say) as waited:
+            # lock and uses all cores while it does; injected (fake) solvers, e.g. in tests, do not take the lock
+            from echo import tier1 as _t1mod
+
+            real = getattr(hooks.run, "__module__", None) == _t1mod.__name__
+            with (tier1_lock(log=say) if real else nullcontext(0.0)) as waited:
                 wall["tier1_lock_wait_s"] = wall.get("tier1_lock_wait_s", 0.0) + waited
                 return hooks.run(scene, cfg.f_max, cfg.duration_s, listeners=lis, c=c, record_field=record_field,
                                  field_dt=cfg.field_dt, ppw=ppw, threads=tier1_lock_threads())

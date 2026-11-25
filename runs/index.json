@@ -1,6 +1,86 @@
 {
  "runs": [
   {
+   "stage": "s4_speech",
+   "run_id": "20261125-140115-s4_4a_ah",
+   "path": "s4_speech/20261125-140115-s4_4a_ah",
+   "title": "Speech 4a: \"ah\" (150 ms)",
+   "created": "2026-11-25T14:01:15+02:00",
+   "status": "tier0_only",
+   "passed": false,
+   "verified": false
+  },
+  {
+   "stage": "s4_speech",
+   "run_id": "20261125-135718-s4_4b_om",
+   "path": "s4_speech/20261125-135718-s4_4b_om",
+   "title": "Speech 4b: \"om\" (247 ms)",
+   "created": "2026-11-25T13:57:18+02:00",
+   "status": "final",
+   "passed": false,
+   "verified": true
+  },
+  {
+   "stage": "s4_speech",
+   "run_id": "20261125-134325-s4_4b_ba",
+   "path": "s4_speech/20261125-134325-s4_4b_ba",
+   "title": "Speech 4b: \"ba\" (238 ms)",
+   "created": "2026-11-25T13:43:25+02:00",
+   "status": "final",
+   "passed": false,
+   "verified": true
+  },
+  {
+   "stage": "s3_melody",
+   "run_id": "20261125-133244-s3_60ms",
+   "path": "s3_melody/20261125-133244-s3_60ms",
+   "title": "Melody, Ode to Joy opening (E6 E6 F6 G6 G6 F6 E6 D6), 60 ms notes",
+   "created": "2026-11-25T13:32:48+02:00",
+   "status": "final",
+   "passed": false,
+   "verified": true
+  },
+  {
+   "stage": "s4_speech",
+   "run_id": "20261125-132102-s4_4b_ma",
+   "path": "s4_speech/20261125-132102-s4_4b_ma",
+   "title": "Speech 4b: \"ma\" (223 ms)",
+   "created": "2026-11-25T13:21:02+02:00",
+   "status": "final",
+   "passed": false,
+   "verified": true
+  },
+  {
+   "stage": "s3_melody",
+   "run_id": "20261125-131152-s3",
+   "path": "s3_melody/20261125-131152-s3",
+   "title": "Melody, Ode to Joy opening (E6 E6 F6 G6 G6 F6 E6 D6), 100 ms notes",
+   "created": "2026-11-25T13:11:57+02:00",
+   "status": "final",
+   "passed": false,
+   "verified": true
+  },
+  {
+   "stage": "s4_speech",
+   "run_id": "20261125-124137-s4_4c_hello",
+   "path": "s4_speech/20261125-124137-s4_4c_hello",
+   "title": "Speech 4c: \"hello\" (399 ms)",
+   "created": "2026-11-25T12:41:37+02:00",
+   "status": "final",
+   "passed": true,
+   "verified": true
+  },
+  {
+   "stage": "s2_motif",
+   "run_id": "20261125-122003-s2",
+   "path": "s2_motif/20261125-122003-s2",
+   "title": "Motif C6 E6 G6 C7, 45 ms each",
+   "created": "2026-11-25T12:20:55+02:00",
+   "status": "final",
+   "passed": false,
+   "verified": true
+  },
+  {
    "stage": "s1_bird",
    "run_id": "20261125-104529-s1",
    "path": "s1_bird/20261125-104529-s1",

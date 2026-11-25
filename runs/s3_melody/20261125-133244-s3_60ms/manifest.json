@@ -3706,6 +3706,7 @@
   "1 cm posts at the 2.5 kHz grid (r/dx 0.73) pass backscatter at the 3 fixed offsets only: below the calibrated sub-cell range (area factor clamped), no held-out offsets checked there",
   "1 cm posts fail backscatter at the 2 kHz grid: not validated there",
   "the 1 cm backscatter match depends on an area factor fitted to backscatter (area factor 0.908; held-out offsets confirm backscatter only)",
-  "radii [0.01] used by this design are validated for backscatter but not at all angles at this grid (metrics.json:checks.cylinder.stage2_grid (f_max 2500.0 Hz, ppw 10.0))"
+  "radii [0.01] used by this design are validated for backscatter but not at all angles at this grid (metrics.json:checks.cylinder.stage2_grid (f_max 2500.0 Hz, ppw 10.0))",
+  "1 cm posts on the 2.5 kHz grid: forward scattering is 2.6 dB off the exact cylinder, and forward scattering sets extinction, so the referee's extinction (and the multiple-scattering residue) for this design is uncertain by roughly that much"
  ]
 }

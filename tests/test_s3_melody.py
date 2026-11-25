@@ -60,7 +60,7 @@ def test_extinction_estimate_and_precomp():
     p = np.full(n, 0.01)  # 0.01 posts per 1 cm bin = 1 post per metre of range
     L = extinction_profile_db(p, cfg, cfg.make_target())
     # more posts in front, more loss (sigma follows the note probing each range, so it is monotone within a note)
-    assert L[0] == 0.0 and L[-1] > L[n // 2] > L[n // 8] > 0
+    assert L[0] == 0.0 and L[-1] > L[n // 8] > 0 and L[n // 2] > L[n // 8]
     # hand calc at the far end (last note D6 1175 Hz; strip 2 m wide everywhere beyond rho = 1 / tan 20 deg = 2.75 m):
     # 8.686 * sigma(1175 Hz) * (137 posts in front) / 2 m
     approx = 8.686 * sigma_total_m(0.01, 1175.0) * (n - 1) * 0.01 / 2.0

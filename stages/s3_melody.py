@@ -50,7 +50,8 @@ TARGET_FILL = 0.01  # nominal: the post count is set by max_posts=N_POSTS (wedge
 SPREAD_UNDO = 0.5  # profile_transform: undo half of the 2D spreading compensation (posts ~ rho^0.5, not rho^1)
 POSTS_PER_PERIOD = 1
 # study outputs (runs/s3_melody/_studies/), copied into metrics.design_study (note_length_sweep is Tier 0 ONLY)
-STUDY_FILES = ("design_study_tier0.json", "note_length_sweep_tier0.json", "wedge_density_tier0.json",
+STUDY_FILES = ("design_study_tier0.json", "note_length_sweep_tier0.json", "strip_density_tier0.json",
+               "wedge_density_tier0.json",
                "design_study_tier0_wedge1deg_2cm.json")  # the last two: the first (abandoned) +-1 deg 2 cm design
 
 
@@ -443,6 +444,11 @@ def note_length_sweep():
 
 # ------------------------------------------------------------------------------------------------ run post-processing
 C_NOT_RUN = (331.0, 349.0)
+JITTER_NOT_RUN = ("not run (time/cost: the 100 ms run alone took ~30 min on the 2.5 kHz grid with the Tier 1 lock "
+                  "shared by three stages; free cases only)")
+EXTINCTION_CAVEAT = ("1 cm posts on the 2.5 kHz grid: forward scattering is 2.6 dB off the exact cylinder, and forward "
+                     "scattering sets extinction, so the referee's extinction (and the multiple-scattering residue) for "
+                     "this design is uncertain by roughly that much")
 
 
 def _peaks_per_note(echo, t_echo0, notes, fs=FS, lag=0.003):
@@ -518,8 +524,7 @@ def postprocess(run_dir, cfg, des):
                                 "pitch_shift_expected_cents": 1200 * math.log2(c / C0),
                                 "alone_breaks_50_cent_limit": abs(1200 * math.log2(c / C0)) > 50.0}
                                for c in C_NOT_RUN] + ([] if cfg.robustness_jitter else
-                                                      [{"case": "jitter", "status": "not run (budget: free cases only "
-                                                                                    "for the 60 ms variant)"}]),
+                                                      [{"case": "jitter", "status": JITTER_NOT_RUN}]),
         "tier1_lock": dict(TIER1_LOCK_STATS),
         "note_ms": int(round(cfg.note_s * 1000)),
     }
@@ -540,7 +545,19 @@ def studies_from_disk():
         out[Path(name).stem] = json.loads(fp.read_text()) if fp.exists() else {"missing": str(fp)}
     nl = out.get("note_length_sweep_tier0")
     if isinstance(nl, dict) and "rows" in nl:
-        out["note_length_sweep"] = nl  # alias the task brief names (design_study.note_length_sweep); Tier 0 only
+        rows = nl["rows"]
+        perf_ok = [r["note_ms"] for r in rows if r["perfect_echo_judge_capped_band"]["notes_in_order"] == 1.0]
+        des_ok = [r["note_ms"] for r in rows if r["tier0_judge_capped_band"]["notes_in_order"] == 1.0]
+        nl = dict(nl, answer={
+            "TIER_0_ONLY": True,
+            "shortest_note_ms_perfect_echo_transcribes_all_claps": min(perf_ok) if perf_ok else None,
+            "shortest_note_ms_realized_design_transcribes_all_claps": min(des_ok) if des_ok else None,
+            "per_length": [{"note_ms": r["note_ms"],
+                            "perfect_echo_in_order_frac": r["perfect_echo_judge_capped_band"]["notes_in_order"],
+                            "design_tier0_in_order_frac": r["tier0_judge_capped_band"]["notes_in_order"]}
+                           for r in rows]})
+        out["note_length_sweep"] = nl  # the name the task brief uses (design_study.note_length_sweep); Tier 0 only
+        out.pop("note_length_sweep_tier0", None)
     return out
 
 
@@ -549,8 +566,182 @@ def attach_studies(run_dir):
     mp = Path(run_dir) / "metrics.json"
     m = json.loads(mp.read_text())
     m["design_study"] = studies_from_disk()
+    ex = m.setdefault("s3_extra", {})
+    for r in ex.get("robustness_not_run", []):
+        if r.get("case") == "jitter":
+            r["status"] = JITTER_NOT_RUN
+    for key in ("caveats",):
+        if EXTINCTION_CAVEAT not in (m.get(key) or []):
+            m[key] = list(m.get(key) or []) + [EXTINCTION_CAVEAT]
     mp.write_text(json.dumps(export_clean(m), indent=1))
+    man = Path(run_dir) / "manifest.json"
+    mf = json.loads(man.read_text())
+    if EXTINCTION_CAVEAT not in (mf.get("caveats") or []):
+        mf["caveats"] = list(mf.get("caveats") or []) + [EXTINCTION_CAVEAT]
+        man.write_text(json.dumps(export_clean(mf), indent=1))
     print("attached studies to", mp)
+
+
+def _notes_named(det, target):
+    """Judge output [(f, on, off)] -> [{hz, on_s, off_s, nearest target note, cents to it}] (reporting only)."""
+    tf = sorted({float(f) for f, _, _ in target.notes})
+    out = []
+    for f, a, b in det:
+        near = min(tf, key=lambda x: abs(math.log2(f / x)))
+        out.append({"hz": round(float(f), 1), "on_s": round(float(a), 4), "off_s": round(float(b), 4),
+                    "nearest_target_hz": round(near, 1), "cents": round(1200 * math.log2(f / near), 1)})
+    return out
+
+
+def _per_note_residue_db(sig, model, t_echo0, notes, fs=FS):
+    """Per note window: least-squares gain g of `model` onto `sig`, residue 10 log10(|sig - g model|^2 / |sig|^2)."""
+    out = []
+    for t1, t2 in note_windows(t_echo0, notes):
+        a, b = sig[int(t1 * fs):int(t2 * fs)], model[int(t1 * fs):int(t2 * fs)]
+        g = float(np.dot(a, b) / max(np.dot(b, b), 1e-300))
+        out.append(float(10 * np.log10(np.sum((a - g * b) ** 2) / max(np.sum(a ** 2), 1e-300))))
+    return out
+
+
+def tonal_fraction_db(echo, t_echo0, notes, fs=FS, rel=0.03):
+    """Per note (phase-insensitive): 10 log10 of the echo's power within +-3 % of the note frequency over its power
+    in the whole spectrum, Hann over the middle 60 % of the note, mean power over claps. A clean tone is near 0 dB."""
+    e = np.atleast_2d(echo)
+    out = []
+    for (f, _, _), (t1, t2) in zip(notes, note_windows(t_echo0, notes)):
+        seg = e[:, int(t1 * fs):int(t2 * fs)]
+        S = np.mean(np.abs(np.fft.rfft(seg * np.hanning(seg.shape[1]), 1 << 14, axis=1)) ** 2, axis=0)
+        fr = np.fft.rfftfreq(1 << 14, 1 / fs)
+        out.append(float(10 * np.log10(S[(fr > f * (1 - rel)) & (fr < f * (1 + rel))].sum() / max(S.sum(), 1e-300))))
+    return out
+
+
+def diagnose(run_dir):
+    """Failure diagnosis of a finished run, recomputed from its own files (scene.json posts, echo_tier1.wav with the
+    manifest gain = Tier 1 echo of clap 0; Tier 0 recomputed for every clap): what the judge detected, whether the
+    design transcribes on Tier 0, Tier 1 vs Tier 0 (stretch, residue per note), the design's own residue against
+    the perfect echo, predicted vs measured extinction per note, and the level two ways. Writes metrics.diagnosis
+    and appends a summary to failure_cause. Judges are only read, never used to choose anything."""
+    import soundfile as sf
+    from scipy.interpolate import CubicSpline
+
+    from echo.inverse import fit_stretch, reference_echo
+    from echo.metrics import echo_segment, segment_notes
+    from echo.scene import Scene
+
+    run_dir = Path(run_dir)
+    m = json.loads((run_dir / "metrics.json").read_text())
+    man = json.loads((run_dir / "manifest.json").read_text())
+    note_ms = int(m.get("s3_extra", {}).get("note_ms") or (60 if run_dir.name.endswith("_60ms") else 100))
+    cfg = make_config(note_ms)
+    target = cfg.make_target()
+    claps = clap_family(cfg.n_claps, seed=cfg.seed)
+    n_out = int(round(cfg.duration_s * FS))
+    bf = clap_band(claps)
+    bc = (bf[0], min(bf[1], cfg.band_max_hz))
+    t0 = 2 * cfg.r0 / C0
+    posts = np.asarray(json.loads((run_dir / "scene.json").read_text())["posts"], dtype=float)
+    sc = Scene(posts=posts, half_angle_deg=cfg.half_angle_deg)
+    cl = torch.as_tensor(claps)
+    e0 = post_echo(posts, cl, sc, mode="2d", n_out=n_out, band=bc).numpy()
+    w1, _ = sf.read(run_dir / "echo_tier1.wav")
+    e1 = np.zeros(n_out)
+    e1[:min(n_out, len(w1))] = (w1 / 10 ** (man["audio"]["echo_gain_db"]["tier1"] / 20))[:n_out]
+    perf = reference_echo(target.audio, claps, t0, n_out, bc)
+    n = len(target.audio)
+    note_s = cfg.note_s
+
+    def det(e):
+        return _notes_named(segment_notes(echo_segment(e, t0, n), FS, note_s=note_s), target)
+
+    judge = {"target_hz": [round(float(f), 1) for f, _, _ in target.notes],
+             "tier1_clap0": det(e1), "perfect_clap0": det(perf[0]),
+             "tier0_per_clap": [det(e0[k]) for k in range(len(claps))]}
+    n0w, n1w = int(t0 * FS), int(t0 * FS) + n + claps.shape[1]
+    fit = fit_stretch(e1[None], e0[:1], n0w, n1w)
+    t = np.arange(n_out) / FS
+    e0w = CubicSpline(t, e0[0])(np.clip(t * (1 + fit["eps"]) + fit["tau_s"], 0, t[-1]))
+    res_t1 = _per_note_residue_db(e1, e0w, t0, target.notes)
+    res_t0 = [float(np.mean([_per_note_residue_db(e0[k], perf[k], t0, target.notes)[i] for k in range(len(claps))]))
+              for i in range(len(target.notes))]
+    tonal = {"perfect_echo": tonal_fraction_db(perf, t0, target.notes),
+             "tier0_design": tonal_fraction_db(e0, t0, target.notes),
+             "tier1_clap0": tonal_fraction_db(e1, t0, target.notes),
+             "definition": "per note, power within +-3 % of the note frequency / total power, dB (0 = pure tone); "
+                           "phase-insensitive, so the stretch pre-warp does not affect it"}
+    seg = slice(n0w, n1w)
+    corr_raw = float(np.corrcoef(e1[seg], e0[0][seg])[0, 1])
+    corr_st = float(np.corrcoef(e1[seg], e0w[seg])[0, 1])
+    lvl = m.get("s3_extra", {}).get("level_along_melody", {})
+    mid = [cfg.r0 + C0 * (a + b) / 4 for _, a, b in target.notes]
+    pred = [extinction_estimate_db(posts, sc, f, r) for (f, _, _), r in zip(target.notes, mid)]
+    gap = lvl.get("tier_gap_per_note_db")
+    # level two ways: (ii) every ring's population scaled from the strip (2 hw wide) to the full +-20 deg wedge
+    # (2 rho tan 20 wide) at the same areal density: coherent single scattering, amplitude x width ratio (unverified)
+    scale_db = [20 * math.log10(max(1.0, 2 * r * math.tan(math.radians(cfg.half_angle_deg)) / (2 * HALF_WIDTH_M)))
+                for r in mid]
+    c3 = lvl.get("corrected_3d_db") or []
+    from echo.metrics import DIRECT_SPL_DB
+
+    full_wedge = [v + d for v, d in zip(lvl.get("tier0_3d_db") or [], scale_db)]
+    posts_per_period = len(posts) / max(1.0, sum((b - a) * f for f, a, b in target.notes))
+    d = {
+        "what": "recomputed from this run's scene.json and echo_tier1.wav (clap 0; per-clap Tier 1 echoes are not "
+                "saved) and Tier 0 of the same posts for every clap; no new solve",
+        "tier0_design_transcribes": {"tier0_metric_notes_in_order": next((x["value"] for x in m["metrics"] if
+                                                                          x["id"] == "notes_in_order" and x["tier"] == "tier0"), None),
+                                     "tier0_full_band_in_order": m.get("s3_extra", {}).get("tier0_full_band", {}).get("notes_in_order_mean")},
+        "judge_detected": judge,
+        "tier1_vs_tier0_clap0": {"stretch_eps": fit["eps"], "tau_s": fit["tau_s"], "corr_raw": corr_raw,
+                                 "corr_after_stretch": corr_st, "residue_db_per_note_after_stretch_and_gain": res_t1},
+        "tier0_design_vs_perfect_echo_residue_db_per_note": res_t0,
+        "residue_note": "waveform residues are phase-sensitive: the design's ranges are pre-warped by the stretch "
+                        "compensation, so Tier 0 drifts against the unwarped perfect echo by ~0.2 % of the delay "
+                        "(a period or more late in the melody) and its residue reads ~0 dB; tonal_fraction_db is the "
+                        "phase-insensitive measure",
+        "tonal_fraction_db": tonal,
+        "posts_per_carrier_period_mean": posts_per_period,
+        "extinction_table": {"note_hz": judge["target_hz"], "range_mid_m": mid, "predicted_two_way_db": pred,
+                             "measured_tier_gap_per_note_db": gap,
+                             "model": "8.686 * sum over nearer posts of sigma_tot(f) / strip width (stage-1 calibrated: "
+                                      "7.4 dB predicted vs 7.2 dB measured)"},
+        "level_two_ways": {
+            "strip_as_simulated_corrected_3d_db": c3, "strip_as_simulated_spl_db": lvl.get("spl_db"),
+            "full_wedge_tier0_3d_db_UNVERIFIED": full_wedge,
+            "full_wedge_spl_db_UNVERIFIED": [DIRECT_SPL_DB + v for v in full_wedge],
+            "full_wedge_definition": "Tier 0 3D per-note peak of the strip design + 20 log10(wedge width 2 rho tan 20 deg"
+                                     " / strip width 2 m) at the note's mid range: ring populations scaled to the full "
+                                     "wedge at the strip's areal density, coherent single scattering; not simulated"},
+    }
+    t0m = next((x["value"] for x in m["metrics"] if x["id"] == "notes_in_order" and x["tier"] == "tier0"), None)
+    tn0, tn1 = tonal["tier0_design"], tonal["tier1_clap0"]
+    inner = slice(1, len(target.notes) - 1)
+    gap_in = float(np.median(gap[inner])) if gap else float("nan")
+    summ = (f"(1) the design is imperfect already on Tier 0 (notes in order for {t0m:.1f} of claps): the inner notes "
+            f"are clean tones (median {np.median(tn0[inner]):.1f} dB of note power at the note frequency) but the first "
+            f"and last notes are not ({tn0[0]:.1f} / {tn0[-1]:.1f} dB: the ends of the {len(posts)}-post comb, "
+            f"{posts_per_period:.1f} posts per carrier period) and the segmenter merges or drops notes (clap 0: "
+            f"{len(judge['tier0_per_clap'][0])} detected); (2) on Tier 1 a broadband residue dominates: the inner notes "
+            f"carry only {np.median(tn1[inner]):.1f} dB of their power at the note frequency, the Tier 1 inner-note level "
+            f"is {gap_in:+.1f} dB ABOVE Tier 0 (median) although coherent extinction predicts {np.median(pred[inner]):.1f} dB "
+            f"below, and the pitch tracker locks to {min(x['hz'] for x in judge['tier1_clap0']):.0f}-"
+            f"{max(x['hz'] for x in judge['tier1_clap0']):.0f} Hz (the top of the 2.5 kHz band where the clap x "
+            f"(ka)^2 scattering residue is strongest; interpretation) instead of the 1175-1568 Hz notes; Tier 1 stretch {fit['eps'] * 100:+.3f} % "
+            f"(corr {corr_raw:.2f} -> {corr_st:.2f} after it). Coherent extinction is not the binding cause "
+            f"(predicted {pred[-1]:.1f} dB at the last note, mean tier gap {m['headline']['tier_gap_db']:.1f} dB); the "
+            f"incoherent residue of a sparse comb of weak (ka ~ 0.2-0.3) posts is the binding cause on Tier 1, and the "
+            f"comb's ends on Tier 0")
+    d["summary"] = summ
+    m["diagnosis"] = d
+    fc = m.get("failure_cause") or ""
+    m["failure_cause"] = fc.split(" | diagnosis: ")[0] + " | diagnosis: " + summ
+    (run_dir / "metrics.json").write_text(json.dumps(export_clean(m), indent=1))
+    print(json.dumps({"summary": summ, "pred": [round(x, 1) for x in pred], "gap": gap and [round(x, 1) for x in gap],
+                      "tonal": {k: [round(x, 1) for x in v] for k, v in tonal.items() if k != "definition"},
+                      "t0c0": [(x["hz"], x["on_s"]) for x in judge["tier0_per_clap"][0]],
+                      "t1c0": [(x["hz"], x["on_s"]) for x in judge["tier1_clap0"]],
+                      "full_wedge_spl": [round(DIRECT_SPL_DB + v, 1) for v in full_wedge]}, indent=0), flush=True)
+    return d
 
 
 def export_clean(o):
@@ -575,6 +766,8 @@ def main(argv=None):
         return note_length_sweep()
     if "--wedge-study" in argv:
         return wedge_study()
+    if "--diagnose" in argv:
+        return [diagnose(d) for d in argv[argv.index("--diagnose") + 1:]]
     if "--attach-studies" in argv:
         return [attach_studies(d) for d in argv[argv.index("--attach-studies") + 1:]]
     note_ms = 100
@@ -585,6 +778,9 @@ def main(argv=None):
     cfg = make_config(note_ms)
     out = stage_main(cfg, argv)
     postprocess(out[0], cfg, out[1])
+    attach_studies(out[0])
+    if out[1].echo_t1_2d is not None and not json.loads((Path(out[0]) / "metrics.json").read_text())["passed"]:
+        diagnose(out[0])
     return out
 
 
