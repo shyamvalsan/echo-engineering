@@ -44,7 +44,7 @@ CONFIG = StageConfig(
     half_angle_deg=10.0,  # narrower wedge: cheaper Tier 1 domain, larger sweet spot (s1 study: +-10 cm at 10 deg)
     catalog=(0.02,),
     a_ref=0.02,
-    target_fill=0.016,  # superseded by the Tier 1 density sweep below
+    target_fill=0.016,  # picked on Tier 1 by spectrogram loss: 0.8 % -> 5.637, 1.6 % -> 5.568 (sweep log in _studies)
     steps=1200,  # profile solve: 1200 Adam steps at lr 0.05 (lower window loss than 300 at 0.02; see the study)
     lr=0.05,
     # Realization, radius and fill chosen on Tier 0 (runs/s2_motif/_studies/design_study_tier0.json) by the spectrogram
@@ -53,8 +53,10 @@ CONFIG = StageConfig(
     # fundamental's periodicity); K = 2 quantile, uniform K = 4/6 and sampling trade them for incoherent noise.
     realization="phase_locked",
     posts_per_period=1,
-    fill_candidates=(0.008, 0.016),  # Tier 1 density sweep, picked by Tier 1 spectrogram loss only
-    correction_rounds=1,  # round 0 = the sweep's pick (time budget on a shared CPU)
+    # Tier 1 density sweep (0.008, 0.016) was run once (runs/s2_motif/_studies/tier1_density_sweep.log, Tier 1 loss
+    # only); its pick is fixed here so the final run spends its Tier 1 budget on a correction round instead.
+    fill_candidates=None,
+    correction_rounds=2,  # round 0 + one window-gain correction round (extinction: round-0 gains 0.5 -> 2.0)
     threads=4,  # shared CPU (NUMBA_NUM_THREADS=4)
     design_study_files=("_studies/design_study_tier0.json",),
     robustness=True,
