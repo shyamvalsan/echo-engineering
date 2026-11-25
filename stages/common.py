@@ -15,10 +15,12 @@ the validation file has no entry for that grid, `cfg.validated_radii` is used an
 from __future__ import annotations
 
 import argparse
+import fcntl
 import json
 import shlex
 import sys
 import time
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Callable
@@ -316,6 +318,57 @@ def tier1_engine():
     return getattr(tier1, "ENGINE_VERSION", None)
 
 
+# Machine-wide mutual exclusion of Tier 1 solves: several stage processes share one 8-core machine and concurrent
+# solves thrash memory bandwidth. Every Tier 1 solve the driver launches (design runs, field run, robustness reruns,
+# which go through the same `t1` closure) holds this lock and uses all cores while it does.
+TIER1_LOCK_FILE = Path(__file__).resolve().parent.parent / ".cache" / "tier1.lock"
+TIER1_LOCK_THREADS = 8
+TIER1_LOCK_STATS = {"acquired": 0, "waited_s": 0.0}  # per process: how many solves, how long they queued
+
+
+@contextmanager
+def tier1_lock(path=None, log=print, poll_s=0.5, log_every_s=60.0):
+    """Blocking exclusive `fcntl.flock` on `path` (default TIER1_LOCK_FILE; parent dir created). Logs
+    "waiting for Tier 1 lock…" every `log_every_s` while blocked. Yields the seconds waited; released on exit or
+    exception (and by the OS if the process dies)."""
+    p = Path(path or TIER1_LOCK_FILE)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    fh = open(p, "a+")
+    t0, last = time.time(), None
+    try:
+        while True:
+            try:
+                fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if last is None or time.time() - last >= log_every_s:
+                    log(f"waiting for Tier 1 lock… ({time.time() - t0:.0f} s so far, {p})")
+                    last = time.time()
+                time.sleep(poll_s)
+        waited = time.time() - t0
+        TIER1_LOCK_STATS["acquired"] += 1
+        TIER1_LOCK_STATS["waited_s"] += waited
+        if waited > 1.0:
+            log(f"Tier 1 lock acquired after {waited:.0f} s")
+        yield waited
+    finally:
+        try:
+            fcntl.flock(fh, fcntl.LOCK_UN)
+        finally:
+            fh.close()
+
+
+def tier1_lock_threads():
+    """Threads for a solve that holds the lock: all 8 cores, capped by this process's NUMBA_NUM_THREADS (numba
+    cannot raise its thread count above that at run time)."""
+    try:
+        import numba
+
+        return int(min(TIER1_LOCK_THREADS, numba.config.NUMBA_NUM_THREADS))
+    except Exception:
+        return TIER1_LOCK_THREADS
+
+
 def _say(verbose):
     return (lambda *a: print(*a, flush=True)) if verbose else (lambda *a: None)
 
@@ -395,8 +448,12 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
         wedge_area_m2 = wedge_area(stage_scene(cfg).r_min, cfg.r0 + C0 * len(target.audio) / FS / 2.0, cfg.half_angle_deg)
 
         def t1(scene, c=C0, record_field=False):
-            return hooks.run(scene, cfg.f_max, cfg.duration_s, listeners=lis, c=c, record_field=record_field,
-                             field_dt=cfg.field_dt, ppw=ppw, threads=cfg.threads)
+            # every Tier 1 solve of the driver (incl. the robustness reruns, which call this) holds the machine-wide
+            # lock and uses all cores while it does
+            with tier1_lock(log=say) as waited:
+                wall["tier1_lock_wait_s"] = wall.get("tier1_lock_wait_s", 0.0) + waited
+                return hooks.run(scene, cfg.f_max, cfg.duration_s, listeners=lis, c=c, record_field=record_field,
+                                 field_dt=cfg.field_dt, ppw=ppw, threads=tier1_lock_threads())
 
         def e1_of(r, li=0):
             return band_limit(hooks.echoes(r, claps, listener=li), band[0], band[1])
