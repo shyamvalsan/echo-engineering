@@ -60,9 +60,15 @@ def test_cylinder_1cm_within_1db_at_4khz():
 @slow
 @pytest.mark.xfail(strict=True, reason="1 cm at f_max 2 kHz is r/dx 0.6: below the validated sub-cell range")
 def test_cylinder_1cm_at_2khz_known_failure():
-    err, r = _cyl_err(0.01, 2000.0)
-    assert 0.01 in r.extra["unvalidated_radii"]
+    err, _ = _cyl_err(0.01, 2000.0)
     assert err < 1.0
+
+
+def test_unvalidated_radii_reported():
+    """1 cm at f_max 2 kHz (r/dx 0.6) is below the calibrated range, so the result must flag it (no solve needed
+    beyond a tiny run: 1 ms)."""
+    r = t1.run_tier1(Scene(posts=np.array([[1.0, 0.0, 0.01], [1.5, 0.0, 0.02]])), 2000.0, 0.001, cache=False)
+    assert r.extra["unvalidated_radii"] == [0.01]
 
 
 def test_empty_scene_reflections_below_60db_fast():

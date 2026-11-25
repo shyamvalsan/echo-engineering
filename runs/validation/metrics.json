@@ -2458,7 +2458,8 @@
   }
  },
  "caveats": [
-  "1 cm and 2 cm posts: forward/side scattering off the analytic cylinder at the 4 kHz grid (1 cm forward 1.04 dB, 90-degree 1.77 dB; 2 cm forward 1.47 dB, 90-degree 0.43 dB) (dipole part ~10 % strong for sub-cell posts; backscatter within 1 dB); its effect on dense-field echoes is bounded at 0.36 dB by the dense convergence check (checks.grid_convergence.dense)",
-  "1 cm posts fail backscatter at the 2 kHz grid: not validated there"
+  "1 cm and 2 cm posts: forward/side scattering off the analytic cylinder at the 4 kHz grid (1 cm forward 1.04 dB, 90-degree 1.77 dB; 2 cm forward 1.47 dB, 90-degree 0.43 dB) (dipole part ~10 % strong for sub-cell posts; backscatter within 1 dB); effect on dense-field echoes is not bounded; shadowing and multiple scattering are checked by self-convergence only, not against an exact solution",
+  "1 cm posts fail backscatter at the 2 kHz grid: not validated there",
+  "the 1 cm backscatter match depends on an area factor fitted to backscatter (area factor 0.908; held-out offsets confirm backscatter only)"
  ]
 }

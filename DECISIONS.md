@@ -96,3 +96,5 @@ Format: `- [task N] <choice> — <reason>`. Append only (`cat >> DECISIONS.md`);
   - The dense-field check passes (level -0.2 to -0.36 dB, time-scale error -0.005 %).
   - Next fix: separate monopole (K-node coverage) and dipole (face coverage) calibrations, fitted on the backscatter and 90-degree angles.
 - [task 3] Validation verdict follows the spec's check 1 (backscatter); forward/90° results reported as an extended check with a caveat; separate monopole/dipole calibration left as future work — controller ruling, spec wording.
+- [task 3] CORRECTION to the line above about the 1 cm area factor: it is validated for backscatter only (held-out offsets ≤ 0.35 dB); forward and 90° scattering FAIL the 1 dB extended check (1.04 / 1.77 dB); the factor is fitted to backscatter and masks a monopole/dipole imbalance (monopole ~1.4 dB weak after calibration).
+- [task 3] SUPERSEDED: the earlier task-3 lines on ppw 9, the 2nd-order "r + 5 dx" blend zone and the 0.912 area factor at r/dx 1.06 are replaced by engine fd8-3 (ppw 10, per-point stencil order, area factor 0.908 at r/dx 1.167).

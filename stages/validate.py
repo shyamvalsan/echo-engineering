@@ -392,9 +392,9 @@ def assemble_cylinder(rows_by_grid, held):
                             for a, v in weak.items())
             caveats.append(f"{' and '.join(f'{100 * float(a):g} cm' for a in weak)} posts: forward/side scattering "
                            f"off the analytic cylinder at the {f_max / 1000:g} kHz grid ({det}) "
-                           "(dipole part ~10 % strong for sub-cell posts; backscatter within 1 dB); its effect on "
-                           "dense-field echoes is bounded by the dense convergence check (checks.grid_convergence"
-                           ".dense)")
+                           "(dipole part ~10 % strong for sub-cell posts; backscatter within 1 dB); effect on "
+                           "dense-field echoes is not bounded; shadowing and multiple scattering are checked by "
+                           "self-convergence only, not against an exact solution")
     # spec pass: every catalog radius validated (backscatter) at the stage-1 grid; the stage-3 grid is per radius
     cyl["pass"] = all(cyl["stage1_grid"]["per_radius"][str(a)]["pass"] for a in RADII)
     cyl["note"] = ("pass = every catalog radius within 1 dB in backscatter at the stage-1 grid (f_max 4 kHz); "
@@ -418,9 +418,9 @@ def finish(m):
             "max_abs_timing_pitch_error_pct": dense["max_abs_timing_pitch_error_pct"],
             "timing_meets_target": dense["timing_meets_target"], "pass": dense["pass"],
             "note": "mirror of checks.grid_convergence.dense"}
-        caveats = [c.replace("bounded by the dense convergence check",
-                             f"bounded at {dense['max_abs_level_delta_db']:.2f} dB by the dense convergence check")
-                   for c in caveats]
+    if 0.01 in cyl["stage1_grid"]["validated_radii_backscatter"] and t1.AREA_CAL:
+        caveats.append("the 1 cm backscatter match depends on an area factor fitted to backscatter "
+                       f"(area factor {min(t1.AREA_CAL.values()):.3f}; held-out offsets confirm backscatter only)")
     m["passed"] = all(c["pass"] for c in m["checks"].values())
     m["caveats"] = caveats
     return m
