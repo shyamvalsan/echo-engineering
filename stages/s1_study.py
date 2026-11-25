@@ -1,7 +1,7 @@
 """Stage 1 design study on Tier 0 (seconds per design, no Tier 1): sampling vs phase-locked realization at equal
 post counts, radial-jitter sensitivity, and the listener sweet spot vs wedge half-angle.
 
-    uv run python -m stages.s1_study            # writes runs/s1_bird/design_study_tier0.json
+    uv run python -m stages.s1_study            # writes runs/s1_bird/_studies/design_study_tier0.json
 
 Selection rule (stated in the output): designs are compared by the Tier 0 spectrogram loss (echo.inverse.window_loss)
 and its robustness to radial jitter. The judge values (pitch error, log-mel correlation) are recorded for information
@@ -154,7 +154,7 @@ def main():
            "profile_solve": {"steps": cfg.steps, "best_loss": res.info["best_loss"], "band": list(band)},
            "jitter": "radial (along the ray from the source), Gaussian sigma, seeds " + str(JITTER_SEEDS),
            "rows": rows, "sweet_spot": sweet, "wall_s": time.time() - t_all}
-    path = export.RUNS / cfg.stage / "design_study_tier0.json"
+    path = export.RUNS / cfg.stage / "_studies" / "design_study_tier0.json"
     path.write_text(json.dumps(out, indent=1))
     print("wrote", path, f"{time.time() - t_all:.0f} s")
 

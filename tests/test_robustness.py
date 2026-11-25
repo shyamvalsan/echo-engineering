@@ -56,3 +56,17 @@ def test_case_delta_and_pass():
     assert abs(c["metrics"]["pitch_err_pct"] - 2.8) < 1e-12 and abs(c["delta"]["pitch_err_pct"] - 0.8) < 1e-12
     assert c["pass"] is True  # mean 2.8 <= 3, mean 0.9 >= 0.8
     assert case("s1_bird", "y", "Y", pc[1:], nominal)["pass"] is False
+
+
+def test_robust_summary_three_states():
+    from echo.robustness import robust_summary
+
+    def cs(nominal, side, back, claps):
+        out = [{"case": "nominal", "pass": nominal}, {"case": "listener_side_1m", "pass": side},
+               {"case": "listener_back_1m", "pass": back}]
+        return out + [{"case": f"clap_{k}", "pass": p} for k, p in enumerate(claps)]
+
+    assert robust_summary(cs(False, False, False, [False] * 5)) == "fails everywhere"
+    assert robust_summary(cs(True, False, False, [True] * 5)) == "fragile"  # one listener position
+    assert robust_summary(cs(True, True, False, [True, False, False, False, False])) == "fragile"  # one clap
+    assert robust_summary(cs(True, True, True, [True] * 4 + [False])) == "robust"

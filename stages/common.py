@@ -75,6 +75,12 @@ class StageConfig:
     realization: str = "sampling"  # "sampling" (inverse-CDF + range polish) or "phase_locked" (posts on carrier rings)
     posts_per_period: int = 1  # phase_locked: K rings per carrier period at raised-cosine quantiles (1 = pure comb)
     design_study_files: tuple = ()  # JSON files (relative to runs/<stage>/) copied into metrics.design_study
+    # Stretch pre-compensation (Tier 1 only): the post field slows the coherent wave, so Tier 1 echoes are late in
+    # proportion to delay (t -> t / (1 + eps), eps < 0). Ranges are scaled by (1 + eps): eps starts at
+    # stretch_per_fill * fill (measured: -0.238 % at 0.351 % fill, runs/s1_bird/_studies/tier_diff.json) and is refit
+    # after every Tier 1 run (echo.inverse.fit_stretch of Tier 1 vs Tier 0 of the same posts; judge-free).
+    stretch_comp: bool = True
+    stretch_per_fill: float = -0.68
     band_max_hz: float | None = None  # cap the stage band (solve, echoes, comparisons) e.g. at a Tier 1 f_max < 4 kHz
 
 
@@ -116,14 +122,14 @@ def stage_scene(cfg: StageConfig, posts=None, c=C0) -> Scene:
     return Scene(posts=np.zeros((0, 3)) if posts is None else posts, half_angle_deg=cfg.half_angle_deg, c=c)
 
 
-def build_design(cfg: StageConfig, profile, claps, band, n_out, seed=None) -> Design:
+def build_design(cfg: StageConfig, profile, claps, band, n_out, seed=None, range_scale=1.0) -> Design:
     """Realize a physical-scale profile and evaluate Tier 0 (2D post echo, 3D post echo, 2D profile echo)."""
     sc = stage_scene(cfg)
     pl = cfg.realization == "phase_locked"
     posts, st = realize(profile, sc, cfg.seed if seed is None else seed, r0=cfg.r0, dr=cfg.dr, a_ref=cfg.a_ref,
                         radii=tuple(cfg.catalog), band=band, shadow_depth=cfg.shadow_depth, claps=claps,
                         refine_steps=0 if pl else cfg.refine_steps, mode=cfg.realization,
-                        posts_per_period=cfg.posts_per_period)
+                        posts_per_period=cfg.posts_per_period, range_scale=range_scale)
     sc = stage_scene(cfg, posts)
     cl = torch.as_tensor(claps)
     e2 = post_echo(posts, cl, sc, mode="2d", n_out=n_out, band=band).numpy()
@@ -140,6 +146,7 @@ def build_design(cfg: StageConfig, profile, claps, band, n_out, seed=None) -> De
 
 
 VALIDATION_FILE = export.RUNS / "validation" / "metrics.json"
+STUDY_DIR = "_studies"  # stage study outputs live in runs/<stage>/_studies/ (the index scanner skips "_" names)
 
 
 def _grid_entries(d):
@@ -289,7 +296,9 @@ def _say(verbose):
 
 def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, verbose=True, runs_root=None):
     """Run a stage end to end and write its run folder. Returns (run_dir, design, solve_result)."""
-    from echo.inverse import clap_centroid_s, correction_loop, reference_echo, stage_score, window_gains, window_loss
+    from echo.inverse import (clap_centroid_s, compose_stretch, correction_loop, fit_stretch, reference_echo,
+                              stage_score, window_gains, window_loss)
+    from echo.realize import wedge_area
     from echo.clap import band_limit
 
     say = _say(verbose)
@@ -349,6 +358,7 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
         # is the bounding box of posts and sensors (snapped to 0.25 m), so the anchors fix the domain for every design
         # of the stage and the cached empty-scene run is reused across correction rounds (sensors only record).
         lis = stage_listeners(cfg, target)
+        wedge_area_m2 = wedge_area(stage_scene(cfg).r_min, cfg.r0 + C0 * len(target.audio) / FS / 2.0, cfg.half_angle_deg)
 
         def t1(scene, c=C0, record_field=False):
             return hooks.run(scene, cfg.f_max, cfg.duration_s, listeners=lis, c=c, record_field=record_field,
@@ -364,15 +374,23 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
 
         memo = {}  # profile bytes -> design, design id -> Tier 1 (the sweep's pick is reused as correction round 0)
         t1_runs = []
+        warp = {"eps_next": None, "in_loop": False}  # stretch pre-compensation state (see StageConfig.stretch_comp)
+        n_w0, n_w1 = res.n0, res.n0 + len(target.audio) + claps.shape[1]
 
-        def build(p):
-            key = np.asarray(p, dtype=float).tobytes()
+        def eps_model(p):
+            return cfg.stretch_per_fill * float(p.sum()) * np.pi * cfg.a_ref ** 2 / wedge_area_m2
+
+        def build(p, eps=None):
+            if eps is None:
+                eps = (warp["eps_next"] if warp["eps_next"] is not None else eps_model(p)) if cfg.stretch_comp else 0.0
+            key = (np.asarray(p, dtype=float).tobytes(), round(float(eps), 9))
             if key in memo:
                 return memo[key]
             t = time.time()
-            d = build_design(cfg, p, claps, band, n_out)
+            d = build_design(cfg, p, claps, band, n_out, range_scale=1.0 + eps)
+            d.extra["stretch_eps_applied"] = float(eps)
             wall["realize_s"] += time.time() - t
-            say(f"  realized {len(d.posts)} posts ({time.time() - t:.0f} s)")
+            say(f"  realized {len(d.posts)} posts, range scale 1{eps:+.5f} ({time.time() - t:.0f} s)")
             memo[key] = d
             return d
 
@@ -380,9 +398,19 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
             if id(d) in memo:
                 return memo[id(d)]
             t = time.time()
-            r = t1(d.scene)
+            # a single-round loop records the field in its only run (saves one Tier 1 run)
+            r = t1(d.scene, record_field=bool(warp["in_loop"] and cfg.field and cfg.correction_rounds == 1))
+            fit = fit_stretch(e1_of(r), d.echo_t0_2d, n_w0, n_w1)
+            d.extra["stretch_fit"] = fit
+            d.extra["stretch_eps_total"] = compose_stretch(d.extra.get("stretch_eps_applied", 0.0), fit["eps"])
+            if cfg.stretch_comp:
+                warp["eps_next"] = d.extra["stretch_eps_total"]
+            say(f"  stretch: applied {d.extra.get('stretch_eps_applied', 0.0):+.5f}, residual {fit['eps']:+.5f} "
+                f"(corr {fit['corr']:.3f}) -> next {d.extra['stretch_eps_total']:+.5f}")
             wall["tier1_loop_s"] += time.time() - t
-            t1_runs.append({"what": "design", "wall_s": r.wall_s, "empty_cached": bool(r.extra.get("empty_cached")),
+            t1_runs.append({"what": "design", "wall_s": r.wall_s, "stretch_eps_applied":
+                            d.extra.get("stretch_eps_applied", 0.0), "stretch_eps_residual": fit["eps"],
+                            "stretch_eps_total": d.extra["stretch_eps_total"], "stretch_corr": fit["corr"], "empty_cached": bool(r.extra.get("empty_cached")),
                             "empty_s": r.extra.get("t_empty_s"), "scene_s": r.extra.get("t_scene_s")})
             say(f"  tier1 {r.wall_s:.0f} s (empty cached: {r.extra.get('empty_cached')})")
             memo[id(d)] = (r, e1_of(r))
@@ -398,7 +426,7 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
             for fill in cfg.fill_candidates:
                 p_f = scale_profile(prof_n, fill, cfg.r0, cfg.dr, cfg.a_ref, half_angle_deg=cfg.half_angle_deg)
                 p_f = p_f * min(1.0, cfg.max_posts / p_f.sum())
-                d_f = build(p_f)
+                d_f = build(p_f, eps=eps_model(p_f) if cfg.stretch_comp else 0.0)
                 _, e_f = run1(d_f)
                 loss_f = window_loss(e_f, target.audio, band, cfg.r0, C0, claps.shape[1])
                 sweep_rows.append({"fill": float(fill), "posts": int(len(d_f.posts)),
@@ -409,10 +437,19 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
                                    "echo_level_db_3d_corrected": float(np.mean(echo_level_db(d_f.echo_t0_3d)))
                                    + float(np.mean(echo_level_db(e_f) - echo_level_db(d_f.echo_t0_2d))),
                                    "spec_corr_tier1_info_only": _spec_corr_mean(e_f, target, t_echo0, band),
+                                   "stretch_eps_applied": d_f.extra["stretch_eps_applied"],
+                                   "stretch_eps_residual": d_f.extra["stretch_fit"]["eps"],
+                                   "stretch_eps_total": d_f.extra["stretch_eps_total"],
+                                   "stretch_eps_per_fill": d_f.extra["stretch_eps_total"] / fill_fraction(d_f.scene),
                                    "profile": p_f})
                 say(f"  density sweep fill {fill}: {len(d_f.posts)} posts, Tier 1 loss {loss_f:.4f}")
             pick = min(range(len(sweep_rows)), key=lambda i: sweep_rows[i]["loss_tier1"])
             profile = sweep_rows[pick]["profile"]
+            warp["eps_next"] = sweep_rows[pick]["stretch_eps_applied"]  # round 0 = the pick's design (memo)
+            if cfg.stretch_comp:
+                memo_pick = build(profile, eps=warp["eps_next"])
+                warp["eps_next"] = memo_pick.extra["stretch_eps_total"]
+                memo[(np.asarray(profile, dtype=float).tobytes(), round(float(warp["eps_next"]), 9))] = memo_pick
             history["phases"].append({"name": "density_sweep", "x_label": "candidate", "iters":
                                       list(range(len(sweep_rows))), "loss": [r["loss_tier1"] for r in sweep_rows],
                                       "score": None, "saved": [], "fills": [r["fill"] for r in sweep_rows],
@@ -421,6 +458,7 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
                                         "picked_fill": sweep_rows[pick]["fill"],
                                         "selection": "lowest Tier 1 spectrogram loss (window_loss); judges not used"}
             wall["density_sweep_s"] = time.time() - t
+        warp["in_loop"] = True
         rounds, ib = correction_loop(profile, build, run1, evaluate, ref, t_echo0, t_stop, r0=cfg.r0, dr=cfg.dr,
                                      c=C0, t_offset=clap_centroid_s(claps), rounds=cfg.correction_rounds,
                                      power=cfg.correction_power, log=say)
@@ -437,13 +475,23 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
         iters = [(f"r{r.k}", r.design.scene, profile_dict(r.design.profile, cfg.r0, cfg.dr), r.echo_t1[0], r.metrics,
                   r.k) for r in rounds]
         t1_info["rounds"] = [{"round": r.k, "loss": r.loss, "score": r.score, "posts": int(len(r.design.posts)),
+                              "stretch_eps_applied": r.design.extra.get("stretch_eps_applied"),
+                              "stretch_fit": r.design.extra.get("stretch_fit"),
                               "gains_next": None if r.gains is None else [float(g) for g in r.gains],
                               "tier_gap_db": r.metrics["headline"]["tier_gap_db"], "wall_s": r.wall_s,
                               "gating": {m["id"]: m["value"] for m in r.metrics["metrics"] if m["gating"]}}
                              for r in rounds]
         t1_info["best_round"] = ib
         t1_info["tier1_runs"] = t1_runs
-        if cfg.field:  # the final design once more, recording the field (deterministic: same ir)
+        history["phases"][-1]["stretch_eps_applied"] = [r.design.extra.get("stretch_eps_applied") for r in rounds]
+        history["phases"][-1]["stretch_eps_residual"] = [(r.design.extra.get("stretch_fit") or {}).get("eps")
+                                                         for r in rounds]
+        t1_info["stretch"] = {"enabled": cfg.stretch_comp, "stretch_per_fill_prior": cfg.stretch_per_fill,
+                              "definition": "Tier 1 echo(t) ~ Tier 0 echo of the same posts at t (1 + eps); ranges "
+                                            "scaled by 1 + eps_applied; residual refit after each Tier 1 run",
+                              "final_applied": des.extra.get("stretch_eps_applied"),
+                              "final_residual": (des.extra.get("stretch_fit") or {}).get("eps")}
+        if cfg.field and best_res.field is None:  # the final design once more, recording the field (same ir)
             t = time.time()
             fres = t1(des.scene, record_field=True)
             wall["tier1_field_run_s"] = time.time() - t
@@ -494,12 +542,16 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
         metrics["caveats"] = vinfo["caveats"]
         metrics["fragile"] = bool(fragile)
         metrics["fragile_reason"] = fragile_why
+        if robust:
+            from echo.robustness import robust_summary
+
+            metrics["robust_summary"] = robust_summary(robust)
         metrics["tier1_correction"] = t1_info
         metrics["failure_cause"] = failure_cause_text(metrics)
     if cfg.design_study_files:
         study = {}
         for name in cfg.design_study_files:
-            fp = Path(runs_root or export.RUNS) / cfg.stage / name
+            fp = Path(runs_root or export.RUNS) / cfg.stage / STUDY_DIR / name
             study[Path(name).stem] = json.loads(fp.read_text()) if fp.exists() else {"missing": str(fp)}
         metrics["design_study"] = study
         for name, st_ in study.items():  # one history phase per study: its rows' losses (Tier 0 or Tier 1)

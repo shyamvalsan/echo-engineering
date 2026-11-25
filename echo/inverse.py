@@ -313,3 +313,44 @@ def correction_loop(profile, build, run_t1, evaluate, reference, t_start, t_stop
             best = k
         p = apply_window_gains(p, r0, dr, tc, g, c, t_offset, power)
     return out, best
+
+
+# ---------------------------------------------------------------- range-proportional stretch (effective-medium slowing)
+def fit_stretch(echo_t1, echo_t0, n0, n1, fs=FS, eps_range=(-0.008, 0.004), tau_max=150e-6):
+    """Judge-free fit of a range-proportional time warp between two echoes of the SAME posts:
+    echo_t1(t) ~ g * echo_t0(t (1 + eps) + tau) on samples [n0, n1) (t = 0 at emission), summed over claps.
+
+    eps < 0: Tier 1 arrives late in proportion to delay (the post field acts as a slower effective medium).
+    Coarse grid (eps step 1e-4, tau step 10 us) then a fine grid around the best. Returns dict(eps, tau_s, corr)."""
+    from scipy.interpolate import CubicSpline
+
+    a = np.atleast_2d(np.asarray(echo_t0, dtype=float))
+    b = np.atleast_2d(np.asarray(echo_t1, dtype=float))[:, n0:n1]
+    t = np.arange(a.shape[-1]) / fs
+    cs = CubicSpline(t, a, axis=-1)
+    tt = t[n0:n1]
+    bb = np.sqrt(np.sum(b * b))
+
+    def corr(eps, tau):
+        x = cs(tt * (1 + eps) + tau)
+        return float(np.sum(x * b) / (np.sqrt(np.sum(x * x)) * bb + 1e-30))
+
+    best = (0.0, 0.0, -2.0)
+    for eps in np.arange(eps_range[0], eps_range[1] + 1e-12, 1e-4):
+        for tau in np.linspace(-tau_max, tau_max, 31):
+            c = corr(eps, tau)
+            if c > best[2]:
+                best = (float(eps), float(tau), c)
+    e0, t0 = best[0], best[1]
+    for eps in np.linspace(e0 - 1e-4, e0 + 1e-4, 11):
+        for tau in np.linspace(t0 - 10e-6, t0 + 10e-6, 11):
+            c = corr(eps, tau)
+            if c > best[2]:
+                best = (float(eps), float(tau), c)
+    return {"eps": best[0], "tau_s": best[1], "corr": best[2]}
+
+
+def compose_stretch(eps_applied, eps_residual):
+    """Total pre-warp after a round: the ranges were scaled by (1 + eps_applied); Tier 1 still shows a residual
+    stretch eps_residual against Tier 0 of those posts, so scale by (1 + eps_residual) more."""
+    return (1.0 + eps_applied) * (1.0 + eps_residual) - 1.0

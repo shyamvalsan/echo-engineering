@@ -18,15 +18,18 @@ CONFIG = StageConfig(
     half_angle_deg=20.0,
     catalog=RADII,
     a_ref=0.01,
-    target_fill=0.0066,  # superseded by the density sweep below
     # Realization (task 6b): phase-locked comb, one ring per carrier period (K = 1; its 2nd harmonic lies at >= 4 kHz,
     # outside the clap/design band for this 3.5 -> 2.0 kHz note). Chosen on Tier 0 by the spectrogram loss under
-    # radial jitter (runs/s1_bird/design_study_tier0.json): judges never used to choose.
+    # radial jitter (runs/s1_bird/_studies/design_study_tier0.json): judges never used to choose.
     realization="phase_locked",
     posts_per_period=1,
     # Density sweep on Tier 1 (fd8-3), picked by Tier 1 spectrogram loss only (1060 / 2000 / 3030 posts of 1 cm).
-    fill_candidates=(0.0035, 0.0066, 0.01),
-    correction_rounds=2,  # Tier 1 runs in the loop (round 0 reuses the sweep's pick); budget: ~4.5 min per run
+    # Round 2 sweep (no stretch compensation): 1060 / 2000 / 3030 posts gave Tier 1 loss 4.672 / 4.773 / 4.861 ->
+    # 0.35 % kept (runs/s1_bird/20261125-095837-s1). Round 3 fixes it to save Tier 1 runs on a shared machine.
+    target_fill=0.0035,
+    fill_candidates=None,
+    threads=4,
+    correction_rounds=1,  # round 3 (shared machine, <= 6 Tier 1 runs): one stretch-compensated round, field recorded in it
     design_study_files=("design_study_tier0.json", "h2_tier1_vs_tier0.json"),
     robustness=True,
 )

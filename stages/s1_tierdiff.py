@@ -96,7 +96,7 @@ def analyse(run_dir: Path) -> dict:
 
 def main(argv=None):
     args = argv if argv is not None else sys.argv[1:]
-    path = export.RUNS / "s1_bird" / "tier_diff.json"
+    path = export.RUNS / "s1_bird" / "_studies" / "tier_diff.json"
     d = json.loads(path.read_text()) if path.exists() else {
         "what": "Tier 1 - Tier 0 decomposition on the same posts (clap 0): stretch, linear filter, incoherent residue, "
                 "and the Tier 0 radial jitter giving the same residue", "selection": "diagnostic only", "rows": []}

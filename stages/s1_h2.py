@@ -48,16 +48,24 @@ def _residue_db(e, ref):
     return float(np.mean(out))
 
 
+def fill_factor(d):
+    return fill_fraction(d.scene)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--posts", type=int, default=300)
     ap.add_argument("--K", type=int, default=1)
     ap.add_argument("--realization", default="phase_locked")
+    ap.add_argument("--radius", type=float, default=None, help="post radius (also the profile's a_ref)")
+    ap.add_argument("--tier0-only", action="store_true", help="print Tier 0 numbers, no Tier 1 run")
     a = ap.parse_args(argv)
     torch.set_num_threads(8)
     from echo.tier1 import echoes, run_tier1
 
     cfg = replace(CONFIG, realization=a.realization, posts_per_period=a.K)
+    if a.radius is not None:
+        cfg = replace(cfg, a_ref=a.radius, catalog=(a.radius,))
     target = cfg.make_target()
     claps = clap_family(cfg.n_claps, seed=cfg.seed)
     n_out = int(round(cfg.duration_s * FS))
@@ -65,6 +73,14 @@ def main(argv=None):
                                 steps=cfg.steps, lr=cfg.lr, w_mel=cfg.w_mel, n_out=n_out)
     band = res.band
     d = build_design(cfg, prof_n * (a.posts / prof_n.sum()), claps, band, n_out)
+    if a.tier0_only:
+        v = stage_values(cfg.stage, d.echo_t0_2d, target, res.n0 / FS, band=band)
+        print(f"N={len(d.posts)} a={cfg.a_ref} L2d={np.mean(echo_level_db(d.echo_t0_2d)):.2f} "
+              f"L3d={np.mean(echo_level_db(d.echo_t0_3d)):.2f} fill={fill_factor(d):.4f} "
+              f"loss={window_loss(d.echo_t0_2d, target.audio, band, cfg.r0, 343.0, claps.shape[1]):.3f} "
+              f"dropped={d.realize_stats['dropped']} [info pitch "
+              f"{np.mean([x['pitch_err_pct'] for x in v]):.2f} corr {np.mean([x['spec_corr'] for x in v]):.3f}]")
+        return
     t = time.time()
     r = run_tier1(d.scene, cfg.f_max, cfg.duration_s, listeners=stage_listeners(cfg, target), threads=8)
     e1 = band_limit(echoes(r, claps, listener=0), band[0], band[1])
@@ -94,7 +110,7 @@ def main(argv=None):
             acc["loss"].append(loss(ej))
             acc["spec_corr_info_only"].append(judges(ej)["spec_corr"])
         jit.append({"sigma_m": sig, **{k: float(np.mean(v)) for k, v in acc.items()}})
-    row = {"label": f"{a.realization} K={a.K} N={len(d.posts)}", "realization": a.realization, "posts_per_period": a.K,
+    row = {"label": f"{a.realization} K={a.K} N={len(d.posts)} a={cfg.a_ref}", "radius": cfg.a_ref, "realization": a.realization, "posts_per_period": a.K,
            "n_posts": int(len(d.posts)), "fill": fill_fraction(d.scene), "tier1_wall_s": wall,
            "loss_tier0": loss(d.echo_t0_2d), "loss_tier1": loss(e1),
            "tier_gap_db": float(np.mean(echo_level_db(e1) - echo_level_db(d.echo_t0_2d))),
@@ -104,9 +120,9 @@ def main(argv=None):
            "per_window_level_db_tier1_minus_tier0": [
                float(10 * np.log10(np.sum(s1[:, i:i + 160] ** 2) / np.sum(s0[:, i:i + 160] ** 2)))
                for i in range(0, nw - 160 + 1, 160)]}
-    np.savez_compressed(export.RUNS / cfg.stage / f"h2_echoes_{a.realization}_K{a.K}_N{len(d.posts)}.npz",
+    np.savez_compressed(export.RUNS / cfg.stage / "_studies" / f"h2_echoes_{a.realization}_K{a.K}_N{len(d.posts)}_a{cfg.a_ref}.npz",
                         tier0=d.echo_t0_2d, tier1=e1, posts=d.posts, n0=n0)
-    path = export.RUNS / cfg.stage / "h2_tier1_vs_tier0.json"
+    path = export.RUNS / cfg.stage / "_studies" / "h2_tier1_vs_tier0.json"
     out = json.loads(path.read_text()) if path.exists() else {
         "what": "H2: Tier 1 vs Tier 0 on the same posts, and the Tier 0 radial jitter that reproduces the residue",
         "selection": "diagnostic only; nothing is chosen from this file", "rows": []}

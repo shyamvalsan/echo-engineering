@@ -1,0 +1,2 @@
+step    0 loss 2.3623 (stft 1.3982 mel 0.9640) 21.0s
+step   25 loss 1.8523 (stft 1.2196 mel 0.6328) 34.5s

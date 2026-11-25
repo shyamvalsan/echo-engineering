@@ -72,7 +72,7 @@ def _arc_len(rho, half_angle_deg):
 def realize(profile, scene_cfg: Scene | None = None, seed=0, *, r0, dr=DR_PROFILE, a_ref=0.02, radii=RADII,
             band=BAND, gap=MIN_GAP, shadow_depth=0.5, n_try=48, smooth_m=0.10, claps=None, refine_steps=0,
             polish_max_posts=POLISH_MAX_POSTS, angle_jitter=0.15, mode="sampling", posts_per_period=1,
-            n_posts=None, fractional=True):
+            n_posts=None, fractional=True, range_scale=1.0):
     """Turn a profile into posts. Returns (posts ndarray[N, 3] (x, y, radius), stats dict).
 
     stats: n_posts, by_radius, requested_mass, realized_mass, dropped (posts), shadow_violations, min_gap_m,
@@ -85,12 +85,14 @@ def realize(profile, scene_cfg: Scene | None = None, seed=0, *, r0, dr=DR_PROFIL
     mode="phase_locked": ranges come from `phase_locked_ranges` (posts only where the band-passed profile's analytic
     phase is locked to the carrier; all posts radius a_ref; n_posts defaults to the profile mass in a_ref posts), and
     no range polish is applied. mode="sampling": the inverse-CDF realization above.
+    range_scale: every post's bistatic range is multiplied by this factor before angular placement (stretch
+    pre-compensation: Tier 1 delays grow by (1 + |eps|) with range in a post field, so ranges are scaled by (1 + eps)).
     """
     if mode == "phase_locked":
         return realize_phase_locked(profile, scene_cfg, seed, r0=r0, dr=dr, a_ref=a_ref, radii=radii, band=band,
                                     gap=gap, shadow_depth=shadow_depth, n_try=n_try, smooth_m=smooth_m,
                                     angle_jitter=angle_jitter, posts_per_period=posts_per_period, n_posts=n_posts,
-                                    fractional=fractional)
+                                    fractional=fractional, range_scale=range_scale)
     if mode != "sampling":
         raise ValueError(f"mode must be 'sampling' or 'phase_locked', got {mode!r}")
     scene = scene_cfg if scene_cfg is not None else Scene()
@@ -150,6 +152,7 @@ def realize(profile, scene_cfg: Scene | None = None, seed=0, *, r0, dr=DR_PROFIL
         rhos, rads = rhos[o], rads[o]
 
     # Phase C: angular placement along each equal-delay ellipse.
+    rhos = rhos * range_scale
     posts, shadow_viol, drop_c = place_on_arcs(rhos, rads, scene, rng, r0=r0, dr=dr, radii=radii, gap=gap,
                                                shadow_depth=shadow_depth, n_try=n_try, angle_jitter=angle_jitter)
     dropped += drop_c
@@ -365,7 +368,7 @@ def phase_locked_ranges(profile, n_posts, band, *, r0, dr=DR_PROFILE, c=343.0, p
 
 def realize_phase_locked(profile, scene_cfg: Scene | None = None, seed=0, *, r0, dr=DR_PROFILE, a_ref=0.01,
                          radii=RADII, band=BAND, gap=MIN_GAP, shadow_depth=0.5, n_try=48, smooth_m=0.10,
-                         angle_jitter=0.15, posts_per_period=1, n_posts=None, fractional=True):
+                         angle_jitter=0.15, posts_per_period=1, n_posts=None, fractional=True, range_scale=1.0):
     """Phase-locked realization (see `phase_locked_ranges`): every post radius a_ref, exactly on its ring's
     equal-delay ellipse, spread across the wedge by `place_on_arcs`. n_posts None: the profile mass (profile units
     are a_ref posts). Returns (posts, stats) with the same keys as `realize` plus rings / posts_per_period / mode."""
@@ -379,6 +382,7 @@ def realize_phase_locked(profile, scene_cfg: Scene | None = None, seed=0, *, r0,
     n_req = int(round(total if n_posts is None else n_posts))
     rhos, rings = phase_locked_ranges(p, n_req, band, r0=r0, dr=dr, c=float(scene.c),
                                       posts_per_period=posts_per_period, fractional=fractional)
+    rhos = rhos * range_scale
     rads = np.full(len(rhos), float(a_ref))
     posts, shadow_viol, dropped = place_on_arcs(rhos, rads, scene, rng, r0=r0, dr=dr, radii=radii, gap=gap,
                                                 shadow_depth=shadow_depth, n_try=n_try, angle_jitter=angle_jitter)
@@ -395,6 +399,7 @@ def realize_phase_locked(profile, scene_cfg: Scene | None = None, seed=0, *, r0,
     ps, rs = np.convolve(p, ks, "same") * (len(posts) / max(total, 1e-30)), np.convolve(real, ks, "same")
     stats = {
         "mode": "phase_locked",
+        "range_scale": float(range_scale),
         "posts_per_period": int(posts_per_period),
         "n_posts": int(len(posts)),
         "n_rings": len(rings),

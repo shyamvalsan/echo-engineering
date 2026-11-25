@@ -99,6 +99,21 @@ def case(stage, name, label, per_clap_t1, nominal, per_clap_t0=None, **info):
     return out
 
 
+def robust_summary(cases) -> str:
+    """Three-state reading of the robustness cases next to the spec's boolean `fragile` (same counts as fragile_rule):
+    "fails everywhere" (no clap variant and no listener position passes), "fragile" (fragile_rule is true), "robust"
+    (otherwise: more than one clap variant and more than one listener position pass), "partial" (none of the above,
+    e.g. passes at one listener position for no clap)."""
+    by = {c["case"]: c for c in cases}
+    n_clap = sum(bool(c["pass"]) for c in cases if c["case"].startswith("clap_"))
+    n_lis = sum(bool(by[p]["pass"]) for p in ["nominal"] + list(LISTENER_OFFSETS) if p in by)
+    if n_clap == 0 and n_lis == 0:
+        return "fails everywhere"
+    if fragile_rule(cases)[0]:
+        return "fragile"
+    return "robust" if n_clap > 1 and n_lis > 1 else "partial"
+
+
 def fragile_rule(cases) -> tuple[bool, str]:
     """`fragile` (spec: "a design that only works for one clap or one listener position is marked fragile").
 
