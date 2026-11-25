@@ -82,6 +82,8 @@ class StageConfig:
     stretch_comp: bool = True
     stretch_per_fill: float = -0.68
     band_max_hz: float | None = None  # cap the stage band (solve, echoes, comparisons) e.g. at a Tier 1 f_max < 4 kHz
+    tier0_equalize_rounds: int = 0  # after the solve: rounds of per-window level correction of the Tier 0 profile echo
+    #   toward the physically perfect echo (echo.inverse.window_gains, the Tier 1 loop's rule; judge-free); 0 = off
 
 
 @dataclass
@@ -143,6 +145,30 @@ def build_design(cfg: StageConfig, profile, claps, band, n_out, seed=None, range
     st["post_vs_profile_level_db"] = lvl
     return Design(profile=profile, posts=posts, scene=sc, realize_stats=st, echo_t0_2d=e2, echo_t0_3d=e3,
                   echo_prof_2d=ep)
+
+
+def tier0_equalize(cfg: StageConfig, prof_n, target, claps, band, n_out, t_echo0, rounds):
+    """Per-window level correction of the solved profile on Tier 0 (profile_echo vs echo.inverse.reference_echo, the
+    same window-gain rule as the Tier 1 correction loop; level arithmetic only, no judge). Keeps the profile's mass.
+    Returns (profile, history {iters, loss (window_loss of the profile echo), gains_range})."""
+    from echo.inverse import apply_window_gains, clap_centroid_s, reference_echo, window_gains, window_loss
+
+    ref = reference_echo(target.audio, claps, t_echo0, n_out, band)
+    t_stop = t_echo0 + len(target.audio) / FS + claps.shape[1] / FS
+    cl = torch.as_tensor(claps)
+    p = np.asarray(prof_n, dtype=float).copy()
+    hist = {"iters": [], "loss": [], "gains_range": []}
+    for k in range(rounds + 1):
+        e = profile_echo(torch.as_tensor(p), cl, stage_scene(cfg), mode="2d", n_out=n_out, a_ref=cfg.a_ref, r0=cfg.r0,
+                         dr=cfg.dr, band=band).numpy()
+        hist["iters"].append(k)
+        hist["loss"].append(window_loss(e, target.audio, band, cfg.r0, C0, claps.shape[1]))
+        if k == rounds:
+            break
+        tc, g, _ = window_gains(e, ref, t_echo0, t_stop)
+        hist["gains_range"].append([float(np.min(g)), float(np.max(g))])
+        p = apply_window_gains(p, cfg.r0, cfg.dr, tc, g, C0, t_offset=clap_centroid_s(claps))
+    return p / p.mean(), hist
 
 
 VALIDATION_FILE = export.RUNS / "validation" / "metrics.json"
@@ -326,6 +352,9 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
                                 log_every=25, band=band_cap)
     wall["profile_solve_s"] = time.time() - t
     band = res.band
+    eq_hist = None
+    if cfg.tier0_equalize_rounds:
+        prof_n, eq_hist = tier0_equalize(cfg, prof_n, target, claps, band, n_out, res.n0 / FS, cfg.tier0_equalize_rounds)
     profile = scale_profile(prof_n, cfg.target_fill, cfg.r0, cfg.dr, cfg.a_ref, half_angle_deg=cfg.half_angle_deg)
     capped = None
     if profile.sum() > cfg.max_posts:  # mass in reference posts ~ post count (a_ref posts preferred)
@@ -334,6 +363,11 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
     t_echo0 = res.n0 / FS
     history = {"phases": [{"name": "Profile solve (Tier 0)", "x_label": "Adam step", "iters": res.history["iters"],
                            "loss": res.history["loss"], "score": None, "saved": []}]}
+    if eq_hist is not None:
+        history["phases"].append({"name": "tier0_equalize", "x_label": "equalization round", "iters": eq_hist["iters"],
+                                  "loss": eq_hist["loss"], "score": None, "saved": [],
+                                  "gains_range": eq_hist["gains_range"],
+                                  "selection": "window gains vs the physically perfect echo (no judge)"})
     iters, solver, field_block, robust, fragile, fragile_why = None, None, None, [], False, None
     t1_info = {}
 
