@@ -2537,5 +2537,138 @@
   "wall_s": 3392.7066254615784
  },
  "realization_study": null,
- "pass_weight": "passed on Tier 1; weight: judges are lenient (see judge floor and controls in the report)"
+ "pass_weight": "passed on Tier 1; weight: judges are lenient (see judge floor and controls in the report)",
+ "recognizer_controls": {
+  "what": "whisper (same settings as the 4c judge) on wrong echoes; transcripts per clap variant",
+  "cases": {
+   "ma_tier1_echo": {
+    "source_run": "20261125-132102-s4_4b_ma",
+    "recognized_text": [
+     {
+      "clap": 0,
+      "transcript": "you",
+      "hit": false
+     },
+     {
+      "clap": 1,
+      "transcript": "you",
+      "hit": false
+     },
+     {
+      "clap": 2,
+      "transcript": "you",
+      "hit": false
+     },
+     {
+      "clap": 3,
+      "transcript": "you",
+      "hit": false
+     },
+     {
+      "clap": 4,
+      "transcript": "you",
+      "hit": false
+     }
+    ],
+    "hello_count": 0,
+    "estoi_vs_hello_mean": -0.07017950595456282
+   },
+   "ba_tier1_echo": {
+    "source_run": "20261125-134325-s4_4b_ba",
+    "recognized_text": [
+     {
+      "clap": 0,
+      "transcript": "you",
+      "hit": false
+     },
+     {
+      "clap": 1,
+      "transcript": "you",
+      "hit": false
+     },
+     {
+      "clap": 2,
+      "transcript": "you",
+      "hit": false
+     },
+     {
+      "clap": 3,
+      "transcript": "you",
+      "hit": false
+     },
+     {
+      "clap": 4,
+      "transcript": "you",
+      "hit": false
+     }
+    ],
+    "hello_count": 0,
+    "estoi_vs_hello_mean": -0.06321282944082965
+   },
+   "hello_tier1_time_reversed": {
+    "source_run": "20261125-124137-s4_4c_hello",
+    "recognized_text": [
+     {
+      "clap": 0,
+      "transcript": "",
+      "hit": false
+     },
+     {
+      "clap": 1,
+      "transcript": "",
+      "hit": false
+     },
+     {
+      "clap": 2,
+      "transcript": "you",
+      "hit": false
+     },
+     {
+      "clap": 3,
+      "transcript": "",
+      "hit": false
+     },
+     {
+      "clap": 4,
+      "transcript": "you",
+      "hit": false
+     }
+    ],
+    "hello_count": 0,
+    "estoi_vs_hello_mean": -0.20036670374618035
+   },
+   "hello_tier1_phase_randomized": {
+    "source_run": "20261125-124137-s4_4c_hello",
+    "recognized_text": [
+     {
+      "clap": 0,
+      "transcript": "you",
+      "hit": false
+     },
+     {
+      "clap": 1,
+      "transcript": "you",
+      "hit": false
+     },
+     {
+      "clap": 2,
+      "transcript": "you",
+      "hit": false
+     },
+     {
+      "clap": 3,
+      "transcript": "you",
+      "hit": false
+     },
+     {
+      "clap": 4,
+      "transcript": "you",
+      "hit": false
+     }
+    ],
+    "hello_count": 0,
+    "estoi_vs_hello_mean": -0.012614407224248092
+   }
+  }
+ }
 }

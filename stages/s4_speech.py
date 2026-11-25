@@ -865,7 +865,8 @@ def failure_cause(met, abl):
     for m in _gating(met):
         if not m["pass"]:
             f = fl.get(m["id"])
-            parts.append(f"Tier 1 {m['id']} = {m['value']:.3g} vs {m['comparator']} {m['threshold']}"
+            v = "n/a (judge returned no value)" if m["value"] is None else f"{m['value']:.3g}"
+            parts.append(f"Tier 1 {m['id']} = {v} vs {m['comparator']} {m['threshold']}"
                          + (f" (judge floor on a perfect echo {f:.3g})" if f is not None else ""))
     if not met.get("verified"):
         parts.append("not verified (no Tier 1 run)")
@@ -977,6 +978,48 @@ def extinction_from_folder(d):
     return out
 
 
+def recognizer_controls(study_dir=None, seed=SEED):
+    """4c weight check: what whisper returns for obviously wrong echoes of the same kind and level (it peak-normalizes,
+    so level is matched by construction): the 4b "ma" and "ba" Tier 1 echoes, the 4c Tier 1 echo time-reversed, and the
+    4c Tier 1 echo with its phase randomized (same magnitude spectrum, speech structure destroyed). ESTOI vs "hello"
+    alongside. Judges only; nothing is selected by these numbers."""
+    import echo.metrics_speech as MS
+
+    sd = Path(study_dir or STUDY_DIR)
+    hello = target_of("hello")
+    n = len(hello.audio)
+
+    def segs(name):
+        z = np.load(sd / f"echoes_{name}.npz")
+        e = z["tier1"] if z["tier1"].size else z["tier0"]
+        return echo_segment(np.atleast_2d(e), float(z["t_echo0"]), len(target_of(name).audio)), str(z["run_id"])
+
+    h, rid = segs("hello")
+    rng = np.random.default_rng(seed)
+    cases = {}
+    for nm in ("ma", "ba"):
+        try:
+            x, r = segs(nm)
+            cases[f"{nm}_tier1_echo"] = (x, r)
+        except FileNotFoundError:
+            pass
+    cases["hello_tier1_time_reversed"] = (h[:, ::-1].copy(), rid)
+    ph = []
+    for x in h:
+        X = np.fft.rfft(x)
+        ph.append(np.fft.irfft(np.abs(X) * np.exp(2j * np.pi * rng.random(len(X))), len(x)))
+    cases["hello_tier1_phase_randomized"] = (np.array(ph), rid)
+    out = {"what": "whisper (same settings as the 4c judge) on wrong echoes; transcripts per clap variant", "cases": {}}
+    for k, (x, r) in cases.items():
+        rt = MS.recognized_text(x)
+        xe = np.zeros((x.shape[0], n))
+        xe[:, : min(n, x.shape[1])] = x[:, :n]
+        out["cases"][k] = {"source_run": r, "recognized_text": rt, "hello_count": int(sum(t["hit"] for t in rt)),
+                           "estoi_vs_hello_mean": float(np.mean([MS.estoi(e, hello.audio) for e in xe]))}
+        print(k, out["cases"][k]["hello_count"], [t["transcript"] for t in rt], out["cases"][k]["estoi_vs_hello_mean"])
+    return out
+
+
 def attach_closed_set_table(dests):
     """Write the 3x3 table into each 4b run's metrics.json (closed_set_3x3) and the studies folder."""
     tab = closed_set_table(tuple(dests))
@@ -997,12 +1040,26 @@ def main(argv=None):
     ap.add_argument("--study-only", action="store_true")
     ap.add_argument("--names", default=None, help="comma-separated target names (default: the sub-stage's)")
     ap.add_argument("--skip-studies", action="store_true", help="reuse _studies/*.json")
+    ap.add_argument("--controls", action="store_true", help="4c recognizer controls -> the newest 4c run and exit")
+    ap.add_argument("--closed-set", action="store_true", help="4b 3x3 closed-set table -> the newest 4b runs and exit")
     ap.add_argument("--attach", action="store_true", help="re-attach finished studies to the newest runs and exit")
     ap.add_argument("--count-sweep", action="store_true", help="Tier 0 post-count/radius sweep -> _studies/count_sweep_<name>.json")
     a = ap.parse_args(argv)
     torch.set_num_threads(int(os.environ.get("S4_THREADS", "4")))
     if a.attach:
         attach_studies()
+        return
+    if a.controls:
+        rc = recognizer_controls()
+        _write_json(STUDY_DIR / "recognizer_controls.json", rc)
+        d = latest_runs()["hello"]
+        met = json.loads((d / "metrics.json").read_text())
+        met["recognizer_controls"] = rc
+        export.write_json(d / "metrics.json", met, indent=1)
+        return
+    if a.closed_set:
+        lr = latest_runs()
+        attach_closed_set_table({k: lr[k] for k in ("ma", "ba", "om")})
         return
     subs = [a.only] if a.only else list(SUBSTAGES)
     for sub in subs:
