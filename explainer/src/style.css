@@ -79,6 +79,16 @@ ul, ol { padding-left: 1.3em; margin: 0 0 1.2em; }
 li { margin-bottom: 0.55em; }
 a { color: var(--accent); text-underline-offset: 0.15em; }
 strong { font-weight: 600; }
+.prose h3 { font-size: 1.3rem; font-weight: 600; margin: 2em 0 0.5em; }
+.card h4 { font-family: var(--serif); font-size: 1.1rem; font-weight: 600; margin: 18px 0 4px; padding-top: 12px; border-top: 1px solid var(--rule); }
+.run h5 { font-family: var(--serif); font-size: 1.05rem; font-weight: 600; margin: 0 0 2px; }
+.back { margin: 4px 0 10px; }
+.tbl-wrap { overflow-x: auto; margin: 0 0 1.4em; }
+.tbl { width: 100%; border-collapse: collapse; font-family: var(--sans); font-size: 0.85rem; line-height: 1.4; }
+.tbl caption { text-align: left; color: var(--muted); padding-bottom: 6px; }
+.tbl th, .tbl td { text-align: left; padding: 5px 8px 5px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+.tbl th { font-weight: 600; }
+.tbl td:nth-child(2), .tbl td:nth-child(3) { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .small { font-size: 0.85rem; color: var(--muted); font-family: var(--sans); line-height: 1.5; }
 
 /* Figures: set into the column, the wide ones break out a little on large screens. */

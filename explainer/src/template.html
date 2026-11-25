@@ -106,22 +106,23 @@
   <canvas class="cv" data-h="230" aria-label="The depth of the field compared with a bus, a tennis court, an Olympic pool and a football pitch"></canvas>
   <figcaption>Depth of the post field only; it starts 3 metres in front of you. The marks on the slider are this project's targets: a bird note (80 ms), four notes (180 ms), the word "hello" (400 ms) and eight notes of a tune (800 ms).</figcaption>
 </figure>
-<p>A bird note fits in a field about the length of a bus. A recognisable tune needs a field longer than a football pitch, because notes much shorter than a tenth of a second stop sounding like a melody. The simulation also tries 60 ms notes to see whether a shorter, faster tune still comes through.</p>
+<p>A bird note fits in a field about the length of a bus. A recognisable tune needs a field longer than a football pitch, because each note has to last long enough to be heard as a note.</p>
+<div data-out="size-table" class="tbl-wrap"></div>
 <p>Loudness is the other hard limit. Each post is thin, so it returns only a sliver of the clap, and that sliver spreads out in every direction on the way back. Posts far away are fainter still. The whole field adds up, but the echo will be much quieter than the clap. A clap is about 100 decibels at arm's length. Below about 35 decibels, roughly a quiet library, an echo would be lost in the ordinary background noise of most outdoor places.</p>
 <figure class="fig" id="loud">
-  <canvas class="cv" data-h="150" aria-label="A loudness scale from silence to a clap, with everyday sounds marked"></canvas>
+  <canvas class="cv" data-h="170" aria-label="A loudness scale from silence to a clap, with everyday sounds and every final design marked"></canvas>
   <figcaption data-out="caption"></figcaption>
 </figure>
 
 <h2 id="story">What we did, and what happened</h2>
-<p class="small">An interim account, written on the morning of 25 November while simulations are still running. Sentences with numbers in them are filled in from the run files each time this page is rebuilt.</p>
-<p>We built two simulators. The fast one treats every post as returning one clean, delayed copy of the clap, just like the figures above; it is quick enough to try thousands of layouts. The slow, careful one follows the actual sound wave as it moves through the field, including posts standing in each other's shadow and sound bouncing from post to post before it comes back. Only the careful one is allowed to declare a pass. Before it was trusted with anything, it was checked against textbook cases whose exact answers are known, such as a single post in open air.</p>
-<p>A designer program turns a target sound into a layout of posts. Fixed pass marks, written down before any design existed and never adjusted, then score the echo. For the bird whistle there are two: the pitch must stay within 3% of the target all along the note, and the spectrogram (a picture of which pitches sound when) must match the target's with a score of 0.8 or better, where 1 is a perfect match.</p>
-<p>Overnight, an independent review of the careful simulator found a real flaw. Right next to each post it used a cruder calculation, which in dense fields bent the pitch slightly, by under 1%. Small, but about as large as the margin the whistle has to spare, so it was fixed and re-checked before any result was accepted. One limitation remains, stated plainly: for the thinnest posts, the careful simulator is only confirmed for sound bounced straight back, not for sound scattered sideways or forwards, and its handling of dense fields has been checked for consistency with itself rather than against an exact answer.</p>
-<p data-out="story-result"></p>
-<p data-out="story-floor" hidden></p>
-<p data-out="story-why"></p>
-<p>The redesign under way puts the posts in exact rings instead: one ring for each ripple of the sound wave, so that every post pulls in the same direction. It is the same idea as a diffraction grating, the evenly ruled lines that split light into colours on the back of a CD. The figure below shows the difference.</p>
+<p class="small">Written on 25 November, after every stage had been run on the careful simulator. Sentences with numbers in them are filled in from the run files each time this page is rebuilt.</p>
+<p>We built two simulators. The fast one treats every post as returning one clean, delayed copy of the clap, like the figures above; it can try thousands of layouts. The slow, careful one follows the actual sound wave as it moves through the field, including posts standing in each other's shadow and sound bouncing from post to post before it comes back. Only the careful one may declare a pass, because only it sees how a crowded field goes wrong. It was first checked against textbook cases with known exact answers.</p>
+<p>A designer program turns each target sound into a layout of posts. Fixed pass marks, written down before any design existed and never adjusted, then score the echo. <span data-out="story-marks"></span></p>
+<p>Overnight, an independent review of the careful simulator found a real flaw: right next to each post it used a cruder calculation, which in dense fields bent the pitch slightly, by under 1%. Small, but about the whistle's whole margin, so it was fixed and re-checked before any result was accepted. Two uncertainties remain. For the thinnest posts the careful simulator is confirmed only for sound bounced straight back, not for sound scattered sideways or forwards. And its handling of dense fields has been checked for consistency with itself, not against an exact answer.</p>
+
+<h3>Stage by stage</h3>
+<p data-out="story-s1"></p>
+<p><strong>The first discovery: exact rings beat scattered posts.</strong> Posts scattered at random, more where the waveform is high, each add a little noise. Exact rings, one per ripple of the sound wave, make every post pull in the same direction, like the fine ruled lines on a CD that split light into clean colours. <span data-out="story-lesson-a"></span></p>
 <figure class="fig fig-wide" id="rings">
   <canvas class="cv" data-h="250" aria-label="Two strips of posts along range for the same whistle: scattered by density, and placed in exact rings"></canvas>
   <div class="controls">
@@ -135,31 +136,57 @@
   <p class="readout" data-out="readout"></p>
   <figcaption>The same 80 ms whistle and the same number of posts, laid out two ways. "Match" compares each echo with the echo a perfect, continuous design would give (100% is perfect). This uses the simple model from the figures above and ignores shadowing; the careful simulator is the judge of the real designs. Echoes turned up for listening.</figcaption>
 </figure>
-<p data-out="story-findings"></p>
-<p data-out="story-todo"></p>
-<p>The night itself went less smoothly than planned: slow downloads held up the start, and an automated worker hung for several hours. So this is an interim account, and the page will be rebuilt as results arrive.</p>
+<p data-out="story-s2"></p>
+<p><strong>The second discovery: a field of posts behaves like slightly thicker air.</strong> Sound slows a little in a forest of posts, which stretches the echo; laying the field out slightly stretched cancels that. It also fades as it goes deeper, because every row takes a little sound from the rows behind, and that cannot be designed out. The fading grows with the square of post thickness and grows again when posts are squeezed into a narrow lane, so thin posts over a wide fan are a must.</p>
+<figure class="fig fig-wide" id="thick">
+  <canvas class="cv" data-h="220" aria-label="How much of the echo survives at each depth of the post field"></canvas>
+  <div class="controls">
+    <label class="slider">Post thickness <input type="range" min="1" max="16" step="1" value="2" data-in="radius"> <span data-out="radius"></span></label>
+    <label class="slider">Fan width <input type="range" min="2" max="30" step="1" value="20" data-in="half"> <span data-out="half"></span></label>
+    <label class="slider">Depth <input type="range" min="5" max="140" step="1" value="30" data-in="depth"> <span data-out="depth"></span></label>
+  </div>
+  <div class="controls">
+    <button class="btn" type="button" data-cal="0">Stage 1</button>
+    <button class="btn" type="button" data-cal="1">Stage 2</button>
+  </div>
+  <p class="readout" data-out="readout"></p>
+  <figcaption><span data-out="real"></span> This is a cartoon of the effect, scaled to land near those two measured numbers, not the careful simulator: the real fading also depends on pitch and on how the posts are arranged.</figcaption>
+</figure>
+<p data-out="story-s3"></p>
+<p><strong>The third discovery: the clap and the posts both favour the middle.</strong> <span data-out="story-lesson-c"></span></p>
+<p data-out="story-s4"></p>
+
+<h3>Two practical surprises</h3>
+<p data-out="story-surprise"></p>
+
+<h3>Where that leaves us</h3>
+<p data-out="story-score"></p>
+<p data-out="story-todo" hidden></p>
+<p>The cheapest decisive experiment is a tabletop model at one tenth scale, in ultrasound: the physics is the same, so a field on a table would show whether real posts behave the way the careful simulator says. <span data-out="story-pilot"></span></p>
+<p>The night went less smoothly than planned: slow downloads held up the start, an automated worker hung for hours, and a usage limit paused the work in the afternoon. So some runs are thinner than planned, with fewer repeat checks.</p>
 
 <h2>What the simulation found</h2>
-<p>Each card below is read directly from the project's run files. The <em>fast simulator</em> is the one the project calls Tier 0; the <em>careful simulator</em> is Tier 1, and a stage passes only if it passes there. Both are flat, as if seen from above, with posts infinitely tall; loudness is then corrected for the real, three-dimensional world.</p>
+<p>Each card below is read directly from the project's run files. The <em>fast simulator</em> is the one the project calls Tier 0; the <em>careful simulator</em> is Tier 1, and a test passes only if it passes there. Both are flat, as if seen from above, with posts infinitely tall; loudness is then corrected for the real, three-dimensional world.</p>
 <div id="results" class="results"></div>
 <p class="small" data-out="results-note"></p>
 
 <h2>What a simulation cannot tell us</h2>
-<p>A simulation is only as honest as what it leaves out. These are left out, on purpose, for now:</p>
+<p data-out="closing-shown"></p>
+<p>And some things were left out on purpose:</p>
 <ul>
-  <li><strong>Wind and weather.</strong> Wind and layers of warm and cool air bend sound and blur the timing. The simulation checks a still, uniform day, plus a cold and a hot one.</li>
-  <li><strong>The ground and real posts.</strong> The real ground reflects too, and real posts have a top. Both are approximated, not simulated.</li>
-  <li><strong>Background noise.</strong> Traffic, leaves and birds will compete with a faint echo. The 35 decibel line above is a rule of thumb, not a measurement of any site.</li>
-  <li><strong>Your ears.</strong> Pitch trackers and a speech recogniser stand in for a listener, and they can be fooled in both directions. The real test is a person listening to the audio files, which is why every result above has a play button.</li>
+  <li><strong>Wind and weather.</strong> Wind and layers of warm and cool air bend sound and blur the timing. The simulation checks a still, uniform day, plus a cold and a hot one for some designs.</li>
+  <li><strong>The ground and real posts.</strong> The real ground reflects too, and real posts have a top. Both are approximated, not simulated, and the careful simulator is flat.</li>
+  <li><strong>Background noise.</strong> Traffic, leaves and birds will compete with a faint echo. The 35 decibel line is a rule of thumb, not a measurement of any site.</li>
+  <li><strong>Your ears.</strong> Pitch trackers and a speech recogniser stand in for a listener, and they can be fooled in both directions. The real test is a person listening, which is why every result has a play button.</li>
 </ul>
-<p>The open questions are concrete: is the echo loud enough to hear outdoors, how short can the notes get before a tune stops being a tune, and can plain posts ever carry speech, whose low, rich sounds are exactly what thin posts and claps are worst at.</p>
+<p>Nothing on this page shows that a composed echo works in the open air. It shows where the idea is close, where it is far, and why.</p>
 
 <h2>How it could be built</h2>
-<p>The plan for a real structure goes in three steps, each cheap enough to fail at:</p>
+<p>If it is pursued, the path goes in three steps, each cheap enough to fail at:</p>
 <ol>
-  <li><strong>A tabletop model at one tenth scale.</strong> Shrink the field ten times and raise every pitch ten times, into ultrasound. The physics is the same, so a field that fits on a table can test the designs cheaply.</li>
-  <li><strong>A full-size outdoor trial.</strong> A real bird-note field, the smallest design, in a real open space, with real claps and real wind.</li>
-  <li><strong>A permanent structure.</strong> Only if the first two work, and only at a size the site can hold.</li>
+  <li><strong>A tabletop model at one tenth scale,</strong> in ultrasound, to check the simulators against real posts.</li>
+  <li><strong>A full-size outdoor trial</strong> of the smallest design, with real claps, real ground and real wind.</li>
+  <li><strong>A permanent structure,</strong> only if the first two work, and only at a size the site can hold.</li>
 </ol>
 <p data-out="build-link"></p>
 
