@@ -1047,6 +1047,95 @@ def recognizer_controls(study_dir=None, seed=SEED):
     return out
 
 
+CONTROL_WORDS = ("yellow", "mellow", "halo")
+CONTROL_DIR = export.ROOT / "artifacts" / "speech" / "control_words"
+
+
+def control_target(word, wpm=195):
+    """A 4c control word through the same espeak route and shaping chain as the stage-4 targets (en-us, `wpm` as
+    "hello", resample to 16 kHz, crop to the voiced extent + 5 ms, 5 ms fades, band-limit 500-4000 Hz, peak 1). The
+    raw espeak WAV is cached in artifacts/speech/control_words/raw/. The committed stage-4 targets are untouched."""
+    from math import gcd
+
+    import soundfile as sf
+    from scipy.signal import resample_poly
+
+    from echo.targets_speech import FADE_S, SpeechTarget, _voiced_extent, fade_window, synth_raw
+
+    raw = CONTROL_DIR / "raw" / f"{word}.wav"
+    src = "cache"
+    if not raw.exists():
+        synth_raw(word, wpm, raw)
+        src = "espeak-ng"
+    x, fs_raw = sf.read(raw, dtype="float64")
+    g = gcd(FS, fs_raw)
+    y = resample_poly(x, FS // g, fs_raw // g)
+    i0, i1 = _voiced_extent(y, FS)
+    pad = int(round(FADE_S * FS))
+    y = y[max(0, i0 - pad): min(len(y), i1 + pad)]
+    y = y * fade_window(len(y), FS)
+    a = band_limit(y / np.max(np.abs(y)), BAND[0], BAND[1])
+    a = a / np.max(np.abs(a))
+    return SpeechTarget(name=word, audio=a, duration_s=len(a) / FS, f_top_hz=BAND[1], candidates={}, source=src)
+
+
+def control_words(words=CONTROL_WORDS, log=print):
+    """4c envelope control (fast model only, no Tier 1): each control word is designed with exactly the 4c pipeline
+    and settings (stage driver, Tier 0 path: same profile-solve steps, realization, post budget, strip, band) and its
+    Tier 0 echo is given to the unchanged recognizer for all five clap variants; "hello" itself is the reference row.
+    Also the recognizer on each clean band-limited target. Informational; no threshold, judge or design choice."""
+    import echo.metrics_speech as MS
+    from stages.common import run_stage
+
+    rows = {}
+    for w in ("hello",) + tuple(words):
+        t = target_of("hello") if w == "hello" else control_target(w)
+        cfg = make_config("4c", "hello")
+        cfg.make_target = (lambda tt=t: tt)
+        cfg.duration_s = duration_for(t)
+        cfg.target_fill = fill_for_posts(cfg, t, cfg._n_posts)
+        cfg.field = False
+        tmp = Path(tempfile.mkdtemp(prefix="s4c_", dir=str(export.ROOT / ".cache")))
+        _, des, res = run_stage(cfg, None, command="control_words", verbose=False, runs_root=tmp)
+        shutil.rmtree(tmp, ignore_errors=True)
+        segs = echo_segment(des.echo_t0_2d, res.n0 / FS, len(t.audio))
+        rt = MS.recognized_text(segs)
+        clean = MS.transcribe(t.audio)
+        rows[w] = {"duration_s": len(t.audio) / FS, "source": getattr(t, "source", ""), "steps": cfg.steps,
+                   "posts": int(len(des.posts)), "max_half_width_m": cfg.max_half_width_m, "band_hz": list(res.band),
+                   "clean_target_transcript": clean, "tier0_recognized_text": rt,
+                   "tier0_hello_count": int(sum(r["hit"] for r in rt)),
+                   "tier0_transcripts": [r["transcript"] for r in rt],
+                   "loss_tier0": window_loss(des.echo_t0_2d, t.audio, res.band, cfg.r0, C0, 128)}
+        log(f"[control] {w}: clean '{clean}', Tier 0 echo -> {rows[w]['tier0_transcripts']} "
+            f"(hello {rows[w]['tier0_hello_count']}/5), {rows[w]['posts']} posts, loss {rows[w]['loss_tier0']:.3f}")
+    reading = control_reading(rows, words)
+    return {"what": "4c envelope control: other two-syllable words designed with the 4c pipeline on Tier 0 (no Tier 1), "
+                    "unchanged recognizer, 5 clap variants; reference row hello", "rows": rows,
+            "settings": {"steps": rows["hello"]["steps"], "strip_half_width_m": rows["hello"]["max_half_width_m"],
+                         "band_hz": rows["hello"]["band_hz"], "posts_target": make_config("4c", "hello")._n_posts,
+                         "espeak": "en-us, 195 wpm (as hello), artifacts/speech/control_words/raw/"},
+            "reading": reading}
+
+
+def control_reading(rows, words=CONTROL_WORDS):
+    """Plain reading of the other-word control from its rows (counts only)."""
+    n_hello = sum(rows[w]["tier0_hello_count"] for w in words)
+    own = sum(sum(rows[w]["clean_target_transcript"].lower().strip(" .!?") == t.lower().strip(" .!?")
+                  for t in rows[w]["tier0_transcripts"]) for w in words)
+    per = ", ".join(f"{w} {rows[w]['tier0_hello_count']}/5" for w in words)
+    ref = rows["hello"]["tier0_hello_count"] if "hello" in rows else None
+    if n_hello >= 3 * len(words):
+        return (f"other words' echoes come back as \"hello\" ({n_hello}/{5 * len(words)}: {per}; hello itself {ref}/5): "
+                "the 4c pass reflects envelope-level cueing, not the word")
+    return (f"other two-syllable words designed the same way are mostly not heard as \"hello\" ({n_hello}/"
+            f"{5 * len(words)}: {per}) while the hello design is ({ref}/5), so the recognizer hears more than the "
+            f"two-syllable envelope and the 4c pass carries more weight; but the false-\"hello\" rate on these "
+            f"degraded echoes is not zero ({n_hello}/{5 * len(words)}), and no control echo is heard as its own word "
+            f"({own}/{5 * len(words)} clap-echoes match the clean target's transcript): the echoes keep word-level "
+            "identity only weakly")
+
+
 def attach_closed_set_table(dests):
     """Write the 3x3 table into each 4b run's metrics.json (closed_set_3x3) and the studies folder."""
     tab = closed_set_table(tuple(dests))
@@ -1067,6 +1156,8 @@ def main(argv=None):
     ap.add_argument("--study-only", action="store_true")
     ap.add_argument("--names", default=None, help="comma-separated target names (default: the sub-stage's)")
     ap.add_argument("--skip-studies", action="store_true", help="reuse _studies/*.json")
+    ap.add_argument("--control-words-reattach", action="store_true", help="re-read saved control_words.json -> 4c run")
+    ap.add_argument("--control-words", action="store_true", help="4c other-word envelope control (Tier 0) -> 4c run")
     ap.add_argument("--controls", action="store_true", help="4c recognizer controls -> the newest 4c run and exit")
     ap.add_argument("--closed-set", action="store_true", help="4b 3x3 closed-set table -> the newest 4b runs and exit")
     ap.add_argument("--attach", action="store_true", help="re-attach finished studies to the newest runs and exit")
@@ -1075,6 +1166,19 @@ def main(argv=None):
     torch.set_num_threads(int(os.environ.get("S4_THREADS", "4")))
     if a.attach:
         attach_studies()
+        return
+    if a.control_words or a.control_words_reattach:
+        if a.control_words:
+            cw = control_words()
+        else:  # recompute the reading from the saved rows (no new designs) and attach
+            cw = json.loads((STUDY_DIR / "control_words.json").read_text())
+            cw["reading"] = control_reading(cw["rows"])
+        _write_json(STUDY_DIR / "control_words.json", cw)
+        d = latest_runs()["hello"]
+        met = json.loads((d / "metrics.json").read_text())
+        met.setdefault("controls", {})["other_words"] = cw
+        export.write_json(d / "metrics.json", met, indent=1)
+        print(cw["reading"])
         return
     if a.controls:
         rc = recognizer_controls()

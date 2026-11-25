@@ -1,0 +1,5 @@
+[control] hello: clean 'Hello.', Tier 0 echo -> ['Hello.', 'Hello.', 'Hello.', 'Hello.', 'Hello.'] (hello 5/5), 3899 posts, loss 4.062
+[control] yellow: clean 'Yellow.', Tier 0 echo -> ['', '', 'Hello.', 'Yeah.', ''] (hello 1/5), 3580 posts, loss 3.736
+[control] mellow: clean 'Meadow.', Tier 0 echo -> ['Metal.', 'Hello.', 'Hello.', 'Metal.', 'Metal.'] (hello 2/5), 3393 posts, loss 3.510
+[control] halo: clean 'Halo.', Tier 0 echo -> ['', '', '', '', ''] (hello 0/5), 3682 posts, loss 3.266
+the other words' echoes do not come back as "hello" (3 of 15 clap-echoes): the recognizer is hearing more than the two-syllable envelope, so the 4c pass carries more weight

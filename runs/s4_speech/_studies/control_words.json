@@ -1,0 +1,208 @@
+{
+ "what": "4c envelope control: other two-syllable words designed with the 4c pipeline on Tier 0 (no Tier 1), unchanged recognizer, 5 clap variants; reference row hello",
+ "rows": {
+  "hello": {
+   "duration_s": 0.3988125,
+   "source": "cache",
+   "steps": 300,
+   "posts": 3899,
+   "max_half_width_m": 5.0,
+   "band_hz": [
+    500.0,
+    2500.0
+   ],
+   "clean_target_transcript": "Hello.",
+   "tier0_recognized_text": [
+    {
+     "clap": 0,
+     "transcript": "Hello.",
+     "hit": true
+    },
+    {
+     "clap": 1,
+     "transcript": "Hello.",
+     "hit": true
+    },
+    {
+     "clap": 2,
+     "transcript": "Hello.",
+     "hit": true
+    },
+    {
+     "clap": 3,
+     "transcript": "Hello.",
+     "hit": true
+    },
+    {
+     "clap": 4,
+     "transcript": "Hello.",
+     "hit": true
+    }
+   ],
+   "tier0_hello_count": 5,
+   "tier0_transcripts": [
+    "Hello.",
+    "Hello.",
+    "Hello.",
+    "Hello.",
+    "Hello."
+   ],
+   "loss_tier0": 4.0621113777160645
+  },
+  "yellow": {
+   "duration_s": 0.363375,
+   "source": "cache",
+   "steps": 300,
+   "posts": 3580,
+   "max_half_width_m": 5.0,
+   "band_hz": [
+    500.0,
+    2500.0
+   ],
+   "clean_target_transcript": "Yellow.",
+   "tier0_recognized_text": [
+    {
+     "clap": 0,
+     "transcript": "",
+     "hit": false
+    },
+    {
+     "clap": 1,
+     "transcript": "",
+     "hit": false
+    },
+    {
+     "clap": 2,
+     "transcript": "Hello.",
+     "hit": true
+    },
+    {
+     "clap": 3,
+     "transcript": "Yeah.",
+     "hit": false
+    },
+    {
+     "clap": 4,
+     "transcript": "",
+     "hit": false
+    }
+   ],
+   "tier0_hello_count": 1,
+   "tier0_transcripts": [
+    "",
+    "",
+    "Hello.",
+    "Yeah.",
+    ""
+   ],
+   "loss_tier0": 3.735762596130371
+  },
+  "mellow": {
+   "duration_s": 0.3424375,
+   "source": "cache",
+   "steps": 300,
+   "posts": 3393,
+   "max_half_width_m": 5.0,
+   "band_hz": [
+    500.0,
+    2500.0
+   ],
+   "clean_target_transcript": "Meadow.",
+   "tier0_recognized_text": [
+    {
+     "clap": 0,
+     "transcript": "Metal.",
+     "hit": false
+    },
+    {
+     "clap": 1,
+     "transcript": "Hello.",
+     "hit": true
+    },
+    {
+     "clap": 2,
+     "transcript": "Hello.",
+     "hit": true
+    },
+    {
+     "clap": 3,
+     "transcript": "Metal.",
+     "hit": false
+    },
+    {
+     "clap": 4,
+     "transcript": "Metal.",
+     "hit": false
+    }
+   ],
+   "tier0_hello_count": 2,
+   "tier0_transcripts": [
+    "Metal.",
+    "Hello.",
+    "Hello.",
+    "Metal.",
+    "Metal."
+   ],
+   "loss_tier0": 3.509758472442627
+  },
+  "halo": {
+   "duration_s": 0.3746875,
+   "source": "cache",
+   "steps": 300,
+   "posts": 3682,
+   "max_half_width_m": 5.0,
+   "band_hz": [
+    500.0,
+    2500.0
+   ],
+   "clean_target_transcript": "Halo.",
+   "tier0_recognized_text": [
+    {
+     "clap": 0,
+     "transcript": "",
+     "hit": false
+    },
+    {
+     "clap": 1,
+     "transcript": "",
+     "hit": false
+    },
+    {
+     "clap": 2,
+     "transcript": "",
+     "hit": false
+    },
+    {
+     "clap": 3,
+     "transcript": "",
+     "hit": false
+    },
+    {
+     "clap": 4,
+     "transcript": "",
+     "hit": false
+    }
+   ],
+   "tier0_hello_count": 0,
+   "tier0_transcripts": [
+    "",
+    "",
+    "",
+    "",
+    ""
+   ],
+   "loss_tier0": 3.266207218170166
+  }
+ },
+ "settings": {
+  "steps": 300,
+  "strip_half_width_m": 5.0,
+  "band_hz": [
+   500.0,
+   2500.0
+  ],
+  "posts_target": 1500,
+  "espeak": "en-us, 195 wpm (as hello), artifacts/speech/control_words/raw/"
+ },
+ "reading": "other two-syllable words designed the same way are mostly not heard as \"hello\" (3/15: yellow 1/5, mellow 2/5, halo 0/5) while the hello design is (5/5), so the recognizer hears more than the two-syllable envelope and the 4c pass carries more weight; but the false-\"hello\" rate on these degraded echoes is not zero (3/15), and no control echo is heard as its own word (0/15 clap-echoes match the clean target's transcript): the echoes keep word-level identity only weakly"
+}
