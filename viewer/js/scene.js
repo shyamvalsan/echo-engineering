@@ -254,7 +254,8 @@ export class ScenePanel {
     ctx.strokeStyle = C.text; ctx.lineWidth = 1.25; ctx.beginPath(); ctx.arc(Lx, Ly, 4.5, 0, 2 * Math.PI); ctx.stroke();
     ctx.fillStyle = C.dim; ctx.textAlign = "right"; ctx.textBaseline = "middle";
     const sep = Math.abs(Ly - Sy) < 16;
-    ctx.fillText("clap", Sx - 9, sep ? Sy + 7 : Sy); ctx.fillText("listener", Lx - 9, sep ? Ly - 7 : Ly);
+    ctx.lineWidth = 3; ctx.strokeStyle = C.ink; ctx.lineJoin = "round"; // knock out of the field video
+    for (const [txt, x, y] of [["clap", Sx - 9, sep ? Sy + 7 : Sy], ["listener", Lx - 9, sep ? Ly - 7 : Ly]]) { ctx.strokeText(txt, x, y); ctx.fillText(txt, x, y); }
     // scale bar
     const bar = niceStep(120 / s, 1), bl = bar * s, bx = 14, by = h - 16;
     ctx.strokeStyle = C.dim; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(bx, by - 4); ctx.lineTo(bx, by); ctx.lineTo(bx + bl, by); ctx.lineTo(bx + bl, by - 4); ctx.stroke();

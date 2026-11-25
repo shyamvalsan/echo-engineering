@@ -2,6 +2,8 @@
 import uPlot from "../vendor/uPlot.esm.js";
 import { colors, el, num } from "./util.js";
 
+const phaseName = (n) => String(n ?? "").replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+
 export class HistoryPanel {
   constructor(host, { onLoad }) {
     this.onLoad = onLoad;
@@ -22,8 +24,12 @@ export class HistoryPanel {
   _render() {
     const ph = this.run.history?.phases ?? [];
     this.sub.hidden = ph.length > 1;
-    this.tabs.replaceChildren(...(ph.length > 1 ? ph.map((p, i) => el("button", { class: "tool toggle" + (i === this.phaseIdx ? " on" : ""), "aria-pressed": String(i === this.phaseIdx),
-      onclick: () => { this.phaseIdx = i; this._render(); } }, p.name)) : []));
+    // phases as a compact select so three or more never overflow the header
+    if (ph.length > 1) {
+      const sel = el("select", { "aria-label": "Design phase", onchange: (e) => { this.phaseIdx = +e.target.value; this._render(); } },
+        ph.map((p, i) => el("option", { value: i, selected: i === this.phaseIdx }, phaseName(p.name))));
+      this.tabs.replaceChildren(sel);
+    } else this.tabs.replaceChildren();
     this.u?.destroy(); this.u = null; this.plotEl.replaceChildren();
     const p = ph[this.phaseIdx];
     if (!p || !p.iters?.length) { this.plotEl.append(el("p", { class: "empty" }, "No history.json in this run.")); this._chips(); return; }
@@ -34,7 +40,7 @@ export class HistoryPanel {
     const axis = { stroke: C.dim, grid: { stroke: C.grid, width: 1 }, ticks: { stroke: C.grid, width: 1, size: 4 }, font: `10px ${font}`, labelFont: `11px ${font}` };
     const opts = {
       width: 300, height: 120, legend: { show: false }, cursor: { y: false, points: { size: 6, fill: C.accent } },
-      scales: { x: { time: false }, y: { distr: pos ? 3 : 1 }, ...(hasScore ? { s: { range: [0, 1] } } : {}) },
+      scales: { x: { time: false }, y: { distr: pos ? 3 : 1 }, ...(hasScore ? { s: { auto: true } } : {}) },
       axes: [{ ...axis, label: p.x_label ?? "iteration", labelSize: 14, size: 22 },
         { ...axis, size: 38, values: (u, v) => v.map((x) => (x == null ? "" : num(x, x < 1 ? 2 : 1))) },
         ...(hasScore ? [{ ...axis, side: 1, scale: "s", size: 30, grid: { show: false }, values: (u, v) => v.map((x) => num(x, 1)) }] : [])],
@@ -45,15 +51,15 @@ export class HistoryPanel {
     this.u = new uPlot(opts, data, this.plotEl);
     this.u.over.addEventListener("click", () => { const i = this.u.cursor.idx; if (i == null) return;
       const it = p.iters[i], near = (p.saved ?? []).reduce((b, s) => (b == null || Math.abs(s.iter - it) < Math.abs(b.iter - it) ? s : b), null);
-      if (near && Math.abs(near.iter - it) <= (p.iters[p.iters.length - 1] - p.iters[0]) * 0.04) this.onLoad({ phase: p.name, xLabel: p.x_label, ...near }); });
+      if (near && Math.abs(near.iter - it) <= (p.iters[p.iters.length - 1] - p.iters[0]) * 0.04) this.onLoad({ phase: phaseName(p.name), xLabel: p.x_label, ...near }); });
     this._size(); this._chips();
   }
   _chips() {
     const p = this.run?.history?.phases?.[this.phaseIdx], saved = p?.saved ?? [];
     const chip = (label, dir, s) => el("button", { class: "chip" + ((this.activeDir ?? null) === dir ? " on" : ""), "aria-pressed": String((this.activeDir ?? null) === dir),
       onclick: () => this.onLoad(s) }, label);
-    const items = [chip("Final", null, null), ...saved.map((s) => chip(`${p.x_label ?? "iter"} ${s.iter}`, s.dir, { phase: p.name, xLabel: p.x_label, ...s }))];
-    this.chips.replaceChildren(el("span", { class: "lbl" }, saved.length ? "Load" : "No saved iterations"), ...(saved.length ? items : []));
+    const items = [chip("Final", null, null), ...saved.map((s) => chip(String(s.iter), s.dir, { phase: phaseName(p.name), xLabel: p.x_label, ...s }))];
+    this.chips.replaceChildren(el("span", { class: "lbl" }, saved.length ? `Load ${(p.x_label ?? "iteration").toLowerCase()}` : "No saved iterations in this phase"), ...(saved.length ? items : []));
   }
   _size() { if (!this.u) return; const r = this.plotEl.getBoundingClientRect(); if (r.width > 10 && r.height > 10) this.u.setSize({ width: Math.floor(r.width), height: Math.floor(r.height) }); }
 }

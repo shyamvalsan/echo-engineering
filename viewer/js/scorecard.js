@@ -3,7 +3,7 @@
 import { el, num } from "./util.js";
 
 const CMP = { "<=": "≤", ">=": "≥", "==": "=" };
-const dec = (v) => (v == null ? 0 : Number.isInteger(v) ? 0 : Math.abs(v) < 1 ? 2 : Math.abs(v) < 100 ? 1 : 0);
+const dec = (v) => (v == null ? 0 : Number.isInteger(v) ? 0 : Math.abs(v) < 10 ? 2 : Math.abs(v) < 100 ? 1 : 0);
 const withUnit = (v, u) => (v == null ? "—" : `${num(v, dec(v))}${u ? (u === "%" ? " %" : ` ${u}`) : ""}`);
 
 // Tier 1 results say pass/fail in colour; Tier 0 or unverified results only "meets"/"misses".
@@ -50,20 +50,30 @@ export class ScorePanel {
       el("dt", {}, "Raw 3D level"), el("dd", {}, H.echo_level_db_re_direct_raw3d == null ? "—" : `${num(H.echo_level_db_re_direct_raw3d, 1)} dB`),
       el("dt", {}, "Wedge filled"), el("dd", {}, H.fill_fraction == null ? "—" : `${num(H.fill_fraction * 100, 2)} %`)));
     if (metrics.failure_cause) b.append(el("p", { class: "cause" }, metrics.failure_cause));
-    const rows = (metrics.metrics ?? []).map((m) => el("tr", { class: m.gating ? "gating" : "" },
+    if (metrics.caveats?.length) b.append(el("details", { class: "caveats" }, el("summary", {}, `Caveats (${metrics.caveats.length})`),
+      el("ul", {}, metrics.caveats.map((c) => el("li", {}, c)))));
+    // judge floor: what the judge scores on a perfect echo (target * clap), mean over the clap family
+    const floor = metrics.judge_floor?.mean ?? null;
+    const rows = (metrics.metrics ?? []).map((m) => el("tr", { class: m.gating ? "gating" : "secondary" },
       el("td", { class: "mark" }, markFor(m.pass, unverified || m.tier !== "tier1")),
-      el("td", { class: "label" }, m.label ?? m.id, el("span", { class: "tier" }, m.tier === "tier1" ? "T1" : "T0")),
+      el("td", { class: "label" }, m.label ?? m.id, el("span", { class: "tier" }, m.tier === "tier1" ? "T1" : "T0"),
+        m.gating && floor?.[m.id] != null ? el("div", { class: "floor", title: metrics.judge_floor.note ?? "" }, `judge floor on a perfect echo: ${num(floor[m.id], Math.abs(floor[m.id]) < 1 ? 3 : 2)}${m.unit ? (m.unit === "%" ? "\u2009%" : ` ${m.unit}`) : ""}`) : null),
       el("td", { class: "val" }, withUnit(m.value, m.unit)),
       el("td", { class: "thr" }, m.comparator ? `${CMP[m.comparator] ?? m.comparator} ${withUnit(m.threshold, m.unit)}` : "")));
-    b.append(el("table", { class: "metrics" }, el("caption", {}, "Metrics, gating rows in bold"), el("tbody", {}, rows)));
+    b.append(el("table", { class: "metrics" }, el("caption", {}, "Metrics: gating rows in bold, information rows dimmed"), el("tbody", {}, rows)));
     if (this.compact) return;
     const rob = metrics.robustness ?? [];
     b.append(el("h3", {}, "Robustness", metrics.fragile ? el("span", { class: "fragile" }, "fragile") : null));
+    if (metrics.fragile_reason) b.append(el("p", { class: metrics.fragile ? "fragnote warn" : "fragnote" }, metrics.fragile_reason));
     if (!rob.length) { b.append(el("p", { class: "empty" }, "No robustness sweep in this run.")); return; }
-    b.append(el("table", { class: "robust" }, el("tbody", {}, rob.map((r) => {
-      const ds = Object.entries(r.delta ?? {}).map(([k, d]) => `${k} ${d >= 0 ? "+" : ""}${num(d, dec(d) || 2)}`).join(", ");
-      return el("tr", {}, el("td", { class: "mark" }, markFor(r.pass, unverified)),
-        el("td", { class: "label" }, r.label ?? r.case), el("td", { class: "val" }, ds));
-    }))));
+    // one column per gating metric (else every metric in the deltas), showing how far it moved
+    const seen = new Map(); for (const m of metrics.metrics ?? []) if (m.gating && !seen.has(m.id)) seen.set(m.id, m);
+    let ids = [...seen.keys()]; if (!ids.length) ids = [...new Set(rob.flatMap((r) => Object.keys(r.delta ?? {})))];
+    const short = (id) => (seen.get(id)?.label ?? id).split(",")[0].replace(/_/g, " ");
+    b.append(el("table", { class: "robust" },
+      el("thead", {}, el("tr", {}, el("th", {}), el("th", {}, "Case"), ids.map((id) => el("th", { class: "val", title: seen.get(id)?.label ?? id }, `\u0394 ${short(id)}`)))),
+      el("tbody", {}, rob.map((r) => el("tr", {}, el("td", { class: "mark" }, markFor(r.pass, unverified)),
+        el("td", { class: "label" }, r.label ?? r.case),
+        ids.map((id) => { const d = r.delta?.[id]; return el("td", { class: "val" }, d == null ? "\u2014" : `${d > 0 ? "+" : ""}${withUnit(d, seen.get(id)?.unit ?? "")}`); }))))));
   }
 }
