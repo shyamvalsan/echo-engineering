@@ -98,3 +98,50 @@ def test_manifest_records_git_state_and_rejects_key_collisions(tmp_path):
                   "units": "x"}, target_audio=np.zeros(10), t_echo0=0.0178, claps=clap_family(5),
                   echo_t0=np.zeros((5, 1920)), metrics=json.loads((d / "metrics.json").read_text()),
                   history={"phases": []}, seed=0, command="c", runs_root=tmp_path, extra={"seed": 1})
+
+
+def test_final_tier1_run_through_contract_checker(tmp_path):
+    """A final (Tier 1) run with a field video, saved correction rounds and a robustness table passes the checker."""
+    from echo.field_video import render_field_video
+
+    tgt = bird_note()
+    claps = clap_family(5)
+    n = int(0.12 * FS)
+    t0 = 2 * 3.06 / 343.0
+    i0 = int(round(t0 * FS))
+    e2 = np.zeros((5, n))
+    e2[:, i0:i0 + len(tgt.audio)] = 0.05 * tgt.audio
+    e1 = 0.9 * e2
+    rob = [{"case": "nominal", "label": "Nominal", "metrics": {"spec_corr": 0.9}, "delta": {"spec_corr": 0.0},
+            "pass": True}]
+    metrics = score_stage("s1_bird", tgt, t0, e2, 0.01 * e2, e1, depth_m=13.7, post_count=3, fill_fraction=0.01,
+                          robustness=rob, claps=claps)
+    posts = np.array([[3.5, 0.0, 0.01], [4.0, 0.2, 0.02], [5.0, -0.5, 0.01]])
+    run_id = "20990101-000000-t6"
+    d = tmp_path / "s1_bird" / run_id
+    frames = np.random.default_rng(0).standard_normal((10, 30, 50)).astype(np.float16)
+    fld = render_field_video(frames, [0.0, 5.0, -1.5, 1.5], d / "field.webm", t0=0.0, dt_frame=0.00025)
+    fld.pop("colour")
+    prof = {"r0_m": 3.06, "dr_m": 0.01, "reflectivity": [0.0, 1.0], "units": "x"}
+    hist = {"phases": [{"name": "Profile solve (Tier 0)", "x_label": "Adam step", "iters": [0], "loss": [1.0]},
+                       {"name": "tier1_correction", "x_label": "correction round", "iters": [0, 1],
+                        "loss": [1.2, 1.1], "score": [0.05, 0.07]}]}
+    iters = [(f"r{k}", Scene(posts=posts), prof, e1[0], metrics, k) for k in (0, 1)]
+    solver = {"tier1": "fdtd", "device": "cpu", "dx": 0.009375, "dt": 7.8e-6, "grid": [100, 80], "f_lo": 300.0,
+              "f_max": 4000.0, "ppw": 9.0, "wall_s": 120.0}
+    out = write_run("s1_bird", "t6", "final", scene=Scene(posts=posts), profile=prof, target_audio=tgt.audio,
+                    t_echo0=t0, claps=claps, echo_t0=e2, echo_t1=e1, metrics=metrics, history=hist, seed=0,
+                    command="pytest", duration_s=0.12, runs_root=tmp_path, iters=iters, solver=solver, field=fld,
+                    run_id=run_id, status="final")
+    check_run_folder(out)
+    check_index(tmp_path)
+    m = json.loads((out / "manifest.json").read_text())
+    assert m["status"] == "final" and m["verified"] is True and m["solver"]["tier1"] == "fdtd"
+    assert set(m["field"]) == {"file", "fps", "n_frames", "t0_s", "sim_seconds_per_frame", "extent_m", "width",
+                               "height"}
+    h = json.loads((out / "history.json").read_text())
+    assert [s["dir"] for s in h["phases"][-1]["saved"]] == ["iters/r0", "iters/r1"]
+    sp = json.loads((out / "spectrograms.json").read_text())
+    assert sp["panels"]["tier1"] is not None
+    for k in (0, 1):
+        assert (out / "iters" / f"r{k}" / "echo.wav").exists()

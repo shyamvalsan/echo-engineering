@@ -10,7 +10,7 @@ Levels are normalized out: every echo and the target are divided by their own RM
 profile's overall scale is therefore free; `solve_profile` returns it normalized to mean 1 and the realization step
 sets the physical scale (`echo.realize.scale_profile`).
 
-The Tier 1 correction loop (Task 6) extends this module; it is not here yet.
+Step 3, the Tier 1 correction loop (`correction_loop`, `window_gains`, `apply_window_gains`), is at the end.
 """
 
 from __future__ import annotations
@@ -187,3 +187,129 @@ def window_loss(echo, target_audio, band, r0=R0_PROFILE, c=C0, n_clap=128):
     e = torch.as_tensor(band_limit(e.numpy(), band[0], band[1]))
     with torch.no_grad():
         return float(EchoLoss(band)(e, tgt)[0])
+
+
+# ------------------------------------------------------------------------------------- step 3: Tier 1 correction loop
+CORR_WIN_S = 0.010  # correction window length (spec: "short time windows"; the spec's fallback uses 10 ms)
+CORR_CLIP = (0.5, 2.0)  # per-window gain limits per round
+CORR_FLOOR_DB = -25.0  # windows whose reference energy is below max - 25 dB keep gain 1 (fades, no information)
+
+
+def reference_echo(target_audio, claps, t_echo0, n, band, fs=FS):
+    """The physically perfect echo: target convolved with each clap, band-limited, placed at t_echo0. [K, n]."""
+    a = np.asarray(target_audio, dtype=float)
+    cl = np.atleast_2d(np.asarray(claps, dtype=float))
+    i0 = int(round(t_echo0 * fs))
+    out = np.zeros((len(cl), n))
+    for k, c in enumerate(cl):
+        y = np.convolve(a, c)[: max(0, n - i0)]
+        out[k, i0:i0 + len(y)] = y
+    return band_limit(out, band[0], band[1])
+
+
+def window_gains(echo, reference, t_start, t_stop, win_s=CORR_WIN_S, fs=FS, clip=CORR_CLIP, floor_db=CORR_FLOOR_DB):
+    """Per-window level correction (in band): g_w = sqrt(E_ref(w) / E_echo(w)) after scaling the reference to the
+    echo's total energy over [t_start, t_stop), so only the shape over time is corrected, never the overall level.
+
+    echo, reference: [K, n] (t = 0 emission), both already band-limited; energies are summed over the clap family.
+    Windows tile [t_start, t_stop) with length win_s. Returns (t_centres_s, gains, info).
+    """
+    e = np.atleast_2d(np.asarray(echo, dtype=float))
+    r = np.atleast_2d(np.asarray(reference, dtype=float))
+    n0, n1 = int(round(t_start * fs)), int(round(t_stop * fs))
+    L = int(round(win_s * fs))
+    nw = max(1, int(np.ceil((n1 - n0) / L)))
+    Ee, Er = np.zeros(nw), np.zeros(nw)
+    for w in range(nw):
+        a, b = n0 + w * L, min(n0 + (w + 1) * L, n1)
+        Ee[w] = np.sum(e[:, a:b] ** 2)
+        Er[w] = np.sum(r[:, a:b] ** 2)
+    Er = Er * (Ee.sum() / max(Er.sum(), 1e-300))
+    g = np.sqrt(Er / np.maximum(Ee, 1e-300))
+    weak = Er < Er.max() * 10 ** (floor_db / 10)
+    g[weak] = 1.0
+    g = np.clip(g, clip[0], clip[1])
+    tc = (n0 + (np.arange(nw) + 0.5) * L) / fs
+    return tc, g, {"E_echo": Ee, "E_ref": Er, "weak": weak}
+
+
+def apply_window_gains(profile, r0, dr, t_centres, gains, c=C0, t_offset=0.0, power=1.0):
+    """Rescale a profile by per-window gains: bin rho echoes at 2 rho / c + t_offset (t_offset: the clap's energy
+    centroid, where a bin's energy lands). Gains are interpolated linearly between window centres (held flat at the
+    ends) and raised to `power` (damping, 1 = full step). Total mass (the post count / fill) is preserved."""
+    p = np.asarray(profile, dtype=float)
+    rho = r0 + dr * np.arange(len(p))
+    tb = 2.0 * rho / c + t_offset
+    g = np.interp(tb, t_centres, np.asarray(gains, dtype=float)) ** power
+    q = p * g
+    return q * (p.sum() / max(q.sum(), 1e-300))
+
+
+def clap_centroid_s(claps, fs=FS):
+    """Mean over the family of each clap's energy centroid time (s)."""
+    cl = np.atleast_2d(np.asarray(claps, dtype=float))
+    t = np.arange(cl.shape[1]) / fs
+    return float(np.mean((cl ** 2 @ t) / np.sum(cl ** 2, axis=1)))
+
+
+def stage_score(metrics: dict) -> float:
+    """The stage's own score for the correction loop's keep-best / stop rule (spec step 3: "stop when the score
+    stops improving"): the smallest relative margin over the GATING metrics, (thr - v)/thr for "<=" and
+    (v - thr)/thr for ">="; positive means every gating metric passes. Used only to select among correction
+    rounds, never inside a loss or a search objective."""
+    m = [x for x in metrics["metrics"] if x["gating"] and x["threshold"] not in (None, 0)]
+    if not m:
+        return float("-inf")
+    out = []
+    for x in m:
+        v, t = x["value"], float(x["threshold"])
+        if v is None:
+            return float("-inf")
+        out.append((t - v) / abs(t) if x["comparator"] == "<=" else (v - t) / abs(t))
+    return float(min(out))
+
+
+@dataclass
+class CorrectionRound:
+    k: int
+    profile: np.ndarray
+    design: object  # stages.common.Design (kept generic here)
+    tier1: object  # Tier1Result
+    echo_t1: np.ndarray  # [K, n] band-limited
+    metrics: dict
+    loss: float
+    score: float
+    gains: np.ndarray | None = None
+    wall_s: float = 0.0
+
+
+def correction_loop(profile, build, run_t1, evaluate, reference, t_start, t_stop, *, r0, dr, c=C0, t_offset=0.0,
+                    rounds=5, power=1.0, win_s=CORR_WIN_S, verbose=True, log=print):
+    """Spec step 3. Round k: realize `profile_k` (build), run Tier 1 (run_t1), score it (evaluate), then rescale the
+    profile per window against `reference` and go on. Stops after `rounds` Tier 1 runs or at the first round whose
+    score does not improve on the best so far. Returns (rounds list, index of the best round by score).
+
+    build(profile) -> design; run_t1(design) -> (Tier1Result, echo_t1 [K, n] band-limited);
+    evaluate(design, echo_t1) -> (metrics dict, loss float, score float).
+    The gains are computed from levels only (window energies in band) -- no judge is involved; the score only picks
+    the round to keep and decides when to stop.
+    """
+    out, best = [], None
+    p = np.asarray(profile, dtype=float)
+    for k in range(rounds):
+        t = time.time()
+        des = build(p)
+        res, e1 = run_t1(des)
+        met, loss, score = evaluate(des, e1)
+        tc, g, _ = window_gains(e1, reference, t_start, t_stop, win_s)
+        rd = CorrectionRound(k, p, des, res, e1, met, loss, score, g, time.time() - t)
+        out.append(rd)
+        if verbose:
+            log(f"correction round {k}: loss {loss:.4f} score {score:+.4f} gains {np.round(g, 2).tolist()} "
+                f"({rd.wall_s:.0f} s)")
+        if best is not None and score <= out[best].score:
+            break
+        if best is None or score > out[best].score:
+            best = k
+        p = apply_window_gains(p, r0, dr, tc, g, c, t_offset, power)
+    return out, best
