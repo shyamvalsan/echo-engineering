@@ -85,14 +85,18 @@ def realize(profile, scene_cfg: Scene | None = None, seed=0, *, r0, dr=DR_PROFIL
     mode="phase_locked": ranges come from `phase_locked_ranges` (posts only where the band-passed profile's analytic
     phase is locked to the carrier; all posts radius a_ref; n_posts defaults to the profile mass in a_ref posts), and
     no range polish is applied. mode="sampling": the inverse-CDF realization above.
+    mode="phase_locked_uniform": as phase_locked, but K equally spaced ring phases weighted by the raised-cosine
+    density (comb harmonics 2 .. K-2 cancel; K = 6 kills the 2nd to 4th) and integer ring counts by error diffusion
+    (fractional detuned pairs would break the cancellation).
     range_scale: every post's bistatic range is multiplied by this factor before angular placement (stretch
     pre-compensation: Tier 1 delays grow by (1 + |eps|) with range in a post field, so ranges are scaled by (1 + eps)).
     """
-    if mode == "phase_locked":
+    if mode in ("phase_locked", "phase_locked_uniform"):
         return realize_phase_locked(profile, scene_cfg, seed, r0=r0, dr=dr, a_ref=a_ref, radii=radii, band=band,
                                     gap=gap, shadow_depth=shadow_depth, n_try=n_try, smooth_m=smooth_m,
                                     angle_jitter=angle_jitter, posts_per_period=posts_per_period, n_posts=n_posts,
-                                    fractional=fractional, range_scale=range_scale)
+                                    fractional=fractional and mode == "phase_locked", range_scale=range_scale,
+                                    uniform=mode == "phase_locked_uniform")
     if mode != "sampling":
         raise ValueError(f"mode must be 'sampling' or 'phase_locked', got {mode!r}")
     scene = scene_cfg if scene_cfg is not None else Scene()
@@ -314,7 +318,7 @@ def _ring_posts(wgt, exact_min=EXACT_MIN):
 
 
 def phase_locked_ranges(profile, n_posts, band, *, r0, dr=DR_PROFILE, c=343.0, posts_per_period=1, rel_floor=0.02,
-                        fractional=True):
+                        fractional=True, uniform=False):
     """Ranges of a phase-locked realization. Returns (rhos[N] sorted, rings) where rings is a list of
     (rho, phase_target, amplitude, count).
 
@@ -331,16 +335,28 @@ def phase_locked_ranges(profile, n_posts, band, *, r0, dr=DR_PROFILE, c=343.0, p
     rho = r0 + dr * np.arange(len(z))
     live = A >= rel_floor * A.max()
     q = quantile_phases(posts_per_period)
+    qw = np.ones(len(q))
+    if uniform:  # uniform="phase_locked_uniform": K equally spaced phases 2 pi k / K weighted by the raised-cosine
+        # density (1 + cos q): samples of the sinusoidal density, so the comb's harmonics 2 .. K-2 cancel exactly
+        # (aliases only at K-1 and above); zero-weight phases (q = pi) are dropped
+        q = (2 * math.pi * np.arange(posts_per_period) / posts_per_period + math.pi) % (2 * math.pi) - math.pi
+        qw = 1.0 + np.cos(q)
+        q, qw = q[qw > 1e-9], qw[qw > 1e-9]
+        o = np.argsort(q)
+        q, qw = q[o], qw[o]
     phim = np.maximum.accumulate(phi)  # carrier phase increases with rho; monotone for the inverse interpolation
     j_lo = int(math.ceil((phim[live].min() - q.min()) / (2 * math.pi)))
     j_hi = int(math.floor((phim[live].max() - q.max()) / (2 * math.pi)))
-    targets = np.sort((2 * math.pi * np.arange(j_lo, j_hi + 1)[:, None] + q[None, :]).ravel())
+    targets = (2 * math.pi * np.arange(j_lo, j_hi + 1)[:, None] + q[None, :]).ravel()
+    tw = np.broadcast_to(qw[None, :], (j_hi - j_lo + 1, len(q))).ravel()
+    o = np.argsort(targets, kind="stable")
+    targets, tw = targets[o], tw[o]
     r_t = np.interp(targets, phim, rho)
     dphi = np.gradient(phim, dr)
     lam = 2 * math.pi / np.maximum(np.interp(r_t, rho, dphi), 1e-9)  # local carrier period in rho
     keep = np.interp(r_t, rho, live.astype(float)) > 0.5
     r_t, targets = r_t[keep], targets[keep]
-    wgt = np.interp(r_t, rho, A) * lam[keep] / len(q)
+    wgt = np.interp(r_t, rho, A) * lam[keep] / len(q) * tw[keep]
     rings, rhos = [], []
     if fractional:
         wgt = wgt / wgt.sum()
@@ -368,7 +384,8 @@ def phase_locked_ranges(profile, n_posts, band, *, r0, dr=DR_PROFILE, c=343.0, p
 
 def realize_phase_locked(profile, scene_cfg: Scene | None = None, seed=0, *, r0, dr=DR_PROFILE, a_ref=0.01,
                          radii=RADII, band=BAND, gap=MIN_GAP, shadow_depth=0.5, n_try=48, smooth_m=0.10,
-                         angle_jitter=0.15, posts_per_period=1, n_posts=None, fractional=True, range_scale=1.0):
+                         angle_jitter=0.15, posts_per_period=1, n_posts=None, fractional=True, range_scale=1.0,
+                         uniform=False):
     """Phase-locked realization (see `phase_locked_ranges`): every post radius a_ref, exactly on its ring's
     equal-delay ellipse, spread across the wedge by `place_on_arcs`. n_posts None: the profile mass (profile units
     are a_ref posts). Returns (posts, stats) with the same keys as `realize` plus rings / posts_per_period / mode."""
@@ -381,7 +398,7 @@ def realize_phase_locked(profile, scene_cfg: Scene | None = None, seed=0, *, r0,
     total = float(p.sum())
     n_req = int(round(total if n_posts is None else n_posts))
     rhos, rings = phase_locked_ranges(p, n_req, band, r0=r0, dr=dr, c=float(scene.c),
-                                      posts_per_period=posts_per_period, fractional=fractional)
+                                      posts_per_period=posts_per_period, fractional=fractional, uniform=uniform)
     rhos = rhos * range_scale
     rads = np.full(len(rhos), float(a_ref))
     posts, shadow_viol, dropped = place_on_arcs(rhos, rads, scene, rng, r0=r0, dr=dr, radii=radii, gap=gap,
@@ -398,7 +415,7 @@ def realize_phase_locked(profile, scene_cfg: Scene | None = None, seed=0, *, r0,
     ks = np.ones(k) / k
     ps, rs = np.convolve(p, ks, "same") * (len(posts) / max(total, 1e-30)), np.convolve(real, ks, "same")
     stats = {
-        "mode": "phase_locked",
+        "mode": "phase_locked_uniform" if uniform else "phase_locked",
         "range_scale": float(range_scale),
         "posts_per_period": int(posts_per_period),
         "n_posts": int(len(posts)),
