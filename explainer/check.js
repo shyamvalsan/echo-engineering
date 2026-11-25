@@ -10,6 +10,7 @@ async (page) => {
   const cases = [
     { file: 'index.html', tag: 'default' },
     { file: '_test_index.html', tag: 'fixture' },
+    { file: '_test_redesign.html', tag: 'redesign' },
   ];
   for (const c of cases) {
     for (const vp of [{ w: 1440, h: 900, n: 'desktop' }, { w: 390, h: 844, n: 'phone' }]) {
@@ -51,6 +52,15 @@ async (page) => {
         await page.click('#clap [data-k="3"]');
         await page.click('#clap [data-act="clap"]');
         const clapReadout = await page.locator('#clap [data-out="readout"]').innerText();
+        // story: rings vs scattered
+        await page.locator('#rings [data-in="nudge"]').fill('10');
+        const ringsReadout = await page.locator('#rings [data-out="readout"]').innerText();
+        await page.click('#rings [data-act="scatter"]');
+        await page.click('#rings [data-act="rings"]');
+        await page.click('#rings [data-act="target"]');
+        if (c.tag === 'default') await page.locator('#rings').screenshot({ path: `artifacts/explainer/story-rings-${vp.n}-${theme}.png` });
+        const fine = await page.locator('details.fine summary').count();
+        if (fine) await page.locator('details.fine summary').first().click();
         // 5 size
         await page.locator('#size [data-in="ms"]').fill('800');
         const sizeReadout = await page.locator('#size [data-out="readout"]').innerText();
@@ -71,10 +81,10 @@ async (page) => {
         }));
         await page.screenshot({ path: `artifacts/explainer/${c.tag}-${vp.n}-${theme}.png`, fullPage: true });
         out.push({ case: c.tag, vp: vp.n, theme, ctxBeforeGesture: before, ...state, toggled, dragged, wavButtons,
-          wallReadout, rowReadout, negReadout, realReadout, clapReadout, sizeReadout });
+          ringsReadout, status: await page.locator('[data-out="status"]').innerText(), wallReadout, rowReadout, negReadout, realReadout, clapReadout, sizeReadout });
       }
     }
   }
   const bad = out.filter((o) => o.ctxBeforeGesture !== 'none' || o.ctx !== 'running' || o.overflow > 0 || o.toggled === undefined);
-  return { errors, runs: out.length, bad, sample: out[0] };
+  return { errors, runs: out.length, bad, sample: out[0], statuses: [...new Set(out.map((o) => o.status))], rings: out[0].ringsReadout };
 }

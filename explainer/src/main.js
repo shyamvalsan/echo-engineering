@@ -553,46 +553,221 @@
   function num(v, d = 1, unit = '') { return v == null || Number.isNaN(+v) ? 'not recorded' : fmt(+v, d) + unit; }
   function cmpWord(c) { return c === '<=' ? 'at most' : c === '>=' ? 'at least' : c === '==' ? 'exactly' : ''; }
 
+  const PLAIN = { s1_bird: 'the bird whistle', s2_motif: 'the four-note motif', s3_melody: 'the melody', s4_speech: 'speech' };
+  // one metric value in plain words
+  function valWord(id, v) {
+    if (typeof v !== 'number') return null;
+    if (/^pitch_err(_max)?_pct$/.test(id)) return `pitch off by up to ${fmt(v, 1)}%`;
+    if (id === 'spec_corr') return `spectrogram match ${fmt(v, 2)}`;
+    return `${id.replace(/_/g, ' ')} ${fmt(v, Math.abs(v) < 10 ? 2 : 1)}`;
+  }
+  const valWords = (m) => Object.entries(m || {}).map(([k, v]) => valWord(k, v)).filter(Boolean).join(', ');
+  const gate = (run, id) => (run.metrics || []).find((m) => m.id === id && m.tier !== 'tier0');
+  function verdictOf(r) {
+    if (!r.has_metrics) return ['A final run exists, but its scores could not be read.', ''];
+    if (r.passed && r.verified) return ['Passed, confirmed by the careful simulator.', 'pass'];
+    if (r.passed) return ['Passed on the fast simulator only. Not confirmed by the careful simulator, so treat it as provisional.', ''];
+    return [r.verified === false ? 'Did not pass (and not checked by the careful simulator).' : 'Did not pass.', 'fail'];
+  }
+  function robustHTML(r) {
+    const all = r.robust || [], rows = all.filter((x) => x.case !== 'nominal');
+    if (!rows.length) return '';
+    const nominal = all.find((x) => x.case === 'nominal');
+    const pf = (x) => (x.pass === true ? 'still passes' : x.pass === false ? 'fails' : 'not scored');
+    const one = (name, x) => `${name}: ${pf(x)}${valWords(x.m) ? ` (${valWords(x.m)})` : ''}`;
+    const used = new Set(), items = [];
+    const pick = (test) => rows.filter((x) => test(x) && !used.has(x) && used.add(x));
+    const lis = pick((x) => /^listener/.test(x.case));
+    if (lis.length) items.push('<b>Listener moved.</b> ' + lis.map((x) => one({ listener_side_1m: 'A metre to the side', listener_back_1m: 'A metre back' }[x.case] || x.label, x)).join('. ') + '.');
+    const tmp = pick((x) => /^c_\d+/.test(x.case));
+    if (tmp.length) items.push('<b>Colder or hotter air.</b> ' + tmp.map((x) => { const c = +x.case.slice(2); return one(c < 343 ? 'About 0 °C' : c > 343 ? 'About 30 °C' : esc(x.label), x); }).join('. ') + '.');
+    const jit = pick((x) => x.case === 'jitter');
+    if (jit.length) items.push('<b>Built slightly wrong.</b> ' + jit.map((x) => one(esc(x.label), x)).join('. ') + '.');
+    const cl = pick((x) => /^clap_\d+/.test(x.case));
+    if (cl.length) items.push(`<b>Each clap on its own.</b> ${cl.filter((x) => x.pass === true).length} of ${cl.length} pass.`);
+    const rest = rows.filter((x) => !used.has(x));
+    rest.forEach((x) => items.push(one(esc(x.label || x.case), x) + '.'));
+    const intro = nominal && nominal.pass === false
+      ? 'What happens when conditions change. The design already misses at its home spot, so this shows how much further it moves:'
+      : 'What happens when conditions change:';
+    return `<p class="small">${intro}</p><ul class="checks robust">${items.map((i) => `<li>${i}</li>`).join('')}</ul>`;
+  }
   function runHTML(r, gi, ri) {
     const hd = r.headline || {};
-    let verdict, cls = '';
-    if (!r.has_metrics) verdict = 'A final run exists, but its scores could not be read.';
-    else if (r.passed && r.verified) { verdict = 'Passed, confirmed by the full-wave referee.'; cls = 'pass'; }
-    else if (r.passed) verdict = 'Passed in the fast model only. Not confirmed by the full-wave referee, so treat it as provisional.';
-    else { verdict = r.verified === false ? 'Did not pass (and not checked by the full-wave referee).' : 'Did not pass.'; cls = 'fail'; }
+    const [verdict, cls] = verdictOf(r);
     const parts = [`<div class="run">`, `<p class="small">${esc(r.title || r.stage)}</p>`, `<p class="verdict ${cls}">${verdict}</p>`];
-    if (r.failure_cause) parts.push(`<p class="cause">Why: ${esc(r.failure_cause)}</p>`);
-    if (r.fragile) parts.push(`<p>Fragile: it stops passing when ${r.robust_failed.length ? esc(r.robust_failed.join('; ').toLowerCase()) : 'conditions change'}.</p>`);
-    else if (r.robust_total && r.robust_failed.length) parts.push(`<p class="small">Checked under ${r.robust_total} changed conditions (moved listener, hot and cold air, sloppy building, single claps); it slipped in: ${esc(r.robust_failed.join('; '))}.</p>`);
+    if (r.failure_cause) parts.push(`<p class="cause">In the run's own words: ${esc(r.failure_cause)}</p>`);
     const depth = hd.depth_m, bus = depth != null ? ` (about ${fmt(depth / 12, 1)} bus lengths)` : '';
     const lw = loudWords(hd.echo_spl_db);
+    const sh = r.shape || {};
+    const shapeTxt = sh.tier0 != null && sh.tier1 != null
+      ? `spectrogram match ${fmt(sh.tier0, 2)} on the fast simulator, ${fmt(sh.tier1, 2)} on the careful one${Math.abs(sh.tier0 - sh.tier1) >= 0.05 ? ': they disagree' : ': they agree'}`
+      : sh.tier1 != null ? `spectrogram match ${fmt(sh.tier1, 2)} on the careful simulator` : 'not compared';
     parts.push('<dl class="facts">',
       `<dt>Depth</dt><dd>${num(depth, 1, ' m')}${bus}</dd>`,
       `<dt>Posts</dt><dd>${hd.post_count == null ? 'not recorded' : fmt(hd.post_count, 0)}</dd>`,
       `<dt>Echo loudness</dt><dd>${num(hd.echo_spl_db, 0, ' dB')}${lw ? ', ' + lw : ''}</dd>`,
-      `<dt>Models agree to</dt><dd>${hd.tier_gap_db == null ? 'no referee result' : `${fmt(Math.abs(hd.tier_gap_db), 1)} dB (fast model vs full-wave referee)`}</dd>`,
+      `<dt>Loudness, fast vs careful</dt><dd>${hd.tier_gap_db == null ? 'no careful-simulator result' : `within ${fmt(Math.abs(hd.tier_gap_db), 1)} dB of each other`}</dd>`,
+      `<dt>Shape, fast vs careful</dt><dd>${shapeTxt}</dd>`,
       '</dl>');
+    if (sh.tier0 != null && sh.tier1 != null && Math.abs(sh.tier0 - sh.tier1) >= 0.05) parts.push(`<p class="small">The two simulators agree on how loud the echo is, but not on its shape: the careful one, which includes shadowing and sound bouncing between posts, ${sh.tier1 < sh.tier0 ? 'finds a less faithful echo' : 'finds a more faithful echo'}.</p>`);
     if (r.metrics.length) {
       parts.push('<ul class="checks">');
       for (const m of r.metrics) {
         const mk = m.pass === true ? '<span class="mark-ok">Pass</span>' : m.pass === false ? '<span class="mark-no">Fail</span>' : '<span>n/a</span>';
         const val = typeof m.value === 'number' ? fmt(m.value, Math.abs(m.value) < 10 ? 2 : 1) : esc(m.value == null ? 'none' : JSON.stringify(m.value));
-        const thr = m.threshold == null ? '' : ` (needs ${cmpWord(m.comparator)} ${esc(m.threshold)}${m.unit ? ' ' + esc(m.unit) : ''})`;
-        parts.push(`<li>${mk} ${esc(m.label)}: ${val}${m.unit ? ' ' + esc(m.unit) : ''}${thr}</li>`);
+        const u = m.unit ? (m.unit === '%' ? '%' : ' ' + esc(m.unit)) : '';
+        const thr = m.threshold == null ? '' : ` (needs ${cmpWord(m.comparator)} ${esc(m.threshold)}${u})`;
+        const fl = r.judge_floor && r.judge_floor[m.id];
+        const floor = typeof fl === 'number' ? `<br><span class="small">Even a perfect echo scores ${fmt(fl, m.unit === '%' ? 1 : 2)}${u} on this test; the pass mark is ${esc(m.threshold)}${u}.</span>` : '';
+        parts.push(`<li>${mk} ${esc(m.label)}: ${val}${u}${thr}${floor}</li>`);
       }
       parts.push('</ul>');
     }
+    if (r.fragile) parts.push(`<p>Fragile${r.fragile_reason ? ': ' + esc(r.fragile_reason) : ': it stops passing when conditions change'}.</p>`);
+    parts.push(robustHTML(r));
     const a = r.audio || {};
     parts.push('<div class="controls">');
     if (a.target) parts.push(`<button class="btn" type="button" data-wav="${gi}-${ri}-target">Target</button>`);
-    if (a.echo) parts.push(`<button class="btn primary" type="button" data-wav="${gi}-${ri}-echo">Echo${a.echo_is_tier0 ? ' (fast model)' : ''}, turned up</button>`);
+    if (a.echo) parts.push(`<button class="btn primary" type="button" data-wav="${gi}-${ri}-echo">Echo${a.echo_is_tier0 ? ' (fast simulator)' : ''}, turned up</button>`);
     if (a.as_heard) parts.push(`<button class="btn" type="button" data-wav="${gi}-${ri}-as_heard">As heard, true loudness</button>`);
     if (!a.target && !a.echo && !a.as_heard) parts.push('<span class="small">No audio files were written for this run.</span>');
     parts.push('</div>');
     if (r.scene && r.scene.posts && r.scene.posts.length) parts.push(`<canvas class="plan cv" data-h="190" data-plan="${gi}-${ri}" aria-label="Plan view of the designed post field"></canvas><p class="small">The real design from above, you at the left${r.scene.posts.length < (hd.post_count || 0) ? `; one in ${Math.round(hd.post_count / r.scene.posts.length)} posts drawn` : ''}.</p>`);
+    if (r.caveats && r.caveats.length) parts.push(`<details class="fine"><summary>Fine print (${r.caveats.length})</summary><ul>${r.caveats.map((c) => `<li>${esc(c)}</li>`).join('')}</ul></details>`);
+    for (const e of r.earlier || []) {
+      const when = new Date(e.created);
+      const vals = (e.metrics || []).filter((m) => m.tier !== 'tier0').map((m) => valWord(m.id, m.value)).filter(Boolean).join(', ');
+      parts.push(`<p class="small earlier">Earlier attempt${isNaN(when) ? '' : ', ' + when.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}: ${verdictOf(e)[0].replace(/\.$/, '').toLowerCase()}${vals ? `; ${vals}` : ''}.</p>`);
+    }
     parts.push('</div>');
     return parts.join('');
   }
+
+  // ---------- the story so far: sentences generated from the run data ----------
+  (function story() {
+    $('[data-out="status"]').textContent = D.status || '';
+    const G = D.results.groups, bird = G[0] && G[0].runs[0];
+    const put = (k, html) => { const el = $(`[data-out="${k}"]`); if (html) { el.innerHTML = html; el.hidden = false; } else el.hidden = true; };
+    function scores(run) {
+      const p = gate(run, 'pitch_err_pct') || (run.metrics || []).find((m) => /^pitch_err/.test(m.id) && m.tier !== 'tier0'), c = gate(run, 'spec_corr'), bits = [];
+      if (p && typeof p.value === 'number') bits.push(`its pitch strayed by up to ${fmt(p.value, 1)}% (the limit is ${p.threshold}%)`);
+      if (c && typeof c.value === 'number') bits.push(`its spectrogram matched the target's to ${fmt(c.value, 2)} (the pass mark is ${c.threshold})`);
+      if (!bits.length) (run.metrics || []).forEach((m) => { const w = valWord(m.id, m.value); if (w) bits.push(w); });
+      return bits.join(', and ');
+    }
+    const earlier = bird ? [...(bird.earlier || [])].reverse() : []; // oldest first
+    const first = earlier[0] || bird;
+    let res = null, failedRun = null;
+    if (!bird) res = 'The first bird-whistle result is not in yet.';
+    else if (!bird.passed && !earlier.length) { res = `The first real result: <strong>the bird whistle failed</strong>. The echo sounds like a whistle, but too noisy. On the careful simulator, ${scores(bird)}.`; failedRun = bird; }
+    else if (!bird.passed) { res = `So far <strong>the bird whistle has failed ${earlier.length + 1} times</strong>. The first attempt: ${scores(first)}. The newest: ${scores(bird)}.`; failedRun = first; }
+    else if (earlier.some((e) => !e.passed)) { res = `The first attempt at the bird whistle failed: ${scores(first)}. <strong>The redesign passed${bird.verified ? ' on the careful simulator' : ' on the fast simulator, but not yet on the careful one'}</strong>: ${scores(bird)}.`; failedRun = first; }
+    else res = `<strong>The bird whistle passed${bird.verified ? ' on the careful simulator' : ' on the fast simulator, but not yet on the careful one'}</strong>: ${scores(bird)}.`;
+    put('story-result', res);
+    const pm = bird && gate(bird, 'pitch_err_pct'), fl = bird && bird.judge_floor && bird.judge_floor.pitch_err_pct;
+    put('story-floor', typeof fl === 'number' && pm ? `The pitch test is strict. Even a perfect echo scores about ${fmt(fl, 1)}% against the ${pm.threshold}% limit, because a real clap is a ragged burst of noise and the pitch tracker hears that raggedness in any echo of it.` : null);
+    const n = failedRun && failedRun.headline && failedRun.headline.post_count;
+    put('story-why', failedRun ? `Why did ${failedRun === bird ? 'it' : 'the first attempt'} fail? This is our current understanding, not a settled conclusion. The first design method scattered ${n ? fmt(n, 0) : 'about a thousand'} posts according to a smooth density, like the dots in the figures above. In such a layout most posts add little to the tune, but each adds its full strength to the noise whenever it sits a millimetre or two from its ideal distance. With too few posts the echo is grainy; with too many, the front rows shadow the back rows. There was no good setting.` : null);
+    const f = [];
+    if (bird) {
+      const spl = bird.headline && bird.headline.echo_spl_db;
+      if (spl != null) f.push(`The echo is modest but not hopeless in loudness: the simulation puts it at about ${fmt(spl, 0)} dB at the listener (a three-dimensional estimate), ${loudWords(spl).replace(/^about /, 'roughly ')}. The line below which it would likely be lost outdoors is about 35 dB.`);
+      const rb = bird.robust || [], side = rb.find((x) => x.case === 'listener_side_1m'), back = rb.find((x) => x.case === 'listener_back_1m');
+      if (side || back) {
+        const bits = [];
+        if (side) bits.push(`step a metre to the side and it falls apart (${valWords(side.m)})`);
+        if (back) bits.push(`a metre back, ${valWords(back.m)}`);
+        f.push(`And it only works near one listening spot: ${bits.join('; ')}. The field is a wide fan, and from anywhere else the echoes from its different parts no longer arrive in step.`);
+      }
+    }
+    put('story-findings', f.length ? (f.length > 1 ? 'Two practical findings so far. ' : '') + f.join(' ') : null);
+    const missing = G.slice(0, 4).filter((g) => !g.runs.length).map((g) => PLAIN[g.key] || g.name);
+    const list = missing.length > 1 ? missing.slice(0, -1).join(', ') + ' and ' + missing[missing.length - 1] : missing[0];
+    put('story-todo', missing.length
+      ? `Not done yet: ${list} ${missing.length > 1 ? 'have' : 'has'} not been run to a final result.${missing.includes('speech') ? ' The scoring for speech is prepared.' : ''}`
+      : 'Every stage now has a final result; the cards below give each one.');
+  })();
+
+  // ---------- scattered by density versus exact rings ----------
+  (function rings() {
+    const fig = $('#rings'), cv = $('canvas', fig), sl = $('[data-in="nudge"]', fig);
+    const d = design('bird'), t = d.t, n = t.length, NP = 1000, r = rng(11);
+    // scattered: draw NP positions from the density bias + signal (inverse CDF)
+    const cdf = new Float64Array(n + 1);
+    for (let i = 0; i < n; i++) cdf[i + 1] = cdf[i] + d.prof[i];
+    const scat = [];
+    for (let k = 0; k < NP; k++) {
+      const u = r() * cdf[n]; let lo = 0, hi = n;
+      while (hi - lo > 1) { const m = (lo + hi) >> 1; if (cdf[m] <= u) lo = m; else hi = m; }
+      scat.push(lo + (u - cdf[lo]) / Math.max(1e-12, cdf[lo + 1] - cdf[lo]));
+    }
+    // rings: one ring per crest of the waveform, posts per ring in proportion to the local loudness
+    const crests = [];
+    for (let i = 1; i < n - 1; i++) if (t[i] > t[i - 1] && t[i] >= t[i + 1] && t[i] > 0.05) {
+      const den = t[i - 1] - 2 * t[i] + t[i + 1];
+      crests.push({ x: i + (den ? 0.5 * (t[i - 1] - t[i + 1]) / den : 0), a: d.bias[i] });
+    }
+    const asum = crests.reduce((s, c) => s + c.a, 0), ring = [];
+    for (const c of crests) for (let k = Math.max(1, Math.round(c.a / asum * NP)); k > 0; k--) ring.push(c.x);
+    const offS = scat.map(() => 2 * r() - 1), offR = ring.map(() => 2 * r() - 1);
+    const yS = scat.map(() => r()), yR = ring.map(() => r());
+    const ideal = conv(t, CLAPS[0]);
+    const mmToSamples = (mm) => mm / 1000 * 2 / C * FS;
+    function echo(pos, off, mm) {
+      const x = new Float32Array(n + 8), sh = mmToSamples(mm);
+      for (let k = 0; k < pos.length; k++) { const p = Math.min(n + 4, Math.max(0, pos[k] + off[k] * sh)), i = Math.floor(p), f = p - i; x[i] += 1 - f; x[i + 1] += f; }
+      return conv(x, CLAPS[0]);
+    }
+    function match(e) {
+      let xy = 0, xx = 0, yy = 0; const m = Math.min(e.length, ideal.length);
+      for (let i = 0; i < m; i++) { xy += e[i] * ideal[i]; xx += e[i] * e[i]; yy += ideal[i] * ideal[i]; }
+      return Math.max(0, xy / Math.sqrt(xx * yy || 1));
+    }
+    let cache = {};
+    function echoes() {
+      const mm = +sl.value;
+      if (cache.mm !== mm) cache = { mm, s: echo(scat, offS, mm), r: echo(ring, offR, mm) };
+      return cache;
+    }
+    function draw() {
+      const { g, w, h } = setup(cv), mm = +sl.value, sh = mmToSamples(mm);
+      const x0 = 8, xw = w - 16, zw = Math.min(320, xw * 0.42), fw = xw - zw - 16, zx = x0 + xw - zw;
+      const zn = Math.round(0.2 / DR), zi = Math.round(n * 0.35);
+      const strip = (label, pos, off, ys, top, hh) => {
+        text(g, label, x0, top - 6, palette.muted);
+        g.fillStyle = palette.ink;
+        for (let k = 0; k < pos.length; k++) {
+          const p = pos[k] + off[k] * sh;
+          g.beginPath(); g.arc(x0 + p / n * fw, top + 3 + ys[k] * (hh - 6), 1, 0, 7); g.fill();
+          if (p >= zi && p < zi + zn) { g.beginPath(); g.arc(zx + (p - zi) / zn * zw, top + 4 + ys[k] * (hh - 8), 2.4, 0, 7); g.fill(); }
+        }
+        g.strokeStyle = palette.rule; g.strokeRect(zx + 0.5, top + 0.5, zw, hh);
+        g.strokeStyle = palette.muted; g.beginPath(); g.moveTo(x0 + zi / n * fw, top - 2); g.lineTo(x0 + zi / n * fw, top + hh + 2); g.stroke();
+      };
+      const hh = (h - 70) / 2;
+      strip('Scattered by density', scat, offS, yS, 22, hh);
+      const rt = 22 + hh + 28;
+      g.strokeStyle = palette.accent; g.globalAlpha = 0.45;
+      for (const c of crests) if (c.x >= zi && c.x < zi + zn) { const x = zx + (c.x - zi) / zn * zw; g.beginPath(); g.moveTo(x, rt + 1); g.lineTo(x, rt + hh - 1); g.stroke(); }
+      g.globalAlpha = 1;
+      strip('Exact rings, one per ripple of the whistle', ring, offR, yR, rt, hh);
+      text(g, `${R0} m`, x0, h - 4, palette.muted);
+      text(g, `${fmt(R0 + n * DR, 1)} m`, x0 + fw, h - 4, palette.muted, 'right');
+      text(g, fw < 300 ? '20 cm, magnified' : '20 cm of each, magnified', zx + zw, h - 4, palette.muted, 'right');
+    }
+    function update() {
+      const mm = +sl.value, e = echoes();
+      $('[data-out="nudge"]', fig).textContent = `${mm} mm`;
+      $('[data-out="readout"]', fig).innerHTML = `Scattered: match <b>${fmt(100 * match(e.s), 0)}%</b>. Rings: match <b>${fmt(100 * match(e.r), 0)}%</b>. ${fmt(scat.length, 0)} and ${fmt(ring.length, 0)} posts${mm ? `, each moved by up to ${mm} mm along the range` : ''}.`;
+      draw();
+    }
+    sl.addEventListener('input', update);
+    $('[data-act="scatter"]', fig).addEventListener('click', () => play(mix(CLAPS[0], echoes().s, D0, null).buf));
+    $('[data-act="rings"]', fig).addEventListener('click', () => play(mix(CLAPS[0], echoes().r, D0, null).buf));
+    $('[data-act="target"]', fig).addEventListener('click', () => { const x = new Float32Array(n + 2 * LEAD); x.set(t.map((v) => 0.7 * v), LEAD); play(x); });
+    drawers.push(update);
+  })();
 
   (function renderResults() {
     const box = $('#results'), G = D.results.groups;

@@ -59,6 +59,13 @@ h1 {
   letter-spacing: -0.02em;
   margin: 0 0 0.3em;
 }
+.status { font-family: var(--sans); font-size: 0.9rem; line-height: 1.45; margin: -1.2em 0 1.8em; color: var(--muted); }
+.status a { color: inherit; text-decoration-color: var(--rule); }
+.status a:hover { color: var(--accent); }
+details.fine { margin: 10px 0; color: var(--muted); }
+details.fine summary { cursor: pointer; }
+details.fine ul { margin: 6px 0 0; font-size: 0.85rem; }
+.earlier { margin: 6px 0 0; }
 .lede { font-size: clamp(1.3rem, 3.4vw, 1.65rem); line-height: 1.35; color: var(--muted); margin: 0 0 1.6em; font-style: italic; }
 h2 {
   font-size: 1.75rem;
