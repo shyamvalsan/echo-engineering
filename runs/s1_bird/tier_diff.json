@@ -1,0 +1,42 @@
+{
+ "what": "Tier 1 - Tier 0 decomposition on the same posts (clap 0): stretch, linear filter, incoherent residue, and the Tier 0 radial jitter giving the same residue",
+ "selection": "diagnostic only",
+ "rows": [
+  {
+   "run": "20261125-033940-s1",
+   "n_posts": 1060,
+   "tier1_vs_tier0": {
+    "stretch_eps": -0.0022400000000000002,
+    "offset_s": 6.199999999999999e-05,
+    "corr_raw": 0.3306224284059228,
+    "corr_stretched": 0.9572848571800667,
+    "residue_db_gain_only": -0.5027400390687291,
+    "residue_db_stretched": -10.777641010836088,
+    "residue_db_stretched_fir33": -11.686337355331382
+   },
+   "tier0_jitter_residue": [
+    {
+     "sigma_m": 0.001,
+     "residue_db_stretched_fir33": -22.472431310911237
+    },
+    {
+     "sigma_m": 0.002,
+     "residue_db_stretched_fir33": -16.411528578327378
+    },
+    {
+     "sigma_m": 0.003,
+     "residue_db_stretched_fir33": -12.86237561333029
+    },
+    {
+     "sigma_m": 0.004,
+     "residue_db_stretched_fir33": -10.351832812044847
+    },
+    {
+     "sigma_m": 0.006,
+     "residue_db_stretched_fir33": -6.892041396327742
+    }
+   ],
+   "equivalent_radial_jitter_m": 0.0034684398359576883
+  }
+ ]
+}

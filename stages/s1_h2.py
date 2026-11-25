@@ -104,6 +104,8 @@ def main(argv=None):
            "per_window_level_db_tier1_minus_tier0": [
                float(10 * np.log10(np.sum(s1[:, i:i + 160] ** 2) / np.sum(s0[:, i:i + 160] ** 2)))
                for i in range(0, nw - 160 + 1, 160)]}
+    np.savez_compressed(export.RUNS / cfg.stage / f"h2_echoes_{a.realization}_K{a.K}_N{len(d.posts)}.npz",
+                        tier0=d.echo_t0_2d, tier1=e1, posts=d.posts, n0=n0)
     path = export.RUNS / cfg.stage / "h2_tier1_vs_tier0.json"
     out = json.loads(path.read_text()) if path.exists() else {
         "what": "H2: Tier 1 vs Tier 0 on the same posts, and the Tier 0 radial jitter that reproduces the residue",

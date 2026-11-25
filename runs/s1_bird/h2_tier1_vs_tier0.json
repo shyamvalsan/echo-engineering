@@ -1,0 +1,74 @@
+{
+ "what": "H2: Tier 1 vs Tier 0 on the same posts, and the Tier 0 radial jitter that reproduces the residue",
+ "selection": "diagnostic only; nothing is chosen from this file",
+ "rows": [
+  {
+   "label": "phase_locked K=1 N=301",
+   "realization": "phase_locked",
+   "posts_per_period": 1,
+   "n_posts": 301,
+   "fill": 0.0010072971004056405,
+   "tier1_wall_s": 288.40205216407776,
+   "loss_tier0": 3.8767447471618652,
+   "loss_tier1": 5.77586555480957,
+   "tier_gap_db": -0.47264242002018053,
+   "wave_corr_tier1_vs_tier0": 0.8965872520364234,
+   "residue_db_tier1_vs_tier0": -7.15270234443791,
+   "judges_tier0_info_only": {
+    "pitch_err_pct": 6.480692589196056,
+    "spec_corr": 0.6104638091285906
+   },
+   "judges_tier1_info_only": {
+    "pitch_err_pct": 10.831367969794197,
+    "spec_corr": 0.5334038103465552
+   },
+   "tier0_jitter_equivalents": [
+    {
+     "sigma_m": 0.0005,
+     "wave_corr_vs_tier0": 0.9980797305949166,
+     "residue_db_vs_tier0": -24.551245278749175,
+     "loss": 4.651487032572429,
+     "spec_corr_info_only": 0.5976079698237156
+    },
+    {
+     "sigma_m": 0.001,
+     "wave_corr_vs_tier0": 0.9923439122404988,
+     "residue_db_vs_tier0": -18.54938869771928,
+     "loss": 4.983595212300618,
+     "spec_corr_info_only": 0.5789974491478485
+    },
+    {
+     "sigma_m": 0.0015,
+     "wave_corr_vs_tier0": 0.982898193489708,
+     "residue_db_vs_tier0": -15.068358457319974,
+     "loss": 5.212114969889323,
+     "spec_corr_info_only": 0.5631913530470841
+    },
+    {
+     "sigma_m": 0.002,
+     "wave_corr_vs_tier0": 0.9699295843559582,
+     "residue_db_vs_tier0": -12.63177947448213,
+     "loss": 5.392659346262614,
+     "spec_corr_info_only": 0.5500401236259463
+    },
+    {
+     "sigma_m": 0.003,
+     "wave_corr_vs_tier0": 0.9344759864388578,
+     "residue_db_vs_tier0": -9.294543322497814,
+     "loss": 5.677277247111003,
+     "spec_corr_info_only": 0.5286956388955389
+    }
+   ],
+   "per_window_level_db_tier1_minus_tier0": [
+    -0.39237351075388666,
+    -0.3113052222761467,
+    -0.8099845427572392,
+    -0.5425845954228189,
+    -0.25389993246506365,
+    -0.32848137663011445,
+    -0.9658790758656184,
+    -0.7335890798761762
+   ]
+  }
+ ]
+}
