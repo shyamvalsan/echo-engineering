@@ -2,13 +2,13 @@
  "runs": [
   {
    "stage": "s4_speech",
-   "run_id": "20261125-140115-s4_4a_ah",
-   "path": "s4_speech/20261125-140115-s4_4a_ah",
+   "run_id": "20261125-142346-s4_4a_ah",
+   "path": "s4_speech/20261125-142346-s4_4a_ah",
    "title": "Speech 4a: \"ah\" (150 ms)",
-   "created": "2026-11-25T14:01:15+02:00",
-   "status": "tier0_only",
+   "created": "2026-11-25T14:25:06+02:00",
+   "status": "final",
    "passed": false,
-   "verified": false
+   "verified": true
   },
   {
    "stage": "s4_speech",

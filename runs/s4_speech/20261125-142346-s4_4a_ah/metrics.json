@@ -1,21 +1,98 @@
 {
  "stage": "s4_speech",
  "passed": false,
- "verified": false,
+ "verified": true,
  "fragile": false,
  "headline": {
-  "echo_level_db_re_direct": -51.243518294238335,
-  "echo_level_db_re_direct_raw3d": -51.243518294238335,
-  "echo_spl_db": 59.21405661136841,
-  "depth_m": 25.499598961144084,
+  "echo_level_db_re_direct": -51.8136872305408,
+  "echo_level_db_re_direct_raw3d": -51.310457881349656,
+  "echo_spl_db": 58.64388767506595,
+  "depth_m": 25.449943583451144,
   "post_count": 1499,
-  "fill_fraction": 0.002886480677103075,
-  "tier_gap_db": null,
+  "fill_fraction": 0.0028971262407654938,
+  "tier_gap_db": -0.5032293491911446,
   "likely_inaudible_on_site": false,
-  "echo_level_db_re_direct_finite_height": -50.80769415285984,
+  "echo_level_db_re_direct_finite_height": -51.5524051417453,
   "finite_height_m": 2.0
  },
  "metrics": [
+  {
+   "id": "formant_err_pct",
+   "label": "Worst of F1, F2 error vs target",
+   "value": null,
+   "unit": "%",
+   "threshold": 10.0,
+   "comparator": "<=",
+   "pass": false,
+   "tier": "tier1",
+   "gating": true
+  },
+  {
+   "id": "f1_err_pct",
+   "label": "F1 error vs target",
+   "value": null,
+   "unit": "%",
+   "threshold": null,
+   "comparator": null,
+   "pass": null,
+   "tier": "tier1",
+   "gating": false
+  },
+  {
+   "id": "f2_err_pct",
+   "label": "F2 error vs target",
+   "value": 2.516367822361676,
+   "unit": "%",
+   "threshold": null,
+   "comparator": null,
+   "pass": null,
+   "tier": "tier1",
+   "gating": false
+  },
+  {
+   "id": "f1_hz",
+   "label": "F1 of echo (LPC)",
+   "value": null,
+   "unit": "Hz",
+   "threshold": null,
+   "comparator": null,
+   "pass": null,
+   "tier": "tier1",
+   "gating": false
+  },
+  {
+   "id": "f2_hz",
+   "label": "F2 of echo (LPC)",
+   "value": 1178.2526754833953,
+   "unit": "Hz",
+   "threshold": null,
+   "comparator": null,
+   "pass": null,
+   "tier": "tier1",
+   "gating": false
+  },
+  {
+   "id": "f1_target_hz",
+   "label": "F1 of target (LPC)",
+   "value": 743.838715114909,
+   "unit": "Hz",
+   "threshold": null,
+   "comparator": null,
+   "pass": null,
+   "tier": "tier1",
+   "gating": false
+  },
+  {
+   "id": "f2_target_hz",
+   "label": "F2 of target (LPC)",
+   "value": 1201.7793807127432,
+   "unit": "Hz",
+   "threshold": null,
+   "comparator": null,
+   "pass": null,
+   "tier": "tier1",
+   "gating": false
+  },
   {
    "id": "formant_err_pct",
    "label": "Worst of F1, F2 error vs target",
@@ -41,7 +118,7 @@
   {
    "id": "f2_err_pct",
    "label": "F2 error vs target",
-   "value": 2.209239894677655,
+   "value": 2.16135275674749,
    "unit": "%",
    "threshold": null,
    "comparator": null,
@@ -63,7 +140,7 @@
   {
    "id": "f2_hz",
    "label": "F2 of echo (LPC)",
-   "value": 1179.5975646012205,
+   "value": 1181.8220170301652,
    "unit": "Hz",
    "threshold": null,
    "comparator": null,
@@ -97,13 +174,78 @@
  "per_clap": [
   {
    "clap": 0,
+   "tier": "tier1",
+   "metrics": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": 4.787765580356574,
+    "f1_hz": null,
+    "f2_hz": 1144.241001171156,
+    "f1_target_hz": 743.838715114909,
+    "f2_target_hz": 1201.7793807127432
+   }
+  },
+  {
+   "clap": 1,
+   "tier": "tier1",
+   "metrics": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": 1.396779748106236,
+    "f1_hz": null,
+    "f2_hz": 1218.5655917194554,
+    "f1_target_hz": 743.838715114909,
+    "f2_target_hz": 1201.7793807127432
+   }
+  },
+  {
+   "clap": 2,
+   "tier": "tier1",
+   "metrics": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": 1.2128260199723462,
+    "f1_hz": null,
+    "f2_hz": 1187.2038876807965,
+    "f1_target_hz": 743.838715114909,
+    "f2_target_hz": 1201.7793807127432
+   }
+  },
+  {
+   "clap": 3,
+   "tier": "tier1",
+   "metrics": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": 2.429532608998075,
+    "f1_hz": null,
+    "f2_hz": 1172.581758770112,
+    "f1_target_hz": 743.838715114909,
+    "f2_target_hz": 1201.7793807127432
+   }
+  },
+  {
+   "clap": 4,
+   "tier": "tier1",
+   "metrics": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": 2.754935154375149,
+    "f1_hz": null,
+    "f2_hz": 1168.671138075456,
+    "f1_target_hz": 743.838715114909,
+    "f2_target_hz": 1201.7793807127432
+   }
+  },
+  {
+   "clap": 0,
    "tier": "tier0",
    "metrics": {
     "formant_err_pct": null,
     "f1_err_pct": null,
-    "f2_err_pct": 3.9919831331787226,
+    "f2_err_pct": 3.8688810699443077,
     "f1_hz": null,
-    "f2_hz": 1153.8045505366708,
+    "f2_hz": 1155.283965749854,
     "f1_target_hz": 743.838715114909,
     "f2_target_hz": 1201.7793807127432
    }
@@ -114,9 +256,9 @@
    "metrics": {
     "formant_err_pct": null,
     "f1_err_pct": null,
-    "f2_err_pct": 0.9087303134212465,
+    "f2_err_pct": 1.0530122164732925,
     "f1_hz": null,
-    "f2_hz": 1212.700314245726,
+    "f2_hz": 1214.4342644067056,
     "f1_target_hz": 743.838715114909,
     "f2_target_hz": 1201.7793807127432
    }
@@ -127,9 +269,9 @@
    "metrics": {
     "formant_err_pct": null,
     "f1_err_pct": null,
-    "f2_err_pct": 0.17076385391030513,
+    "f2_err_pct": 0.19874168050884045,
     "f1_hz": null,
-    "f2_hz": 1199.7271759267387,
+    "f2_hz": 1204.1678172499803,
     "f1_target_hz": 743.838715114909,
     "f2_target_hz": 1201.7793807127432
    }
@@ -140,9 +282,9 @@
    "metrics": {
     "formant_err_pct": null,
     "f1_err_pct": null,
-    "f2_err_pct": 1.703581326871484,
+    "f2_err_pct": 1.5273368014172006,
     "f1_hz": null,
-    "f2_hz": 1181.3060915927292,
+    "f2_hz": 1183.4241619592738,
     "f1_target_hz": 743.838715114909,
     "f2_target_hz": 1201.7793807127432
    }
@@ -153,16 +295,283 @@
    "metrics": {
     "formant_err_pct": null,
     "f1_err_pct": null,
-    "f2_err_pct": 4.2711408460065154,
+    "f2_err_pct": 4.158792015393809,
     "f1_hz": null,
-    "f2_hz": 1150.4496907042371,
+    "f2_hz": 1151.7998757850125,
     "f1_target_hz": 743.838715114909,
     "f2_target_hz": 1201.7793807127432
    }
   }
  ],
- "robustness": [],
- "failure_cause": "MECHANISM: the profile model fits (loss 2.75) but realizing it with a finite number of weak 1 cm posts raises the loss to 5.23 on Tier 0; the clap spectrum is the largest of the three ablated constraints (numbers below), none of which explains the realized error; not verified (no Tier 1 run); Tier 0 of the same posts: f2_err_pct 2.21, f2_hz 1.18e+03, f1_target_hz 744, f2_target_hz 1.2e+03; realization (Tier 0, ah): continuous profile echo loss 2.364 vs best realized 5.145 ((i) sampling, 1499 posts): the discrete posts add more error than the profile's own fit; count sweep (quantile, Tier 0, ah): 1 cm x 1500: 5.28, 1 cm x 4975: 4.48, 1 cm x 11742: 5.38, 4 cm x 1497: 4.44, 4 cm x 3705: 4.61, 4 cm x 6240: 4.97; ablations (Tier 0 profile model, loss 500-4000 Hz): baseline 2.380, ceiling 0.479; removing alone: clap spectrum +1.472, positivity +0.192, small-post scattering +0.857; restoring alone onto the ceiling: clap spectrum +1.061, positivity -0.065, small-post scattering +0.157; largest single cost: clap spectrum",
+ "robustness": [
+  {
+   "case": "nominal",
+   "label": "Nominal design",
+   "metrics": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": 2.516367822361676,
+    "f1_hz": null,
+    "f2_hz": 1178.2526754833953,
+    "f1_target_hz": 743.838715114909,
+    "f2_target_hz": 1201.7793807127432
+   },
+   "delta": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": 0.0,
+    "f1_hz": null,
+    "f2_hz": 0.0,
+    "f1_target_hz": 0.0,
+    "f2_target_hz": 0.0
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": 2.16135275674749,
+    "f1_hz": null,
+    "f2_hz": 1181.8220170301652,
+    "f1_target_hz": 743.838715114909,
+    "f2_target_hz": 1201.7793807127432
+   }
+  },
+  {
+   "case": "listener_side_1m",
+   "label": "Listener moved 1 m sideways",
+   "metrics": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": 38.26627652971456,
+    "f1_hz": null,
+    "f2_hz": 1661.6556018133729,
+    "f1_target_hz": 743.838715114909,
+    "f2_target_hz": 1201.7793807127432
+   },
+   "delta": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": 35.74990870735289,
+    "f1_hz": null,
+    "f2_hz": 483.4029263299776,
+    "f1_target_hz": 0.0,
+    "f2_target_hz": 0.0
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": 47.97285403977819,
+    "f1_hz": null,
+    "f2_hz": 1778.3072489022175,
+    "f1_target_hz": 743.838715114909,
+    "f2_target_hz": 1201.7793807127432
+   },
+   "listener": [
+    0.0,
+    1.3
+   ],
+   "window_shift_ms": 0.14623879445093427
+  },
+  {
+   "case": "listener_back_1m",
+   "label": "Listener moved 1 m back",
+   "metrics": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": 2.2207168945305096,
+    "f1_hz": null,
+    "f2_hz": 1192.0007049704666,
+    "f1_target_hz": 743.838715114909,
+    "f2_target_hz": 1201.7793807127432
+   },
+   "delta": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": -0.2956509278311663,
+    "f1_hz": null,
+    "f2_hz": 13.748029487071335,
+    "f1_target_hz": 0.0,
+    "f2_target_hz": 0.0
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": 1.9198755888149475,
+    "f1_hz": null,
+    "f2_hz": 1183.928226549198,
+    "f1_target_hz": 743.838715114909,
+    "f2_target_hz": 1201.7793807127432
+   },
+   "listener": [
+    -1.0,
+    0.3
+   ],
+   "window_shift_ms": 2.914965030113874
+  },
+  {
+   "case": "clap_0",
+   "label": "Clap variant 0 alone",
+   "metrics": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": 4.787765580356574,
+    "f1_hz": null,
+    "f2_hz": 1144.241001171156,
+    "f1_target_hz": 743.838715114909,
+    "f2_target_hz": 1201.7793807127432
+   },
+   "delta": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": 2.271397757994898,
+    "f1_hz": null,
+    "f2_hz": -34.011674312239165,
+    "f1_target_hz": 0.0,
+    "f2_target_hz": 0.0
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": 3.8688810699443077,
+    "f1_hz": null,
+    "f2_hz": 1155.283965749854,
+    "f1_target_hz": 743.838715114909,
+    "f2_target_hz": 1201.7793807127432
+   }
+  },
+  {
+   "case": "clap_1",
+   "label": "Clap variant 1 alone",
+   "metrics": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": 1.396779748106236,
+    "f1_hz": null,
+    "f2_hz": 1218.5655917194554,
+    "f1_target_hz": 743.838715114909,
+    "f2_target_hz": 1201.7793807127432
+   },
+   "delta": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": -1.1195880742554398,
+    "f1_hz": null,
+    "f2_hz": 40.31291623606012,
+    "f1_target_hz": 0.0,
+    "f2_target_hz": 0.0
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": 1.0530122164732925,
+    "f1_hz": null,
+    "f2_hz": 1214.4342644067056,
+    "f1_target_hz": 743.838715114909,
+    "f2_target_hz": 1201.7793807127432
+   }
+  },
+  {
+   "case": "clap_2",
+   "label": "Clap variant 2 alone",
+   "metrics": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": 1.2128260199723462,
+    "f1_hz": null,
+    "f2_hz": 1187.2038876807965,
+    "f1_target_hz": 743.838715114909,
+    "f2_target_hz": 1201.7793807127432
+   },
+   "delta": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": -1.3035418023893297,
+    "f1_hz": null,
+    "f2_hz": 8.951212197401219,
+    "f1_target_hz": 0.0,
+    "f2_target_hz": 0.0
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": 0.19874168050884045,
+    "f1_hz": null,
+    "f2_hz": 1204.1678172499803,
+    "f1_target_hz": 743.838715114909,
+    "f2_target_hz": 1201.7793807127432
+   }
+  },
+  {
+   "case": "clap_3",
+   "label": "Clap variant 3 alone",
+   "metrics": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": 2.429532608998075,
+    "f1_hz": null,
+    "f2_hz": 1172.581758770112,
+    "f1_target_hz": 743.838715114909,
+    "f2_target_hz": 1201.7793807127432
+   },
+   "delta": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": -0.08683521336360078,
+    "f1_hz": null,
+    "f2_hz": -5.6709167132833045,
+    "f1_target_hz": 0.0,
+    "f2_target_hz": 0.0
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": 1.5273368014172006,
+    "f1_hz": null,
+    "f2_hz": 1183.4241619592738,
+    "f1_target_hz": 743.838715114909,
+    "f2_target_hz": 1201.7793807127432
+   }
+  },
+  {
+   "case": "clap_4",
+   "label": "Clap variant 4 alone",
+   "metrics": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": 2.754935154375149,
+    "f1_hz": null,
+    "f2_hz": 1168.671138075456,
+    "f1_target_hz": 743.838715114909,
+    "f2_target_hz": 1201.7793807127432
+   },
+   "delta": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": 0.2385673320134729,
+    "f1_hz": null,
+    "f2_hz": -9.581537407939322,
+    "f1_target_hz": 0.0,
+    "f2_target_hz": 0.0
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "formant_err_pct": null,
+    "f1_err_pct": null,
+    "f2_err_pct": 4.158792015393809,
+    "f1_hz": null,
+    "f2_hz": 1151.7998757850125,
+    "f1_target_hz": 743.838715114909,
+    "f2_target_hz": 1201.7793807127432
+   }
+  }
+ ],
+ "failure_cause": "MECHANISM: the profile model fits (loss 2.75) but realizing it with a finite number of weak 1 cm posts raises the loss to 5.23 on Tier 0 and the full-wave field to 5.46 (incoherent residue; see design_study.extinction); the clap spectrum is the largest of the three ablated constraints (numbers below), none of which explains the realized error; Tier 1 formant_err_pct = n/a (judge returned no value) vs <= 10.0 (judge floor on a perfect echo 10.3); Tier 0 of the same posts: f2_err_pct 2.16, f2_hz 1.18e+03, f1_target_hz 744, f2_target_hz 1.2e+03; stretch measured -0.190 % (applied -0.195 %, Tier1-vs-Tier0 corr after stretch 0.758), tier gap -0.5032293491911446 dB; Tier 1 spectrogram loss 5.456; realization (Tier 0, ah): continuous profile echo loss 2.364 vs best realized 5.145 ((i) sampling, 1499 posts): the discrete posts add more error than the profile's own fit; count sweep (quantile, Tier 0, ah): 1 cm x 1500: 5.28, 1 cm x 4975: 4.48, 1 cm x 11742: 5.38, 4 cm x 1497: 4.44, 4 cm x 3705: 4.61, 4 cm x 6240: 4.97; ablations (Tier 0 profile model, loss 500-4000 Hz): baseline 2.380, ceiling 0.479; removing alone: clap spectrum +1.472, positivity +0.192, small-post scattering +0.857; restoring alone onto the ceiling: clap spectrum +1.061, positivity -0.065, small-post scattering +0.157; largest single cost: clap spectrum",
  "judge_floor": {
   "per_clap": [
    {
@@ -237,6 +646,119 @@
   },
   "note": "metrics of target * clap (band-limited): the floor set by the judge and the clap, not the design"
  },
+ "verification": {
+  "validation_passed": true,
+  "radii": [
+   0.01,
+   0.02,
+   0.04,
+   0.08
+  ],
+  "radii_all_angles": [
+   0.04,
+   0.08
+  ],
+  "source": "metrics.json:checks.cylinder.stage1_grid (f_max 4000.0 Hz, ppw 10.0)",
+  "path": "/home/shyam/projects/echo/runs/validation/metrics.json",
+  "engine": "fd8-3",
+  "validation_engine": "fd8-3",
+  "radii_used": [
+   0.01
+  ],
+  "radii_ok": true,
+  "caveats": [
+   "1 cm and 2 cm posts: forward/side scattering off the analytic cylinder at the 4 kHz grid (1 cm forward 1.04 dB, 90-degree 1.77 dB; 2 cm forward 1.47 dB, 90-degree 0.43 dB) (backscatter within 1 dB; cause measured at the 4 kHz grid: dipole part ~10 % strong for sub-cell posts); effect on dense-field echoes is not bounded; shadowing and multiple scattering are checked by self-convergence only, not against an exact solution",
+   "1 cm and 2 cm posts: forward/side scattering off the analytic cylinder at the 2.5 kHz grid (1 cm forward 2.61 dB, 90-degree 0.51 dB; 2 cm forward 1.73 dB, 90-degree 1.65 dB) (backscatter within 1 dB; cause measured at the 4 kHz grid: dipole part ~10 % strong for sub-cell posts); effect on dense-field echoes is not bounded; shadowing and multiple scattering are checked by self-convergence only, not against an exact solution",
+   "1 cm posts at the 2.5 kHz grid (r/dx 0.73) pass backscatter at the 3 fixed offsets only: below the calibrated sub-cell range (area factor clamped), no held-out offsets checked there",
+   "1 cm posts fail backscatter at the 2 kHz grid: not validated there",
+   "the 1 cm backscatter match depends on an area factor fitted to backscatter (area factor 0.908; held-out offsets confirm backscatter only)",
+   "radii [0.01] used by this design are validated for backscatter but not at all angles at this grid (metrics.json:checks.cylinder.stage1_grid (f_max 4000.0 Hz, ppw 10.0))"
+  ],
+  "reason": "validation passed and every radius used is validated at this grid"
+ },
+ "caveats": [
+  "1 cm and 2 cm posts: forward/side scattering off the analytic cylinder at the 4 kHz grid (1 cm forward 1.04 dB, 90-degree 1.77 dB; 2 cm forward 1.47 dB, 90-degree 0.43 dB) (backscatter within 1 dB; cause measured at the 4 kHz grid: dipole part ~10 % strong for sub-cell posts); effect on dense-field echoes is not bounded; shadowing and multiple scattering are checked by self-convergence only, not against an exact solution",
+  "1 cm and 2 cm posts: forward/side scattering off the analytic cylinder at the 2.5 kHz grid (1 cm forward 2.61 dB, 90-degree 0.51 dB; 2 cm forward 1.73 dB, 90-degree 1.65 dB) (backscatter within 1 dB; cause measured at the 4 kHz grid: dipole part ~10 % strong for sub-cell posts); effect on dense-field echoes is not bounded; shadowing and multiple scattering are checked by self-convergence only, not against an exact solution",
+  "1 cm posts at the 2.5 kHz grid (r/dx 0.73) pass backscatter at the 3 fixed offsets only: below the calibrated sub-cell range (area factor clamped), no held-out offsets checked there",
+  "1 cm posts fail backscatter at the 2 kHz grid: not validated there",
+  "the 1 cm backscatter match depends on an area factor fitted to backscatter (area factor 0.908; held-out offsets confirm backscatter only)",
+  "radii [0.01] used by this design are validated for backscatter but not at all angles at this grid (metrics.json:checks.cylinder.stage1_grid (f_max 4000.0 Hz, ppw 10.0))"
+ ],
+ "fragile_reason": "0/5 clap variants pass on their own; 0/3 listener positions pass (nominal, 1 m sideways, 1 m back)",
+ "tier1_correction": {
+  "rounds": [
+   {
+    "round": 0,
+    "loss": 5.456166744232178,
+    "score": null,
+    "posts": 1499,
+    "stretch_eps_applied": -0.0019473003386684166,
+    "stretch_fit": {
+     "eps": -0.0019000000000000364,
+     "tau_s": 3.7999999999999995e-05,
+     "corr": 0.7578991915394041
+    },
+    "gains_next": [
+     0.5,
+     0.5480571185178773,
+     0.8530942732701852,
+     1.3933446556888163,
+     1.2880272488451354,
+     1.3027394438194464,
+     1.4309680898626123,
+     1.5355881546281815,
+     1.9351672739620105,
+     1.8133779614612202,
+     1.493350864679214,
+     1.7103223027960446,
+     1.916689004722384,
+     2.0,
+     1.582851092802427,
+     1.0
+    ],
+    "tier_gap_db": -0.5032293491911446,
+    "wall_s": 1852.5947561264038,
+    "gating": {
+     "formant_err_pct": null
+    }
+   }
+  ],
+  "best_round": 0,
+  "tier1_runs": [
+   {
+    "what": "design",
+    "wall_s": 744.8915383815765,
+    "stretch_eps_applied": -0.0019473003386684166,
+    "stretch_eps_measured": -0.0019000000000000364,
+    "stretch_timing_residual": 4.7392626345788e-05,
+    "stretch_corr": 0.7578991915394041,
+    "empty_cached": true,
+    "empty_s": 0.0,
+    "scene_s": 742.9707281589508
+   }
+  ],
+  "stretch": {
+   "enabled": true,
+   "stretch_per_fill_prior": -0.68,
+   "definition": "Tier 1 echo(t) ~ Tier 0 echo of the same posts at t (1 + eps_measured) (the medium's stretch); ranges scaled by 1 + eps_applied; timing residual = (1 + eps_measured) / (1 + eps_applied) - 1; refit after each Tier 1 run",
+   "final_applied": -0.0019473003386684166,
+   "final_measured": -0.0019000000000000364,
+   "final_timing_residual": 4.7392626345788e-05
+  },
+  "field_colour": {
+   "limit": 0.00029565817598511073,
+   "percentile": 99.97,
+   "direct_excluded_halfwidth_m": 1.2,
+   "compress": "asinh",
+   "compress_k": 2.0,
+   "level_decay_exponent": -1.7846363647867574,
+   "time_gain_exponent": 1.0,
+   "t_ref_s": 0.09612109375,
+   "zero_rgb": "#0e1620",
+   "crf": 54,
+   "bytes": 10708472
+  }
+ },
  "substage": "4a",
  "judge_stage": "s4a_vowel",
  "target_name": "ah",
@@ -257,6 +779,29 @@
   "cell_steps": 148900602240.0,
   "est_wall_s_idle_8_threads": 703.8937560436364
  },
+ "robustness_not_run": [
+  {
+   "case": "c_331",
+   "label": "Speed of sound 331 m/s",
+   "status": "not run (cost)"
+  },
+  {
+   "case": "c_349",
+   "label": "Speed of sound 349 m/s",
+   "status": "not run (cost)"
+  },
+  {
+   "case": "jitter",
+   "label": "Posts jittered 5 mm, radii 1 mm",
+   "status": "not run (cost)"
+  }
+ ],
+ "robustness_not_run_reason": "each speed-of-sound or jitter case is one more full Tier 1 solve (~10 min under the machine-wide lock); stage 4's budget is 7 solves in total, spent on the designs",
+ "robust_summary": "fails everywhere",
+ "tier1_solves": 1,
+ "tier1_wall_s": [
+  744.8915383815765
+ ],
  "design_study": {
   "extinction": {
    "predicted": {
@@ -321,234 +866,276 @@
     ],
     "extinction_db": {
      "1000": [
-      0.016945623351725992,
-      0.04287837956977125,
-      0.07371975528946548,
-      0.08928495921944458,
-      0.10247822578431497,
-      0.13438515867078335,
-      0.17028532468892837,
-      0.18279087405942362,
-      0.2016656905840586,
-      0.24555982419583128,
-      0.2617792159504071,
-      0.27737844153412333,
-      0.32285370462369933,
-      0.35960081450122316,
-      0.3686205416792029,
-      0.3912881308955966,
-      0.4328382858187186,
-      0.45059032590240067,
-      0.45908092710443116,
-      0.49824019879536385,
-      0.5342916969369866,
-      0.5436652316478154,
-      0.5573676948608272,
-      0.5991363665310014,
-      0.6143784957416812,
-      0.6214155449489063,
-      0.6525127396261273,
-      0.6879517887218054,
-      0.6978856870942473,
-      0.7097946936965339,
-      0.7415347187381005,
-      0.7654409468916872,
-      0.7706255486684654,
-      0.789594987993985,
-      0.8285688070532672,
-      0.8400603182875667,
-      0.8478313757279582,
-      0.8750884134582194,
-      0.897325087638577,
-      0.9019553087288863,
-      0.9190540179688405,
-      0.9526062094526897,
-      0.9615372426113388,
-      0.9681343630089376,
-      0.9917184808325334,
-      1.0109529120365246,
-      1.0154929470816052,
-      1.0329162482784748,
-      1.059653445056074,
-      1.0668875545640017,
-      1.0699455306566097,
-      1.0723531349622066
+      0.016979045391031046,
+      0.04667467013419024,
+      0.07757639548949798,
+      0.09005296716142368,
+      0.10516045432932783,
+      0.13712974926994068,
+      0.17110164680884196,
+      0.1836316623427584,
+      0.20389416833695256,
+      0.24787401937699863,
+      0.26412505876159414,
+      0.2797547436686813,
+      0.3253187794017285,
+      0.36213762127340393,
+      0.3701708022980885,
+      0.39244215313305986,
+      0.43233876495913864,
+      0.45012545003948723,
+      0.4605230944184685,
+      0.4997587944883772,
+      0.5351281105142973,
+      0.543666128703782,
+      0.5609405240394276,
+      0.602115703943398,
+      0.615395593017598,
+      0.622446375916921,
+      0.6553782709530083,
+      0.6894341652170817,
+      0.6984235969803237,
+      0.7092247292238958,
+      0.7448648630303764,
+      0.7656605538958546,
+      0.7714359100214353,
+      0.7953997782014558,
+      0.8307778637297848,
+      0.8394971137511361,
+      0.8474994584001794,
+      0.877586352838877,
+      0.8986138153647614,
+      0.9037490827317215,
+      0.9256801144993657,
+      0.9562910628200242,
+      0.963689154055498,
+      0.9714220168869677,
+      0.9987771533750901,
+      1.0118205284535284,
+      1.016798382424813,
+      1.0385312388325125,
+      1.061504173658072,
+      1.0670344931333111,
+      1.0699385273825963,
+      1.071746835732246
      ],
      "2000": [
-      0.12398042194007748,
-      0.3137140181169889,
-      0.5393608825358587,
-      0.6532416475432791,
-      0.7497684451434359,
-      0.9832113182659029,
-      1.2458701557878111,
-      1.3373653610903973,
-      1.4754604708537946,
-      1.796606119669801,
-      1.9152731637557836,
-      2.0294028437129743,
-      2.3621166181583035,
-      2.6309720089061304,
-      2.6969636551323766,
-      2.8628080868821595,
-      3.1668043242657524,
-      3.296684788040365,
-      3.358805153736174,
-      3.6453088087707033,
-      3.9090748478473984,
-      3.977655080300172,
-      4.077907348128051,
-      4.383502334518286,
-      4.495019365882776,
-      4.546505009804868,
-      4.774023539941554,
-      5.033308676217747,
-      5.105988735614896,
-      5.193119414303578,
-      5.425341128156391,
-      5.600247898592519,
-      5.63818035481053,
-      5.776967759837153,
-      6.062114575111663,
-      6.146190703914118,
-      6.20304662242373,
-      6.402469149910168,
-      6.565160848539476,
-      6.599037251462943,
-      6.724137706146677,
-      6.969617897157662,
-      7.034960625270249,
-      7.0832275879842825,
-      7.25577768060487,
-      7.396503863817558,
-      7.429720432416346,
-      7.557195721412247,
-      7.752814901018525,
-      7.805742310682819,
-      7.828115590105767,
-      7.845730509986671
+      0.12422494988981009,
+      0.3414890781554773,
+      0.5675774827367828,
+      0.65886067652342,
+      0.769392617110916,
+      1.0032917539910153,
+      1.2518426690890465,
+      1.343516877854725,
+      1.4917648348983157,
+      1.8135376239914527,
+      1.9324362137952769,
+      2.046788745381183,
+      2.3801520131833427,
+      2.6495322216210786,
+      2.708305932820082,
+      2.8712513386268266,
+      3.1631496456709827,
+      3.2932835850018303,
+      3.3693565809921298,
+      3.656419414197739,
+      3.9151943576511394,
+      3.977661643492031,
+      4.104047482361447,
+      4.4053002643922055,
+      4.502460824175864,
+      4.554046948847808,
+      4.794988822576199,
+      5.044154288653694,
+      5.109924282467158,
+      5.1889493442895205,
+      5.449705690374495,
+      5.601854624321785,
+      5.6441092569453035,
+      5.819437743045091,
+      6.0782768474081434,
+      6.142070092083209,
+      6.200618193000207,
+      6.4207449944728925,
+      6.57458965525504,
+      6.612161162759719,
+      6.772616668921835,
+      6.996577641617158,
+      7.050704801998769,
+      7.107281274681475,
+      7.307421528812662,
+      7.402851665089281,
+      7.4392714782118885,
+      7.5982770604476855,
+      7.766355513140582,
+      7.806817367377048,
+      7.828064351573598,
+      7.8412946015050355
      ],
      "4000": [
-      0.5648842435698139,
-      1.429355563146194,
-      2.457456261035092,
-      2.9763240692884003,
-      3.4161230810463614,
-      4.479744245880626,
-      5.676480282334844,
-      6.093354164749895,
-      6.722548277809859,
-      8.185764115184945,
-      8.726439347501662,
-      9.246441271375115,
-      10.762364236161002,
-      11.987333240587008,
-      12.288006851606472,
-      13.043633465173901,
-      14.42871251165027,
-      15.020478746881174,
-      15.303513884504094,
-      16.608892571893854,
-      17.810673281555086,
-      18.123141106125406,
-      18.579914244915663,
-      19.97227757151581,
-      20.480375647984104,
-      20.714956467814613,
-      21.751584919171997,
-      22.932949571609324,
-      23.264097181310245,
-      23.661085244042997,
-      24.71914251726016,
-      25.516059297885448,
-      25.68888857610659,
-      26.321236950782822,
-      27.620433554021798,
-      28.00350436211928,
-      28.262553428231445,
-      29.171169819651727,
-      29.912431832453414,
-      30.066780768687376,
-      30.63676814740767,
-      31.755234191003126,
-      32.05295117700037,
-      32.272866920917636,
-      33.059046117783026,
-      33.70022802627006,
-      33.851570600632165,
-      34.432378288422555,
-      35.32366572373268,
-      35.564815570655895,
-      35.66675354461372,
-      35.747011302546476
+      0.5659983709760197,
+      1.555905332330968,
+      2.5860177920509693,
+      3.0019256996536994,
+      3.5055354686158413,
+      4.571235479477289,
+      5.7036924712077735,
+      6.121381935908019,
+      6.796834832138795,
+      8.262908069541366,
+      8.804638279132945,
+      9.325655567946647,
+      10.844537778699243,
+      12.071897977147154,
+      12.339684962163917,
+      13.082102925112993,
+      14.412060928108353,
+      15.004982058165444,
+      15.351588692693912,
+      16.65951512861726,
+      17.83855522140019,
+      18.123171009586056,
+      18.699014903892145,
+      20.071594116301952,
+      20.51428069906531,
+      20.749319333052966,
+      21.847107725410094,
+      22.982364757338356,
+      23.282028467330132,
+      23.64208541480656,
+      24.830153248495908,
+      25.523379921851706,
+      25.71590206214894,
+      26.514740279481245,
+      27.69407270460462,
+      27.984729876109938,
+      28.251488927106976,
+      29.254438907382408,
+      29.955391714876324,
+      30.12657642504626,
+      30.857649813946374,
+      31.878069188799795,
+      32.12468538489183,
+      32.38246122945756,
+      33.29434775390744,
+      33.72915011625491,
+      33.89508743333116,
+      34.61955462451445,
+      35.38535996800409,
+      35.56971378424488,
+      35.666520089693734,
+      35.726800250124
      ]
     },
     "far_end_db": {
-     "1000": 1.0723531349622066,
-     "2000": 7.845730509986671,
-     "4000": 35.747011302546476
+     "1000": 1.071746835732246,
+     "2000": 7.8412946015050355,
+     "4000": 35.726800250124
     },
     "lateral_width_m": [
-     0.6889270922693929,
-     1.0504101771220342,
-     1.5141087256937267,
-     1.2500424102926795,
-     2.0646919334436333,
-     2.195315807496107,
-     1.9511273039511354,
-     1.867058963429544,
-     2.8863889634854365,
-     2.8369589736133163,
-     2.8790966268148366,
-     2.494632176822829,
-     3.594045975976357,
-     3.8123158184597608,
-     3.882921997096947,
-     3.776825375956953,
-     4.495501513868138,
-     3.945788416665896,
-     4.124901904333381,
-     4.968724952520882,
-     5.18116566542059,
-     4.566661819971807,
-     5.111912584291163,
-     5.776311211619214,
-     5.872077183875163,
-     5.529921552161687,
-     6.256887555063198,
-     6.588381641323789,
-     5.87599076651685,
-     5.554985679008135,
-     7.110993584202513,
-     7.325057060901546,
-     6.755175918053661,
-     7.590262358599537,
-     7.887941572319895,
-     7.449979764951507,
-     7.511396686966728,
-     8.566080538851734,
-     8.400032434857009,
-     8.404421584986867,
-     9.10345442537291,
-     9.278518833772925,
-     9.150127617389817,
-     9.437894773318202,
-     9.900136277912264,
-     9.711167560785102,
-     8.571372178464337,
-     10.273938120037776,
-     10.47915302670279,
-     10.220639742986851,
-     10.180414469223539,
-     6.465236830519868
+     0.6875709884469537,
+     1.0483518810930783,
+     1.5111517416151923,
+     1.2475968911305946,
+     2.0606646038306016,
+     2.1910334358171077,
+     1.9473260523985265,
+     1.8634133358888076,
+     2.8807638664590565,
+     2.831429695510172,
+     2.8734898109872455,
+     2.489770606764511,
+     3.5870436778499597,
+     3.8048885067331444,
+     3.8753594577370274,
+     4.193476761747372,
+     4.486744867553149,
+     3.938102789696928,
+     4.116871237551973,
+     4.959046226436682,
+     5.171074024073576,
+     4.557770809458221,
+     5.18124990384009,
+     5.765060747980242,
+     5.860640831745895,
+     5.5191502320107935,
+     6.499134507020448,
+     6.51316567128109,
+     5.627566950773304,
+     6.845321904640979,
+     7.097143542128697,
+     6.549441234837515,
+     6.737996623670243,
+     7.6322132126971844,
+     7.919681699937364,
+     8.033465488758313,
+     8.266872276592803,
+     8.019067802243871,
+     8.512958618904523,
+     6.820072756586043,
+     9.049418444304505,
+     9.15303810919305,
+     9.468090066058101,
+     9.561430061962513,
+     10.100177845942273,
+     10.14374894980586,
+     8.599240421485154,
+     10.385340527674236,
+     10.67170047414119,
+     10.554814305634858,
+     10.720074691745573,
+     6.45592275490973
     ],
     "radius_m": 0.01,
     "model": "4.343 x 2 int n_A sigma drho; sigma = total scattering width (partial waves); lateral width = occupied post extent per 0.5 m range bin; single-scattering estimate"
-   }
+   },
+   "measured_tier1_over_tier0_db": [
+    {
+     "t_s": 0.0278125,
+     "rho_m": 4.76984375,
+     "gap_db": -0.168622468567922
+    },
+    {
+     "t_s": 0.0478125,
+     "rho_m": 8.19984375,
+     "gap_db": 1.977919395937905
+    },
+    {
+     "t_s": 0.0678125,
+     "rho_m": 11.62984375,
+     "gap_db": 7.737444840722593
+    },
+    {
+     "t_s": 0.0878125,
+     "rho_m": 15.05984375,
+     "gap_db": 7.2735416398200226
+    },
+    {
+     "t_s": 0.1078125,
+     "rho_m": 18.48984375,
+     "gap_db": 7.488353457994288
+    },
+    {
+     "t_s": 0.1278125,
+     "rho_m": 21.91984375,
+     "gap_db": 9.744491692658276
+    },
+    {
+     "t_s": 0.1478125,
+     "rho_m": 25.34984375,
+     "gap_db": 8.105152960971234
+    },
+    {
+     "t_s": 0.1678125,
+     "rho_m": 28.77984375,
+     "gap_db": 6.635227163612375
+    }
+   ]
   },
   "full_wedge_level": {
-   "echo_level_db_re_direct_3d_full_wedge_tier0": -46.19145298270034,
-   "echo_level_db_re_direct_3d_as_simulated_tier0": -51.243518294238335,
+   "echo_level_db_re_direct_3d_full_wedge_tier0": -46.25839256981167,
+   "echo_level_db_re_direct_3d_as_simulated_tier0": -51.310457881349656,
    "label": "unverified single-scattering estimate (Tier 0, no extinction); ring populations scaled to the full +-20 deg wedge at the same areal density"
   }
  },
@@ -2774,6 +3361,7 @@
  },
  "loss_chain": {
   "profile_model": 2.7450449466705322,
-  "realized_tier0": 5.229523658752441
+  "realized_tier0": 5.231081008911133,
+  "realized_tier1": 5.456166744232178
  }
 }
