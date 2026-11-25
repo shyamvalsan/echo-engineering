@@ -30,6 +30,11 @@ value that decides a 3-of-5 vote). Worst positive = the worse of the owner-accep
 what C2 exists to reject; every other control has to be rejected by the conjunction and is checked, never used for
 calibration. If worst positive >= best control no threshold exists and the test is recorded null.
 
+Judge-validity rule (added after the first scoring, because C1 rejected the perfect "hello" echo on 3 of 5 claps; it
+looks only at perfect echoes, never at the accepted echo): a criterion that rejects the physically perfect echo
+(target * clap, band-limited) by majority is not valid for that test and is not used there ("c1": False below). If no
+valid criterion remains, the test is null.
+
 Verdict: owner_v2.passed = true/false only when the criterion is established for that test (the accepted echo and
 the perfect echo pass AND every control fails); otherwise null with the numbers shown ("accepted by ear; no automated
 criterion separates this echo from the negative controls").
@@ -58,14 +63,14 @@ NULL_NOTE = "accepted by ear; no automated criterion separates this echo from th
 # None: no C2 for this test (speech) or no threshold exists (see the test's margin block).
 THRESHOLDS_V2 = {
     "s1_bird": {"pitch_cents": 40.0},  # worst positive 14 c, best mistuning control 69 c
-    "s2_motif": {"pitch_cents": 240.0},  # worst positive 220 c, best mistuning control 258 c: a lax C2 (see report)
+    "s2_motif": {"pitch_cents": 240.0},  # worst positive 225 c, best mistuning control 260 c: a lax C2 (see report)
     "s3_melody_100ms": {"pitch_cents": None},  # no threshold exists: worst positive >= best mistuning control
     "s3_melody_60ms": {"pitch_cents": None},  # idem
     "s4a_ah": {},
     "s4b_ma": {},
     "s4b_ba": {},
     "s4b_om": {},
-    "s4c_hello": {},
+    "s4c_hello": {"c1": False},  # C1 fails the perfect echo (2/5 claps): judge-validity rule; C3 alone decides
 }
 TONAL = ("s1_bird", "s2_motif", "s3_melody_100ms", "s3_melody_60ms")
 MULTI_NOTE = ("s2_motif", "s3_melody_100ms", "s3_melody_60ms")
@@ -102,43 +107,6 @@ def dtw(A, B):
         j = k - i
         D[i, j] = d[i - 1, j - 1] + np.minimum(np.minimum(D[i - 1, j], D[i, j - 1]), D[i - 1, j - 1])
     return float(D[n, m] / (n + m))
-
-
-def align(echo, target, fs=FS, max_lag_s=0.020):
-    """Same result as echo.metrics_speech.align (envelope lag search within +-20 ms, first maximum wins), with the
-    lag scan vectorised (cross-correlation by np.correlate, window norms by cumulative sums)."""
-    from echo.metrics_speech import _envelope
-
-    e, t = np.asarray(echo, float), np.asarray(target, float)
-    n = len(t)
-    ee, et = _envelope(e, fs), _envelope(t, fs)
-    if len(ee) != n:
-        from echo.metrics_speech import align as ref
-
-        return ref(echo, target, fs, max_lag_s)
-    L = int(round(max_lag_s * fs))
-    full = np.correlate(ee, et, "full")  # index n - 1 + lag: sum_i ee[i + lag] et[i]
-    ce, ct = np.concatenate([[0.0], np.cumsum(ee * ee)]), np.concatenate([[0.0], np.cumsum(et * et)])
-    best, best_lag = -np.inf, 0
-    for lag in range(-L, L + 1):
-        m = n - abs(lag)
-        if m < n // 2:
-            continue
-        if lag >= 0:
-            na, nb = ce[n] - ce[lag], ct[m]
-        else:
-            na, nb = ce[m], ct[n] - ct[-lag]
-        c = float(full[n - 1 + lag] / (np.sqrt(na) * np.sqrt(nb) + 1e-30))
-        if c > best + 1e-12:
-            best, best_lag = c, lag
-    out = np.zeros(n)
-    if best_lag >= 0:
-        seg = e[best_lag: best_lag + n]
-        out[: len(seg)] = seg
-    else:
-        seg = e[: n + best_lag]
-        out[-best_lag: -best_lag + len(seg)] = seg
-    return out, best_lag
 
 
 def identify(seg, own, candidates, fs=FS, feats=None):
@@ -278,7 +246,7 @@ def majority_value(vals):
 
 def clap_passes(test, v, thr=None):
     thr = THRESHOLDS_V2[test] if thr is None else thr
-    ok = bool(v["id_correct"])
+    ok = bool(v["id_correct"]) if thr.get("c1", True) else True
     if test in TONAL:
         t = thr.get("pitch_cents")
         ok = ok and t is not None and v["pitch_cents"] <= t
@@ -314,6 +282,7 @@ def metric_entries(test, per_clap, thr=None):
     ents = [{"id": "id_claps", "label": "C1: claps whose echo is nearest its own target (closed set, log-mel DTW, 30 dB)",
              "value": float(sum(bool(v["id_correct"]) for v in pc)), "unit": "claps", "threshold": MAJORITY,
              "comparator": ">=", "pass": bool(sum(bool(v["id_correct"]) for v in pc) >= MAJORITY),
+             "used": bool(thr.get("c1", True)),
              "per_clap": [{"clap": k, "correct": bool(v["id_correct"]), "margin": v["id_margin"],
                            "nearest": v["nearest"]} for k, v in enumerate(pc)]}]
     if test in TONAL:

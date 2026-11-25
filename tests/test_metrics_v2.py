@@ -142,14 +142,3 @@ def test_rescore_temp_copy_adds_two_keys_only(tmp_path):
     rescore.write_run_blocks(blocks)  # idempotent
     assert json.loads((dst / "metrics.json").read_text()) == after
 
-
-def test_align_matches_metrics_speech():
-    from echo.metrics_speech import align as ref
-
-    rng = np.random.default_rng(2)
-    for _ in range(4):
-        t = rng.standard_normal(1500) * np.hanning(1500)
-        e = np.roll(t, int(rng.integers(-250, 250))) + 0.3 * rng.standard_normal(1500)
-        a, la = ref(e, t)
-        b, lb = V.align(e, t)
-        assert la == lb and np.array_equal(a, b)

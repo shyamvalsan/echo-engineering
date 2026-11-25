@@ -130,8 +130,8 @@ def _deconv(e0, claps, eps_rel=DECONV_EPS):
 
 def clap_echoes(run, claps):
     """Per-clap Tier 1 echoes [K, n_file] on the run's time axis (t = 0 at emission; arbitrary common scale) and the
-    route used. Routes, in order: ir_tier1.wav in the run folder (echo_k = clap_k * ir); the saved stage-4 per-clap
-    Tier 1 echoes (runs/s4_speech/_studies/echoes_<name>.npz, run_id checked); band-limited regularized
+    route used. Routes, in order: the saved stage-4 per-clap Tier 1 echoes (runs/s4_speech/_studies/echoes_<name>.npz,
+    run_id checked; exact); ir_tier1.wav in the run folder (echo_k = clap_k * ir); band-limited regularized
     deconvolution of echo_tier1.wav (clap 0) re-convolved with each clap."""
     import soundfile as sf
 
@@ -139,19 +139,18 @@ def clap_echoes(run, claps):
     e0, _ = sf.read(d / "echo_tier1.wav", dtype="float64")
     n = len(e0)
     ir = d / "ir_tier1.wav"
-    if ir.exists():
+    npz = ROOT / "runs" / "s4_speech" / "_studies" / f"echoes_{run['test'].split('_', 1)[-1]}.npz"
+    z = np.load(npz) if npz.exists() and run["test"].startswith("s4") else None
+    if z is not None and str(z["run_id"]) == run["run_id"] and z["tier1"].shape[-1] == n:
+        E = np.asarray(z["tier1"], float)
+        route = f"saved per-clap Tier 1 echoes ({npz.relative_to(ROOT)})"
+    elif ir.exists():
         h, _ = sf.read(ir, dtype="float64")
         E = np.stack([np.convolve(h, c)[:n] for c in claps])
         route = "ir_tier1.wav (echo_k = clap_k * ir)"
     else:
-        npz = ROOT / "runs" / "s4_speech" / "_studies" / f"echoes_{run['test'].split('_', 1)[-1]}.npz"
-        z = np.load(npz) if npz.exists() and run["test"].startswith("s4") else None
-        if z is not None and str(z["run_id"]) == run["run_id"] and z["tier1"].shape[-1] == n:
-            E = np.asarray(z["tier1"], float)
-            route = f"saved per-clap Tier 1 echoes ({npz.relative_to(ROOT)})"
-        else:
-            E = _deconv(e0, claps)
-            route = f"deconvolution of echo_tier1.wav by clap 0 (Tikhonov eps {DECONV_EPS:g} re max|C0|^2)"
+        E = _deconv(e0, claps)
+        route = f"deconvolution of echo_tier1.wav by clap 0 (Tikhonov eps {DECONV_EPS:g} re max|C0|^2)"
     g = float(np.dot(E[0], e0) / np.dot(E[0], E[0]))
     err0 = float(np.linalg.norm(g * E[0] - e0) / np.linalg.norm(e0))
     return E, {"route": route, "clap0_rel_err_vs_echo_tier1_wav": err0}
@@ -265,6 +264,7 @@ def study(runs_root=None, log=print, tests=None):
                      "best_mistuning_control": best,
                      "margin_positive": None if t_rule is None else t_rule - worst,
                      "margin_control": None if t_rule is None else best - t_rule}
+        c1_valid = sum(bool(v["id_correct"]) for v in perfect) >= V.MAJORITY  # judge-validity rule
         acc_v, acc_ok = V.verdict(test, pos, thr)
         per_v, per_ok = V.verdict(test, perfect, thr)
         ctrl_res = [(c, V.verdict(test, c["per_clap"], thr)) for c in ctrls]
@@ -278,7 +278,9 @@ def study(runs_root=None, log=print, tests=None):
             why.append("the perfect echo fails the criterion")
         if n_rej < len(ctrls):
             why.append("controls that pass: " + ", ".join(c["name"] for c, (_, ok) in ctrl_res if ok))
-        margin = {"id": {"accepted_median_margin": acc_v["id_margin_median"],
+        margin = {"id": {"c1_valid_on_perfect_echo": c1_valid, "c1_used": bool(thr.get("c1", True)),
+                         "c1_matches_frozen": c1_valid == bool(thr.get("c1", True)),
+                         "accepted_median_margin": acc_v["id_margin_median"],
                          "perfect_median_margin": per_v["id_margin_median"],
                          "accepted_id_claps": acc_v["id_claps"],
                          "strongest_control": best_ctrl[0]["name"], "strongest_control_values": best_ctrl[1][0]},
@@ -349,10 +351,17 @@ def write_summary(blocks, tests_out, out_dir=CRIT_DIR):
         mg = t["margin"]
         parts = [f"id margin {mg['id']['accepted_median_margin']:.2f} (accepted, median clap), "
                  f"{mg['id']['accepted_id_claps']}/5 claps identified"]
+        if not mg["id"]["c1_used"]:
+            parts[0] = "C1 not used (rejects the perfect echo); " + parts[0]
         if mg["pitch"]:
             pm = mg["pitch"]
-            parts.append(f"pitch T {_fmt(pm['frozen_threshold'], 0)} c: worst positive {pm['worst_positive']:.0f} c, "
+            lax = " (lax: over a semitone)" if (pm["frozen_threshold"] or 0) > 100 else ""
+            parts.append(f"pitch T {_fmt(pm['frozen_threshold'], 0)} c{lax}: worst positive {pm['worst_positive']:.0f} c, "
                          f"best mistuned control {pm['best_mistuning_control']:.0f} c")
+        if "hello_claps" in t["accepted"]["values"]:
+            parts.append(f"hello {t['accepted']['values']['hello_claps']}/5 (perfect "
+                         f"{t['perfect_echo']['values']['hello_claps']}/5), best control "
+                         f"{max(c['values']['hello_claps'] for c in t['controls'])}/5")
         L.append(f"| {TEST_TITLE[row['test']]} | `{row['run_id']}`{' (newest)' if row['newest'] else ''} | "
                  f"{v(row['spec_v1'])} | {v(row['owner_v2'])} | {row['listening'] or '-'} | "
                  f"{row['controls_rejected']}/{row['controls_total']} | {'; '.join(parts) if row['newest'] else '(same criterion)'} |")
