@@ -89,6 +89,9 @@ class StageConfig:
     robustness_c_cases: tuple | None = None  # speed-of-sound cases to run (None: echo.robustness.C_CASES, the spec's
     #   331 and 349 m/s); () skips them (each costs an empty-scene run + a full run) and records them as not run
     robustness_jitter: bool = True  # run the jitter case (one Tier 1 rerun); False records it as not run
+    profile_transform: Callable | None = None  # optional physics pre-compensation of the physical-scale profile
+    #   (cfg, profile) -> profile, applied right after scale_profile (incl. the density sweep); None = unchanged.
+    #   Stage 3 uses it for an extinction pre-compensation (judge-free); it must not consult any judge
     tier0_equalize_rounds: int = 0  # after the solve: rounds of per-window level correction of the Tier 0 profile echo
     #   toward the physically perfect echo (echo.inverse.window_gains, the Tier 1 loop's rule; judge-free); 0 = off
 
@@ -415,6 +418,8 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
     if cfg.tier0_equalize_rounds:
         prof_n, eq_hist = tier0_equalize(cfg, prof_n, target, claps, band, n_out, res.n0 / FS, cfg.tier0_equalize_rounds)
     profile = scale_profile(prof_n, cfg.target_fill, cfg.r0, cfg.dr, cfg.a_ref, half_angle_deg=cfg.half_angle_deg)
+    if cfg.profile_transform is not None:
+        profile = cfg.profile_transform(cfg, profile)
     capped = None
     if profile.sum() > cfg.max_posts:  # mass in reference posts ~ post count (a_ref posts preferred)
         capped = f"profile scaled by {cfg.max_posts / profile.sum():.4f} to respect max_posts={cfg.max_posts}"
@@ -526,6 +531,8 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
             sweep_rows = []
             for fill in cfg.fill_candidates:
                 p_f = scale_profile(prof_n, fill, cfg.r0, cfg.dr, cfg.a_ref, half_angle_deg=cfg.half_angle_deg)
+                if cfg.profile_transform is not None:
+                    p_f = cfg.profile_transform(cfg, p_f)
                 p_f = p_f * min(1.0, cfg.max_posts / p_f.sum())
                 d_f = build(p_f, eps=eps_model(p_f) if cfg.stretch_comp else 0.0)
                 _, e_f = run1(d_f)
@@ -692,7 +699,7 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
         t1_info["field_colour"] = field_block.pop("colour", None)  # manifest field block stays exactly the contract's
         wall["field_video_s"] = time.time() - t
     wall["total_s"] = time.time() - t_all
-    extra = {"design": {"config": {k: v for k, v in asdict(cfg).items() if k != "make_target"},
+    extra = {"design": {"config": {k: v for k, v in asdict(cfg).items() if k != "make_target" and not callable(v)},
                         "loss_band_hz": list(band), "t_echo0_s": t_echo0, "realization": rs,
                         "max_posts_applied": capped,
                         "solve_wall_s": res.history["wall_s"], "realize_wall_s": wall.get("realize_s"),
