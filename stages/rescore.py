@@ -68,8 +68,9 @@ LISTENING = {"by": "owner", "date": "2026-11-25", "verdict": "pass",
              "note": "A human judgment, recorded as such; not an automated pass. Not a blind test: the listener knew "
                      "each target, and knowing the target helps a listener hear it. A blind check is prepared in "
                      "runs/_criteria/blind_test/. Written only on the runs the owner heard (metrics_v2.ACCEPTED_RUNS, "
-                     "pinned: the newest final run per test at the time of the statement, about 14:55; for stage 2 "
-                     "that is 20261125-122003-s2, since 20261125-145628-s2v2 was written at 14:57:45)."}
+                     "pinned to the newest final run per test before the statement, which the ledger logs at 15:04). "
+                     "Which of the two stage-2 designs the owner heard is not recorded; pinned to the first design "
+                     "(20261125-122003-s2) pending confirmation."}
 DECONV_EPS = 1e-5  # Tikhonov term re max |C0|^2; validated on the saved stage-4 per-clap echoes (<= 2.3 % error)
 
 

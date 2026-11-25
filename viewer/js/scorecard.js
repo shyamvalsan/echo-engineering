@@ -2,6 +2,8 @@
 // robustness below. Every number shown comes from metrics.json as written by the run.
 import { el, num } from "./util.js";
 
+// gating metrics whose threshold counts claps across the family (echo.robustness judges a lone clap against them too)
+const COUNT_RULES = new Set(["hello_count"]);
 const CMP = { "<=": "≤", ">=": "≥", "==": "=" };
 const dec = (v) => (v == null ? 0 : Number.isInteger(v) ? 0 : Math.abs(v) < 10 ? 2 : Math.abs(v) < 100 ? 1 : 0);
 const unitStr = (u) => (u ? (u === "%" ? "\u2009%" : ` ${u}`) : "");
@@ -100,7 +102,12 @@ export class ScorePanel {
     const rob = metrics.robustness ?? [];
     b.append(el("h3", {}, "Robustness", metrics.fragile ? el("span", { class: "fragile" }, "fragile") : null,
       metrics.robust_summary ? el("span", { class: "rsum" }, String(metrics.robust_summary)) : null));
-    if (metrics.fragile_reason) b.append(el("p", { class: metrics.fragile ? "fragnote warn" : "fragnote" }, metrics.fragile_reason));
+    // count rules (e.g. hello_count >= 3 of 5 claps) cannot be met by one clap alone: per-clap rows are "not applicable"
+    const countRule = (metrics.metrics ?? []).some((m) => m.gating && COUNT_RULES.has(m.id));
+    const naClap = (r) => countRule && /^clap_\d+$/.test(r.case ?? "");
+    const NA_NOTE = "not applicable: the pass rule counts claps (at least 3 of 5), so one clap alone cannot meet it";
+    if (metrics.fragile_reason) b.append(el("p", { class: metrics.fragile ? "fragnote warn" : "fragnote" },
+      countRule ? metrics.fragile_reason.replace(/\d+\/\d+ clap variants pass on their own/, "clap variants alone: not applicable (count rule)") : metrics.fragile_reason));
     const notRun = metrics.robustness_not_run ?? [];
     if (!rob.length && !notRun.length) { b.append(el("p", { class: "empty" }, "No robustness sweep in this run.")); this._links(b, metrics); return; }
     // one column per gating metric (else every metric in the deltas), showing how far it moved
@@ -110,8 +117,8 @@ export class ScorePanel {
     const short = (id) => (seen.get(id)?.label ?? id).split(",")[0].replace(/_/g, " ");
     b.append(el("table", { class: "robust" },
       el("thead", {}, el("tr", {}, el("th", {}), el("th", {}, "Case"), ids.map((id) => el("th", { class: "val", title: seen.get(id)?.label ?? id }, `\u0394 ${short(id)}`)))),
-      el("tbody", {}, rob.map((r) => el("tr", {}, el("td", { class: "mark" }, markFor(r.pass, unverified)),
-        el("td", { class: "label" }, r.label ?? r.case),
+      el("tbody", {}, rob.map((r) => el("tr", naClap(r) ? { title: NA_NOTE } : {}, el("td", { class: "mark" }, naClap(r) ? el("span", { class: "info" }, "n/a") : markFor(r.pass, unverified)),
+        el("td", { class: "label" }, (r.label ?? r.case) + (naClap(r) ? " (not applicable: count rule)" : "")),
         ids.map((id) => { const d = r.delta?.[id]; return el("td", { class: "val" }, d == null ? "\u2014" : `${d > 0 ? "+" : ""}${withUnit(d, seen.get(id)?.unit ?? "")}`); }))),
         notRun.map((r) => el("tr", { class: "notrun", title: metrics.robustness_not_run_reason ?? "" }, el("td", { class: "mark" }, el("span", { class: "info" }, "\u2014")),
           el("td", { class: "label" }, r.label ?? r.case), el("td", { class: "val", colspan: Math.max(1, ids.length) }, r.status ?? "not run"))))));

@@ -87,6 +87,78 @@
     "residue_db_stretched": -0.16122257702430629,
     "residue_db_stretched_fir33": -0.7968006653361237
    }
+  },
+  {
+   "run": "20261125-104529-s1",
+   "n_posts": 1060,
+   "tier1_vs_tier0": {
+    "stretch_eps": -0.00242,
+    "offset_s": 4.9999999999999996e-05,
+    "corr_raw": 0.17193137124972557,
+    "corr_stretched": 0.9839783411741129,
+    "residue_db_gain_only": -0.13031488248885256,
+    "residue_db_stretched": -14.977555938999306,
+    "residue_db_stretched_fir33": -16.079060522960503
+   },
+   "tier0_jitter_residue": [
+    {
+     "sigma_m": 0.001,
+     "residue_db_stretched_fir33": -28.021642245084358
+    },
+    {
+     "sigma_m": 0.002,
+     "residue_db_stretched_fir33": -21.872780120505855
+    },
+    {
+     "sigma_m": 0.003,
+     "residue_db_stretched_fir33": -18.200924316560027
+    },
+    {
+     "sigma_m": 0.004,
+     "residue_db_stretched_fir33": -15.534229527663829
+    },
+    {
+     "sigma_m": 0.006,
+     "residue_db_stretched_fir33": -11.632795457001805
+    }
+   ],
+   "equivalent_radial_jitter_m": 0.0037956905313779117
+  },
+  {
+   "run": "20261125-150605-pilot_whistle80",
+   "n_posts": 500,
+   "tier1_vs_tier0": {
+    "stretch_eps": -0.0021799999999999996,
+    "offset_s": 2.5999999999999995e-05,
+    "corr_raw": 0.01440810313396106,
+    "corr_stretched": 0.9387973827019409,
+    "residue_db_gain_only": -0.000901660429620477,
+    "residue_db_stretched": -9.25697580308807,
+    "residue_db_stretched_fir33": -9.962798789294357
+   },
+   "tier0_jitter_residue": [
+    {
+     "sigma_m": 0.001,
+     "residue_db_stretched_fir33": -22.652720300627102
+    },
+    {
+     "sigma_m": 0.002,
+     "residue_db_stretched_fir33": -16.616513298208073
+    },
+    {
+     "sigma_m": 0.003,
+     "residue_db_stretched_fir33": -13.079861834145671
+    },
+    {
+     "sigma_m": 0.004,
+     "residue_db_stretched_fir33": -10.576745530896021
+    },
+    {
+     "sigma_m": 0.006,
+     "residue_db_stretched_fir33": -7.090727330849025
+    }
+   ],
+   "equivalent_radial_jitter_m": 0.004352233813118582
   }
  ]
 }

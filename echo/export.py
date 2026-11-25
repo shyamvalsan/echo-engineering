@@ -25,6 +25,16 @@ EXPORT_DIRS_SKIPPED = ("validation", "_tmp")  # stage-level folders update_index
 SPEC_N_FFT, SPEC_HOP, SPEC_FMAX, SPEC_FLOOR = 256, 32, 5000.0, -60.0
 
 
+def rel_path(p) -> str:
+    """A path as stored in run files: relative to the repo root when inside it (no machine-specific prefix), else
+    as given."""
+    p = Path(p)
+    try:
+        return p.resolve().relative_to(ROOT).as_posix()
+    except (ValueError, OSError):
+        return str(p)
+
+
 def clean_json(obj):
     """Recursively convert numpy types to Python and NaN/inf to None."""
     if isinstance(obj, dict):

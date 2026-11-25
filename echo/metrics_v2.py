@@ -71,10 +71,10 @@ MIN_MARGIN_CENTS = 20.0  # T must sit at least this far from the worst positive 
 MAX_PITCH_T_CENTS = 50.0  # T must be below half a semitone
 NULL_NOTE = "accepted by ear; no automated criterion separates this echo from the negative controls"
 
-# The runs the owner listened to on 2026-11-25 (statement at about 14:55: the newest final run of each test in the
-# index at that time). Stage 2: 20261125-145628-s2v2 was written at 14:57:45 (committed 14:58), after the statement,
-# so the stage-2 run the owner judged is 20261125-122003-s2. These are the owner_v2 calibration positives and the only
-# runs that carry a listening_verdict. Never follow "newest": a later run gets no verdict until the owner listens.
+# The runs the owner listened to on 2026-11-25 (the ledger logs the statement at 15:04; pinned to the newest final run
+# of each test before it). Which of the two stage-2 designs the owner heard is not recorded: the pin to the first
+# design, 20261125-122003-s2 (the v2 run 20261125-145628-s2v2 was written at 14:57:45), is a guess pending the
+# owner's confirmation. These are the owner_v2 calibration positives and the only runs that carry a listening_verdict. Never follow "newest": a later run gets no verdict until the owner listens.
 ACCEPTED_RUNS = {
     "s1_bird": "20261125-104529-s1",
     "s2_motif": "20261125-122003-s2",

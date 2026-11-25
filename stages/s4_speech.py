@@ -823,7 +823,7 @@ def run_one(sub, name, tier0_only=False, log=print, runs_root=None, half_angle=N
     export.write_json(dest / "metrics.json", met, indent=1)
     export.write_json(dest / "manifest.json", mf, indent=1)
     export.update_index(runs_root or export.RUNS)
-    log(f"[{sub} {name}] wrote {dest}: passed {met['passed']} verified {met['verified']}")
+    log(f"[{sub} {name}] wrote {export.rel_path(dest)}: passed {met['passed']} verified {met['verified']}")
     return dest, met, des, res
 
 

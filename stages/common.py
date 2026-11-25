@@ -191,6 +191,23 @@ VALIDATION_FILE = export.RUNS / "validation" / "metrics.json"
 STUDY_DIR = "_studies"  # stage study outputs live in runs/<stage>/_studies/ (the index scanner skips "_" names)
 
 
+def study_path(stage: str, name: str, runs_root=None) -> Path:
+    """runs/<stage>/_studies/<name>; a name already starting with "_studies/" is not joined twice."""
+    parts = Path(name).parts
+    if parts and parts[0] == STUDY_DIR:
+        name = str(Path(*parts[1:]))
+    return Path(runs_root or export.RUNS) / stage / STUDY_DIR / name
+
+
+def load_design_studies(stage: str, names, runs_root=None) -> dict:
+    """{file stem: study JSON} for metrics.design_study; a missing file gives {"missing": repo-relative path}."""
+    study = {}
+    for name in names:
+        fp = study_path(stage, name, runs_root)
+        study[Path(name).stem] = json.loads(fp.read_text()) if fp.exists() else {"missing": export.rel_path(fp)}
+    return study
+
+
 def _grid_entries(d):
     """Yield (path, dict) for every dict in the validation file that describes a grid (has an `f_max`)."""
     stack = [("", d)]
@@ -213,7 +230,7 @@ def validated_radii(cfg: StageConfig, ppw, path=None, engine=None) -> dict:
     carrying `validated_radii_backscatter` (preferred) or, in the older layout, `per_radius` pass flags."""
     path = Path(path or VALIDATION_FILE)
     out = {"validation_passed": False, "radii": None, "radii_all_angles": None, "caveats": [], "source": None,
-           "path": str(path), "engine": engine, "validation_engine": None}
+           "path": export.rel_path(path), "engine": engine, "validation_engine": None}
     try:
         d = json.loads(path.read_text())
     except Exception:
@@ -359,7 +376,7 @@ def tier1_lock(path=None, log=print, poll_s=0.5, log_every_s=60.0):
                 break
             except BlockingIOError:
                 if last is None or time.time() - last >= log_every_s:
-                    log(f"waiting for Tier 1 lock… ({time.time() - t0:.0f} s so far, {p})")
+                    log(f"waiting for Tier 1 lock… ({time.time() - t0:.0f} s so far, {export.rel_path(p)})")
                     last = time.time()
                 time.sleep(poll_s)
         waited = time.time() - t0
@@ -688,10 +705,7 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
         metrics["tier1_correction"] = t1_info
         metrics["failure_cause"] = failure_cause_text(metrics)
     if cfg.design_study_files:
-        study = {}
-        for name in cfg.design_study_files:
-            fp = Path(runs_root or export.RUNS) / cfg.stage / STUDY_DIR / name
-            study[Path(name).stem] = json.loads(fp.read_text()) if fp.exists() else {"missing": str(fp)}
+        study = load_design_studies(cfg.stage, cfg.design_study_files, runs_root)
         metrics["design_study"] = study
         for name, st_ in study.items():  # one history phase per study: its rows' losses (Tier 0 or Tier 1)
             rows = [dict(r, loss=r.get("loss", r.get("loss_tier1", r.get("loss_tier0")))) for r in (st_.get("rows") or [])]
@@ -754,7 +768,7 @@ def print_summary(run_dir, metrics, wall):
     h = metrics["headline"]
     print(f"\n=== {metrics['stage']}  {'PASSED' if metrics['passed'] else 'FAILED'}  verified={metrics['verified']}"
           f"  fragile={metrics['fragile']} ===")
-    print(f"run: {run_dir}")
+    print(f"run: {export.rel_path(run_dir)}")
     for m in metrics["metrics"]:
         if m["threshold"] is not None or m["tier"] == "tier1":
             print(f"  [{m['tier']}{'*' if m['gating'] else ' '}] {m['id']:<22} {m['value']!s:<22.22} "

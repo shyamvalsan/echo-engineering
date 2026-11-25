@@ -3,6 +3,7 @@ saved, robustness runs, the run folder passes the contract checker and verificat
 
 import json
 from dataclasses import replace
+from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
@@ -66,6 +67,29 @@ def test_stage_driver_with_stand_in_tier1(tmp_path):
     assert [r["fill"] for r in ds["rows"]] == [0.001, 0.002]
     assert ds["picked_fill"] == min(ds["rows"], key=lambda r: r["loss_tier1"])["fill"]
     assert [p["name"] for p in h["phases"]] == ["Profile solve (Tier 0)", "density_sweep", "tier1_correction"]
+    assert m["verification"]["path"] == "runs/validation/metrics.json"  # repo-relative, no machine prefix
+    assert "/home/" not in (d / "metrics.json").read_text()
+
+
+def test_design_study_path_joined_once(tmp_path):
+    """Stage 2 names its study files "_studies/<file>"; they must not be looked up in _studies/_studies/."""
+    from stages.common import load_design_studies, study_path
+
+    (tmp_path / "s2_motif" / "_studies").mkdir(parents=True)
+    (tmp_path / "s2_motif" / "_studies" / "a.json").write_text('{"rows": [1]}')
+    assert study_path("s2_motif", "_studies/a.json", tmp_path) == tmp_path / "s2_motif" / "_studies" / "a.json"
+    assert study_path("s2_motif", "a.json", tmp_path) == tmp_path / "s2_motif" / "_studies" / "a.json"
+    st = load_design_studies("s2_motif", ("_studies/a.json", "b.json"), tmp_path)
+    assert st["a"] == {"rows": [1]} and "missing" in st["b"]
+    st = load_design_studies("s2_motif", ("b.json",))  # under the repo: stored repo-relative
+    assert st["b"]["missing"] == "runs/s2_motif/_studies/b.json"
+
+
+def test_committed_stage2_runs_carry_their_design_studies():
+    root = Path(__file__).resolve().parents[1] / "runs" / "s2_motif"
+    for rid, n in (("20261125-122003-s2", 1), ("20261125-145628-s2v2", 2)):
+        ds = json.loads((root / rid / "metrics.json").read_text())["design_study"]
+        assert len(ds) == n and not any("missing" in v for v in ds.values())
 
 
 def test_verify_requires_validated_radius_at_grid(tmp_path):

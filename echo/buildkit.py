@@ -23,6 +23,7 @@ from pathlib import Path
 
 import numpy as np
 
+from echo.export import rel_path
 from echo.scene import C0, FS, Scene, alpha_db_per_m, bistatic_range, ellipse_point, fill_fraction
 
 SCALE = 10  # scale-model ratio: lengths / 10, frequencies x 10
@@ -1139,7 +1140,7 @@ def build_pack(run_dir, out_root=None, post_height=2.0, embed=0.6, panel=(600.0,
     b = bom(scene, post_height, embed)
     (out / "bom.json").write_text(json.dumps(b, indent=1))
     (out / "bom.md").write_text(bom_markdown(b, run))
-    summary = {"stage": run["stage"], "run_id": run["run_id"], "run_path": str(Path(run_dir)),
+    summary = {"stage": run["stage"], "run_id": run["run_id"], "run_path": rel_path(run_dir),
                "status": run["manifest"].get("status"), "verified": bool(run["metrics"].get("verified", False)),
                "posts": int(len(scene.posts)), "depth_m": scene.depth_m, "fill_fraction": fill_fraction(scene),
                "plan": plan, "template": tmpl, "template_full": deck, "control_points": control_points(scene)}

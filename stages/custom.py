@@ -479,7 +479,7 @@ def main(argv=None):
         return 2
     for w in r["warnings"]:
         print("warning:", w)
-    print(f"run: {r['run_dir']}  ({r['classification']['realization']}, tonal_ratio "
+    print(f"run: {export.rel_path(r['run_dir'])}  ({r['classification']['realization']}, tonal_ratio "
           f"{r['classification']['tonal_ratio']:.2f}; timings {({k: round(v, 1) for k, v in r['timings'].items()})})")
     return 0
 

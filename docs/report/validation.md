@@ -1,4 +1,4 @@
-*Appendix of [REPORT.md](../../REPORT.md); generated 2026-11-25T17:15+02:00 by `uv run python -m stages.report`.*
+*Appendix of [REPORT.md](../../REPORT.md); generated 2026-11-25T17:53+02:00 by `uv run python -m stages.report`.*
 
 # Solver validation
 
@@ -51,6 +51,7 @@ Grid and post radius each result used, and whether those posts are validated the
 - At the 2000 Hz grid only 2 cm, 4 cm, 8 cm posts match the analytic cylinder at all angles (1 cm: forward 1.21 dB, 90° 2.82 dB off); 1 cm posts are not validated even in backscatter.
 - The 1 cm backscatter match relies on an area factor fitted to backscatter (factor 0.908, `solver.area_cal`); held-out offsets confirm backscatter only.
 - Shadowing and multiple scattering in dense fields are checked by self-convergence only (production grid vs twice as fine, 436 posts), not against an exact solution. A bias shared by both grids would not show, so the effect of the angular errors above on dense-field echoes is not bounded.
+- Reproducibility of the dense-patch check: `stages/validate.py` takes the latest stage-1 scene at the time it runs; the scene it used is `runs/s1_bird/20261125-013334-s1/scene.json` (`checks.grid_convergence.dense.source_scene`), a run folder that was later deleted, so this check cannot be re-run exactly on the same posts (the solver and the validation file are frozen; the check was not re-run).
 
 Caveats as recorded in the file (`caveats`):
 

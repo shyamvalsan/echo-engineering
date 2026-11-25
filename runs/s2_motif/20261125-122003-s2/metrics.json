@@ -564,7 +564,7 @@
    0.08
   ],
   "source": "metrics.json:checks.cylinder.stage2_grid (f_max 2500.0 Hz, ppw 10.0)",
-  "path": "/home/shyam/projects/echo/runs/validation/metrics.json",
+  "path": "runs/validation/metrics.json",
   "engine": "fd8-3",
   "validation_engine": "fd8-3",
   "radii_used": [
@@ -722,7 +722,1947 @@
  },
  "design_study": {
   "design_study_tier0": {
-   "missing": "/home/shyam/projects/echo/runs/s2_motif/_studies/_studies/design_study_tier0.json"
+   "what": "Tier 0 design study, stage 2 (2D for losses/judges, 3D for level); phase-locked realization",
+   "selection": "designs compared by the Tier 0 spectrogram loss (window_loss, physical clap band 898-4000 Hz) and its mean under radial jitter only; the note judge (notes in order, cents) is recorded for information and never used to choose",
+   "band_full_hz": [
+    898.4375,
+    4000.0
+   ],
+   "band_capped_hz": [
+    898.4375,
+    2500.0
+   ],
+   "jitter": "radial Gaussian sigma (0.002, 0.005) m, seeds (11, 12, 13)",
+   "solve_rows": [
+    {
+     "steps": 300,
+     "lr": 0.02,
+     "solve_best_loss": 2.1141395568847656,
+     "loss_after_equalize_rounds_0_1_2": [
+      2.09987735748291,
+      2.052320718765259,
+      2.0524659156799316
+     ],
+     "label": "solve 300 steps lr 0.02",
+     "loss": 2.09987735748291
+    },
+    {
+     "steps": 1200,
+     "lr": 0.05,
+     "solve_best_loss": 2.0618481636047363,
+     "loss_after_equalize_rounds_0_1_2": [
+      2.0387344360351562,
+      2.2171595096588135,
+      2.2241806983947754
+     ],
+     "label": "solve 1200 steps lr 0.05",
+     "loss": 2.0387344360351562
+    }
+   ],
+   "rows": [
+    {
+     "radius_m": 0.02,
+     "fill_target": 0.004,
+     "mode": "phase_locked",
+     "posts_per_period": 1,
+     "half_angle_deg": 10.0,
+     "n_posts": 635,
+     "fill_realized": 0.004071526261011155,
+     "dropped": 0,
+     "n_rings": 252,
+     "max_posts_per_ring": 4,
+     "realize_s": 0.1,
+     "label": "a=2cm fill=0.4% phase_locked K=1",
+     "loss_tier0_full_band": 5.737662315368652,
+     "loss_tier0_capped_band": 3.449275016784668,
+     "echo_level_db_2d": -32.056214091766456,
+     "echo_level_db_3d": -46.076964376604984,
+     "harmonic_to_fundamental_db": [
+      14.162404199300852,
+      10.670931122658471,
+      -2.569481138415766,
+      -45.76596491734559
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.8,
+      "note_cents_max": 253.66902216507987,
+      "n_notes_detected": [
+       4,
+       5,
+       4,
+       4,
+       4
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.4,
+      "note_cents_max": 731.6690221650799,
+      "n_notes_detected": [
+       3,
+       5,
+       4,
+       4,
+       4
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 6.420996030171712,
+       "loss_max": 6.449451446533203
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 6.892457644144694,
+       "loss_max": 6.927489757537842
+      }
+     ],
+     "loss": 5.737662315368652
+    },
+    {
+     "radius_m": 0.02,
+     "fill_target": 0.004,
+     "mode": "phase_locked",
+     "posts_per_period": 2,
+     "half_angle_deg": 10.0,
+     "n_posts": 635,
+     "fill_realized": 0.004137077603126204,
+     "dropped": 0,
+     "n_rings": 365,
+     "max_posts_per_ring": 2,
+     "realize_s": 0.4,
+     "label": "a=2cm fill=0.4% phase_locked K=2",
+     "loss_tier0_full_band": 6.483945846557617,
+     "loss_tier0_capped_band": 4.494965553283691,
+     "echo_level_db_2d": -34.42952953481073,
+     "echo_level_db_3d": -49.751652020283416,
+     "harmonic_to_fundamental_db": [
+      17.697838712110862,
+      -1.3203930810463165,
+      -14.970674594626978,
+      -32.41536286024298
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       3,
+       4,
+       4,
+       4,
+       3
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       4,
+       4,
+       4,
+       5,
+       4
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 7.131677150726318,
+       "loss_max": 7.136780261993408
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 7.449352741241455,
+       "loss_max": 7.466422080993652
+      }
+     ],
+     "loss": 6.483945846557617
+    },
+    {
+     "radius_m": 0.02,
+     "fill_target": 0.004,
+     "mode": "phase_locked_uniform",
+     "posts_per_period": 4,
+     "half_angle_deg": 10.0,
+     "n_posts": 635,
+     "fill_realized": 0.004120441735814236,
+     "dropped": 0,
+     "n_rings": 543,
+     "max_posts_per_ring": 3,
+     "realize_s": 0.1,
+     "label": "a=2cm fill=0.4% phase_locked_uniform K=4",
+     "loss_tier0_full_band": 7.132516384124756,
+     "loss_tier0_capped_band": 5.043722152709961,
+     "echo_level_db_2d": -34.63608384630468,
+     "echo_level_db_3d": -49.03589218413108,
+     "harmonic_to_fundamental_db": [
+      1.5426855253385827,
+      -8.98886414484662,
+      -18.52721903622744,
+      -44.79288500712984
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       5,
+       5,
+       4,
+       4,
+       4
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       5,
+       4,
+       4,
+       4,
+       4
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 7.205445925394694,
+       "loss_max": 7.212702751159668
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 7.380558967590332,
+       "loss_max": 7.388628959655762
+      }
+     ],
+     "loss": 7.132516384124756
+    },
+    {
+     "radius_m": 0.02,
+     "fill_target": 0.004,
+     "mode": "phase_locked_uniform",
+     "posts_per_period": 6,
+     "half_angle_deg": 10.0,
+     "n_posts": 635,
+     "fill_realized": 0.004117691986072004,
+     "dropped": 0,
+     "n_rings": 620,
+     "max_posts_per_ring": 2,
+     "realize_s": 0.1,
+     "label": "a=2cm fill=0.4% phase_locked_uniform K=6",
+     "loss_tier0_full_band": 7.198450088500977,
+     "loss_tier0_capped_band": 5.112746238708496,
+     "echo_level_db_2d": -32.945463204498225,
+     "echo_level_db_3d": -47.284620446549084,
+     "harmonic_to_fundamental_db": [
+      18.43990287947115,
+      -4.403885257729769,
+      -15.868111600637874,
+      -45.5866602187925
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       2,
+       5,
+       4,
+       2,
+       3
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       3,
+       4,
+       5,
+       4,
+       5
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 7.234179655710856,
+       "loss_max": 7.246047496795654
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 7.366659641265869,
+       "loss_max": 7.374996185302734
+      }
+     ],
+     "loss": 7.198450088500977
+    },
+    {
+     "radius_m": 0.02,
+     "fill_target": 0.004,
+     "mode": "sampling",
+     "posts_per_period": 1,
+     "half_angle_deg": 10.0,
+     "n_posts": 635,
+     "fill_realized": 0.0040151286509883775,
+     "dropped": 0,
+     "n_rings": null,
+     "max_posts_per_ring": null,
+     "realize_s": 0.1,
+     "label": "a=2cm fill=0.4% sampling K=1",
+     "loss_tier0_full_band": 7.0370588302612305,
+     "loss_tier0_capped_band": 4.887173652648926,
+     "echo_level_db_2d": -33.72945553627416,
+     "echo_level_db_3d": -48.13458813625141,
+     "harmonic_to_fundamental_db": [
+      7.928333053733669,
+      -1.1897742271333327,
+      -14.904967680921079,
+      -50.77226591408868
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       4,
+       5,
+       5,
+       3,
+       4
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       4,
+       3,
+       5,
+       3,
+       4
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 7.164317448933919,
+       "loss_max": 7.16867733001709
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 7.398299694061279,
+       "loss_max": 7.404068470001221
+      }
+     ],
+     "loss": 7.0370588302612305
+    },
+    {
+     "radius_m": 0.02,
+     "fill_target": 0.008,
+     "mode": "phase_locked",
+     "posts_per_period": 1,
+     "half_angle_deg": 10.0,
+     "n_posts": 1269,
+     "fill_realized": 0.008194382363532208,
+     "dropped": 0,
+     "n_rings": 259,
+     "max_posts_per_ring": 9,
+     "realize_s": 0.2,
+     "label": "a=2cm fill=0.8% phase_locked K=1",
+     "loss_tier0_full_band": 5.628398895263672,
+     "loss_tier0_capped_band": 3.508178234100342,
+     "echo_level_db_2d": -29.496773995548715,
+     "echo_level_db_3d": -45.68203265616019,
+     "harmonic_to_fundamental_db": [
+      19.557625819004947,
+      10.490776416314063,
+      -3.38684341910731,
+      -36.90795767852188
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 1.0,
+      "note_cents_max": 8.834315971666879,
+      "n_notes_detected": [
+       4,
+       4,
+       4,
+       4,
+       4
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 1.0,
+      "note_cents_max": 10.632873966619446,
+      "n_notes_detected": [
+       4,
+       4,
+       4,
+       4,
+       4
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 6.095445473988851,
+       "loss_max": 6.103195667266846
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 6.538704872131348,
+       "loss_max": 6.565743446350098
+      }
+     ],
+     "loss": 5.628398895263672
+    },
+    {
+     "radius_m": 0.02,
+     "fill_target": 0.008,
+     "mode": "phase_locked",
+     "posts_per_period": 2,
+     "half_angle_deg": 10.0,
+     "n_posts": 1269,
+     "fill_realized": 0.008197533677222833,
+     "dropped": 0,
+     "n_rings": 503,
+     "max_posts_per_ring": 4,
+     "realize_s": 0.3,
+     "label": "a=2cm fill=0.8% phase_locked K=2",
+     "loss_tier0_full_band": 5.325546741485596,
+     "loss_tier0_capped_band": 3.0336921215057373,
+     "echo_level_db_2d": -33.13158915482055,
+     "echo_level_db_3d": -47.12426919533004,
+     "harmonic_to_fundamental_db": [
+      -3.6621697246433342,
+      -6.335067527243567,
+      -19.83879310866412,
+      -63.313919939415484
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       5,
+       5,
+       4,
+       5,
+       5
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.2,
+      "note_cents_max": 968.8345110825397,
+      "n_notes_detected": [
+       5,
+       4,
+       5,
+       5,
+       5
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 6.306852340698242,
+       "loss_max": 6.3227996826171875
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 6.880771954854329,
+       "loss_max": 6.892315864562988
+      }
+     ],
+     "loss": 5.325546741485596
+    },
+    {
+     "radius_m": 0.02,
+     "fill_target": 0.008,
+     "mode": "phase_locked_uniform",
+     "posts_per_period": 4,
+     "half_angle_deg": 10.0,
+     "n_posts": 1269,
+     "fill_realized": 0.008184879728884192,
+     "dropped": 0,
+     "n_rings": 718,
+     "max_posts_per_ring": 5,
+     "realize_s": 0.2,
+     "label": "a=2cm fill=0.8% phase_locked_uniform K=4",
+     "loss_tier0_full_band": 6.726509094238281,
+     "loss_tier0_capped_band": 4.479257583618164,
+     "echo_level_db_2d": -33.83296242865994,
+     "echo_level_db_3d": -48.9155961068178,
+     "harmonic_to_fundamental_db": [
+      -4.743920557936038,
+      -10.0767565757791,
+      -18.740693124661956,
+      -48.036668609190514
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       4,
+       4,
+       4,
+       4,
+       4
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       4,
+       4,
+       4,
+       4,
+       5
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 6.851699193318685,
+       "loss_max": 6.864014625549316
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 7.1177622477213545,
+       "loss_max": 7.133268356323242
+      }
+     ],
+     "loss": 6.726509094238281
+    },
+    {
+     "radius_m": 0.02,
+     "fill_target": 0.008,
+     "mode": "phase_locked_uniform",
+     "posts_per_period": 6,
+     "half_angle_deg": 10.0,
+     "n_posts": 1269,
+     "fill_realized": 0.008179659376470196,
+     "dropped": 0,
+     "n_rings": 921,
+     "max_posts_per_ring": 3,
+     "realize_s": 0.2,
+     "label": "a=2cm fill=0.8% phase_locked_uniform K=6",
+     "loss_tier0_full_band": 6.843667984008789,
+     "loss_tier0_capped_band": 4.6029863357543945,
+     "echo_level_db_2d": -34.89656482796218,
+     "echo_level_db_3d": -49.813990542854846,
+     "harmonic_to_fundamental_db": [
+      7.164933165314562,
+      -7.246295413420974,
+      -18.979178869492678,
+      -47.592492403247334
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       2,
+       5,
+       4,
+       5,
+       5
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       4,
+       4,
+       4,
+       5,
+       5
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 6.92006794611613,
+       "loss_max": 6.934135437011719
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 7.129576365152995,
+       "loss_max": 7.150966644287109
+      }
+     ],
+     "loss": 6.843667984008789
+    },
+    {
+     "radius_m": 0.02,
+     "fill_target": 0.008,
+     "mode": "sampling",
+     "posts_per_period": 1,
+     "half_angle_deg": 10.0,
+     "n_posts": 1269,
+     "fill_realized": 0.008061754014640377,
+     "dropped": 0,
+     "n_rings": null,
+     "max_posts_per_ring": null,
+     "realize_s": 0.3,
+     "label": "a=2cm fill=0.8% sampling K=1",
+     "loss_tier0_full_band": 6.501270294189453,
+     "loss_tier0_capped_band": 4.1866912841796875,
+     "echo_level_db_2d": -33.093855228471575,
+     "echo_level_db_3d": -46.94222984885562,
+     "harmonic_to_fundamental_db": [
+      0.7244380371284838,
+      -11.923477771036827,
+      -18.38884025392197,
+      -48.991085926051326
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       4,
+       3,
+       4,
+       4,
+       4
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       4,
+       3,
+       4,
+       4,
+       4
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 6.772172927856445,
+       "loss_max": 6.798308372497559
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 7.13991657892863,
+       "loss_max": 7.17767333984375
+      }
+     ],
+     "loss": 6.501270294189453
+    },
+    {
+     "radius_m": 0.02,
+     "fill_target": 0.016,
+     "mode": "phase_locked",
+     "posts_per_period": 1,
+     "half_angle_deg": 10.0,
+     "n_posts": 2538,
+     "fill_realized": 0.016308728056058583,
+     "dropped": 0,
+     "n_rings": 263,
+     "max_posts_per_ring": 19,
+     "realize_s": 0.6,
+     "label": "a=2cm fill=1.6% phase_locked K=1",
+     "loss_tier0_full_band": 5.533930778503418,
+     "loss_tier0_capped_band": 3.4625775814056396,
+     "echo_level_db_2d": -21.584563737789676,
+     "echo_level_db_3d": -36.90254508743628,
+     "harmonic_to_fundamental_db": [
+      20.938589609546675,
+      11.984076831085327,
+      -1.957623309713685,
+      -32.37061891397602
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 1.0,
+      "note_cents_max": 8.668729498770462,
+      "n_notes_detected": [
+       4,
+       4,
+       4,
+       4,
+       4
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 1.0,
+      "note_cents_max": 7.668729498770555,
+      "n_notes_detected": [
+       4,
+       4,
+       4,
+       4,
+       4
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 5.844635486602783,
+       "loss_max": 5.864866733551025
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 6.247141043345134,
+       "loss_max": 6.2712721824646
+      }
+     ],
+     "loss": 5.533930778503418
+    },
+    {
+     "radius_m": 0.02,
+     "fill_target": 0.016,
+     "mode": "phase_locked",
+     "posts_per_period": 2,
+     "half_angle_deg": 10.0,
+     "n_posts": 2538,
+     "fill_realized": 0.016353227597733,
+     "dropped": 0,
+     "n_rings": 518,
+     "max_posts_per_ring": 9,
+     "realize_s": 0.8,
+     "label": "a=2cm fill=1.6% phase_locked K=2",
+     "loss_tier0_full_band": 5.1849565505981445,
+     "loss_tier0_capped_band": 2.868150234222412,
+     "echo_level_db_2d": -31.215749730157903,
+     "echo_level_db_3d": -45.717545898081,
+     "harmonic_to_fundamental_db": [
+      2.3945793067730574,
+      -6.806019006192686,
+      -20.6647970778682,
+      -54.141589201449946
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       3,
+       4,
+       4,
+       4,
+       5
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.4,
+      "note_cents_max": 729.8344135271034,
+      "n_notes_detected": [
+       4,
+       5,
+       5,
+       4,
+       5
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 5.956801414489746,
+       "loss_max": 5.976616859436035
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 6.53933572769165,
+       "loss_max": 6.562564373016357
+      }
+     ],
+     "loss": 5.1849565505981445
+    },
+    {
+     "radius_m": 0.02,
+     "fill_target": 0.016,
+     "mode": "phase_locked_uniform",
+     "posts_per_period": 4,
+     "half_angle_deg": 10.0,
+     "n_posts": 2538,
+     "fill_realized": 0.01636089079803359,
+     "dropped": 0,
+     "n_rings": 763,
+     "max_posts_per_ring": 10,
+     "realize_s": 0.7,
+     "label": "a=2cm fill=1.6% phase_locked_uniform K=4",
+     "loss_tier0_full_band": 6.225739002227783,
+     "loss_tier0_capped_band": 3.912872552871704,
+     "echo_level_db_2d": -28.691576857770496,
+     "echo_level_db_3d": -43.096026015583604,
+     "harmonic_to_fundamental_db": [
+      -7.566362984828114,
+      -23.201170035575394,
+      -33.986911329262824,
+      -51.3229239816673
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       4,
+       3,
+       4,
+       4,
+       4
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       4,
+       4,
+       4,
+       4,
+       4
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 6.394483248392741,
+       "loss_max": 6.397942543029785
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 6.765737215677897,
+       "loss_max": 6.778737545013428
+      }
+     ],
+     "loss": 6.225739002227783
+    },
+    {
+     "radius_m": 0.02,
+     "fill_target": 0.016,
+     "mode": "phase_locked_uniform",
+     "posts_per_period": 6,
+     "half_angle_deg": 10.0,
+     "n_posts": 2538,
+     "fill_realized": 0.016356072770854962,
+     "dropped": 0,
+     "n_rings": 1142,
+     "max_posts_per_ring": 6,
+     "realize_s": 0.6,
+     "label": "a=2cm fill=1.6% phase_locked_uniform K=6",
+     "loss_tier0_full_band": 6.207178115844727,
+     "loss_tier0_capped_band": 3.926269054412842,
+     "echo_level_db_2d": -31.57804595331269,
+     "echo_level_db_3d": -45.90862348955981,
+     "harmonic_to_fundamental_db": [
+      2.307394687915427,
+      -15.589721677865864,
+      -30.90077377550117,
+      -53.23664572189874
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       3,
+       4,
+       4,
+       3,
+       4
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       4,
+       5,
+       4,
+       5,
+       4
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 6.372682571411133,
+       "loss_max": 6.388633728027344
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 6.739017645517985,
+       "loss_max": 6.769478797912598
+      }
+     ],
+     "loss": 6.207178115844727
+    },
+    {
+     "radius_m": 0.02,
+     "fill_target": 0.016,
+     "mode": "sampling",
+     "posts_per_period": 1,
+     "half_angle_deg": 10.0,
+     "n_posts": 2538,
+     "fill_realized": 0.016086298893013558,
+     "dropped": 0,
+     "n_rings": null,
+     "max_posts_per_ring": null,
+     "realize_s": 0.7,
+     "label": "a=2cm fill=1.6% sampling K=1",
+     "loss_tier0_full_band": 5.819408416748047,
+     "loss_tier0_capped_band": 3.5666468143463135,
+     "echo_level_db_2d": -32.37110125539489,
+     "echo_level_db_3d": -46.03377783801612,
+     "harmonic_to_fundamental_db": [
+      1.6807644917430042,
+      -16.00487196424738,
+      -20.656475895932516,
+      -49.57766591156491
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       3,
+       5,
+       4,
+       2,
+       4
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       4,
+       4,
+       4,
+       4,
+       4
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 6.265664577484131,
+       "loss_max": 6.278743743896484
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 6.821004390716553,
+       "loss_max": 6.84593391418457
+      }
+     ],
+     "loss": 5.819408416748047
+    },
+    {
+     "radius_m": 0.04,
+     "fill_target": 0.004,
+     "mode": "phase_locked",
+     "posts_per_period": 1,
+     "half_angle_deg": 10.0,
+     "n_posts": 160,
+     "fill_realized": 0.004161056896822812,
+     "dropped": 0,
+     "n_rings": 120,
+     "max_posts_per_ring": 2,
+     "realize_s": 0.0,
+     "label": "a=4cm fill=0.4% phase_locked K=1",
+     "loss_tier0_full_band": 7.457817077636719,
+     "loss_tier0_capped_band": 5.403809070587158,
+     "echo_level_db_2d": -35.289276153255244,
+     "echo_level_db_3d": -49.47399454919762,
+     "harmonic_to_fundamental_db": [
+      14.345192993966018,
+      13.936953925546135,
+      -2.2263716133564984,
+      -25.76389007277247
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       5,
+       4,
+       3,
+       5,
+       4
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       4,
+       5,
+       5,
+       4,
+       3
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 7.536009152730306,
+       "loss_max": 7.547348976135254
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 7.6568552652994795,
+       "loss_max": 7.681446075439453
+      }
+     ],
+     "loss": 7.457817077636719
+    },
+    {
+     "radius_m": 0.04,
+     "fill_target": 0.004,
+     "mode": "phase_locked",
+     "posts_per_period": 2,
+     "half_angle_deg": 10.0,
+     "n_posts": 159,
+     "fill_realized": 0.0040563369485416036,
+     "dropped": 0,
+     "n_rings": 159,
+     "max_posts_per_ring": 1,
+     "realize_s": 0.0,
+     "label": "a=4cm fill=0.4% phase_locked K=2",
+     "loss_tier0_full_band": 7.694625377655029,
+     "loss_tier0_capped_band": 5.708112716674805,
+     "echo_level_db_2d": -35.01287757727705,
+     "echo_level_db_3d": -49.01414928114367,
+     "harmonic_to_fundamental_db": [
+      6.944177194940439,
+      -2.1019219499868775,
+      -12.263931172983554,
+      -34.15854441313585
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       4,
+       5,
+       4,
+       4,
+       4
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       5,
+       4,
+       4,
+       4,
+       4
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 7.71696122487386,
+       "loss_max": 7.720742702484131
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 7.7880838712056475,
+       "loss_max": 7.795566558837891
+      }
+     ],
+     "loss": 7.694625377655029
+    },
+    {
+     "radius_m": 0.04,
+     "fill_target": 0.004,
+     "mode": "phase_locked_uniform",
+     "posts_per_period": 4,
+     "half_angle_deg": 10.0,
+     "n_posts": 159,
+     "fill_realized": 0.004141251969188801,
+     "dropped": 0,
+     "n_rings": 159,
+     "max_posts_per_ring": 1,
+     "realize_s": 0.0,
+     "label": "a=4cm fill=0.4% phase_locked_uniform K=4",
+     "loss_tier0_full_band": 7.784931182861328,
+     "loss_tier0_capped_band": 5.800863265991211,
+     "echo_level_db_2d": -34.937527397392195,
+     "echo_level_db_3d": -48.917516803790875,
+     "harmonic_to_fundamental_db": [
+      1.8263184140803475,
+      -4.250817400624273,
+      -7.73692669984511,
+      -30.312927874911892
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       4,
+       4,
+       3,
+       4,
+       4
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       5,
+       5,
+       4,
+       4,
+       4
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 7.7906233469645185,
+       "loss_max": 7.791881561279297
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 7.8229726155598955,
+       "loss_max": 7.831046104431152
+      }
+     ],
+     "loss": 7.784931182861328
+    },
+    {
+     "radius_m": 0.04,
+     "fill_target": 0.004,
+     "mode": "phase_locked_uniform",
+     "posts_per_period": 6,
+     "half_angle_deg": 10.0,
+     "n_posts": 159,
+     "fill_realized": 0.004137806562418833,
+     "dropped": 0,
+     "n_rings": 159,
+     "max_posts_per_ring": 1,
+     "realize_s": 0.0,
+     "label": "a=4cm fill=0.4% phase_locked_uniform K=6",
+     "loss_tier0_full_band": 7.795217990875244,
+     "loss_tier0_capped_band": 5.863739013671875,
+     "echo_level_db_2d": -34.423633033112196,
+     "echo_level_db_3d": -48.73844568055937,
+     "harmonic_to_fundamental_db": [
+      8.405154690770845,
+      1.2876307913451628,
+      -15.9864127663155,
+      -32.29554081182181
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       4,
+       5,
+       4,
+       4,
+       4
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       3,
+       5,
+       4,
+       4,
+       4
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 7.808065573374431,
+       "loss_max": 7.812204837799072
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 7.83980147043864,
+       "loss_max": 7.854827880859375
+      }
+     ],
+     "loss": 7.795217990875244
+    },
+    {
+     "radius_m": 0.04,
+     "fill_target": 0.004,
+     "mode": "sampling",
+     "posts_per_period": 1,
+     "half_angle_deg": 10.0,
+     "n_posts": 159,
+     "fill_realized": 0.0040465640026708756,
+     "dropped": 0,
+     "n_rings": null,
+     "max_posts_per_ring": null,
+     "realize_s": 0.0,
+     "label": "a=4cm fill=0.4% sampling K=1",
+     "loss_tier0_full_band": 7.814526557922363,
+     "loss_tier0_capped_band": 5.858036041259766,
+     "echo_level_db_2d": -34.76523140607891,
+     "echo_level_db_3d": -48.767998843460504,
+     "harmonic_to_fundamental_db": [
+      16.90468832276944,
+      -2.36304737002065,
+      -12.978082581575187,
+      -30.26544411656623
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       5,
+       4,
+       4,
+       4,
+       3
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       4,
+       4,
+       5,
+       5,
+       5
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 7.850878079732259,
+       "loss_max": 7.856560707092285
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 7.919349988301595,
+       "loss_max": 7.922366142272949
+      }
+     ],
+     "loss": 7.814526557922363
+    },
+    {
+     "radius_m": 0.04,
+     "fill_target": 0.008,
+     "mode": "phase_locked",
+     "posts_per_period": 1,
+     "half_angle_deg": 10.0,
+     "n_posts": 318,
+     "fill_realized": 0.008233651148595774,
+     "dropped": 0,
+     "n_rings": 183,
+     "max_posts_per_ring": 2,
+     "realize_s": 0.1,
+     "label": "a=4cm fill=0.8% phase_locked K=1",
+     "loss_tier0_full_band": 6.852325439453125,
+     "loss_tier0_capped_band": 4.805294990539551,
+     "echo_level_db_2d": -35.089524025351295,
+     "echo_level_db_3d": -49.3917703297541,
+     "harmonic_to_fundamental_db": [
+      13.795597428772412,
+      17.476835192617,
+      7.798019912737287,
+      -26.715848801779522
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       5,
+       5,
+       4,
+       5,
+       4
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       4,
+       5,
+       4,
+       5,
+       3
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 7.279702822367351,
+       "loss_max": 7.289472579956055
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 7.571509043375651,
+       "loss_max": 7.584883689880371
+      }
+     ],
+     "loss": 6.852325439453125
+    },
+    {
+     "radius_m": 0.04,
+     "fill_target": 0.008,
+     "mode": "phase_locked",
+     "posts_per_period": 2,
+     "half_angle_deg": 10.0,
+     "n_posts": 317,
+     "fill_realized": 0.008081892111252783,
+     "dropped": 0,
+     "n_rings": 239,
+     "max_posts_per_ring": 2,
+     "realize_s": 0.1,
+     "label": "a=4cm fill=0.8% phase_locked K=2",
+     "loss_tier0_full_band": 7.468865871429443,
+     "loss_tier0_capped_band": 5.398351669311523,
+     "echo_level_db_2d": -34.227777492450954,
+     "echo_level_db_3d": -48.58895061623015,
+     "harmonic_to_fundamental_db": [
+      6.02199862029595,
+      6.1373926103337375,
+      -0.8910930756752464,
+      -34.29852907203085
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       4,
+       4,
+       4,
+       3,
+       3
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       6,
+       4,
+       4,
+       4,
+       3
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 7.574607213338216,
+       "loss_max": 7.577846527099609
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 7.7028764088948565,
+       "loss_max": 7.712760925292969
+      }
+     ],
+     "loss": 7.468865871429443
+    },
+    {
+     "radius_m": 0.04,
+     "fill_target": 0.008,
+     "mode": "phase_locked_uniform",
+     "posts_per_period": 4,
+     "half_angle_deg": 10.0,
+     "n_posts": 317,
+     "fill_realized": 0.008191831675150951,
+     "dropped": 0,
+     "n_rings": 317,
+     "max_posts_per_ring": 1,
+     "realize_s": 0.1,
+     "label": "a=4cm fill=0.8% phase_locked_uniform K=4",
+     "loss_tier0_full_band": 7.514415740966797,
+     "loss_tier0_capped_band": 5.435102462768555,
+     "echo_level_db_2d": -33.592508217898626,
+     "echo_level_db_3d": -47.9968695364037,
+     "harmonic_to_fundamental_db": [
+      4.69354677792453,
+      -6.804029275541347,
+      -8.05308903721028,
+      -33.206984842408865
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       4,
+       5,
+       5,
+       4,
+       4
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       6,
+       6,
+       4,
+       4,
+       5
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 7.545960744222005,
+       "loss_max": 7.550979137420654
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 7.626096725463867,
+       "loss_max": 7.639475345611572
+      }
+     ],
+     "loss": 7.514415740966797
+    },
+    {
+     "radius_m": 0.04,
+     "fill_target": 0.008,
+     "mode": "phase_locked_uniform",
+     "posts_per_period": 6,
+     "half_angle_deg": 10.0,
+     "n_posts": 317,
+     "fill_realized": 0.008211269657450955,
+     "dropped": 0,
+     "n_rings": 317,
+     "max_posts_per_ring": 1,
+     "realize_s": 0.0,
+     "label": "a=4cm fill=0.8% phase_locked_uniform K=6",
+     "loss_tier0_full_band": 7.477931976318359,
+     "loss_tier0_capped_band": 5.368476867675781,
+     "echo_level_db_2d": -32.94239880669393,
+     "echo_level_db_3d": -47.2206282344353,
+     "harmonic_to_fundamental_db": [
+      9.399318384402255,
+      1.7951169552265216,
+      -19.771308302581595,
+      -34.07495108141498
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       4,
+       5,
+       3,
+       5,
+       4
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       6,
+       5,
+       4,
+       4,
+       3
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 7.507921059926351,
+       "loss_max": 7.517913341522217
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 7.589855194091797,
+       "loss_max": 7.616531848907471
+      }
+     ],
+     "loss": 7.477931976318359
+    },
+    {
+     "radius_m": 0.04,
+     "fill_target": 0.008,
+     "mode": "sampling",
+     "posts_per_period": 1,
+     "half_angle_deg": 10.0,
+     "n_posts": 317,
+     "fill_realized": 0.008109309008857694,
+     "dropped": 0,
+     "n_rings": null,
+     "max_posts_per_ring": null,
+     "realize_s": 0.1,
+     "label": "a=4cm fill=0.8% sampling K=1",
+     "loss_tier0_full_band": 7.382608890533447,
+     "loss_tier0_capped_band": 5.294556617736816,
+     "echo_level_db_2d": -33.115224111323975,
+     "echo_level_db_3d": -47.36299232643987,
+     "harmonic_to_fundamental_db": [
+      12.067431954424759,
+      -8.70916268938055,
+      -9.874706163972078,
+      -36.0800898527752
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       4,
+       6,
+       4,
+       5,
+       4
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       5,
+       5,
+       4,
+       5,
+       5
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 7.441885789235433,
+       "loss_max": 7.445972442626953
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 7.577830632527669,
+       "loss_max": 7.585958480834961
+      }
+     ],
+     "loss": 7.382608890533447
+    },
+    {
+     "radius_m": 0.04,
+     "fill_target": 0.016,
+     "mode": "phase_locked",
+     "posts_per_period": 1,
+     "half_angle_deg": 10.0,
+     "n_posts": 635,
+     "fill_realized": 0.01633675205589209,
+     "dropped": 0,
+     "n_rings": 252,
+     "max_posts_per_ring": 4,
+     "realize_s": 0.2,
+     "label": "a=4cm fill=1.6% phase_locked K=1",
+     "loss_tier0_full_band": 5.501608371734619,
+     "loss_tier0_capped_band": 3.2371554374694824,
+     "echo_level_db_2d": -29.822549376124833,
+     "echo_level_db_3d": -43.70214669199657,
+     "harmonic_to_fundamental_db": [
+      10.225004453825592,
+      4.672608561260825,
+      -7.766081487237817,
+      -27.912665524965256
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.8,
+      "note_cents_max": 249.83441352710352,
+      "n_notes_detected": [
+       4,
+       5,
+       4,
+       4,
+       4
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 1.0,
+      "note_cents_max": 12.337946774722507,
+      "n_notes_detected": [
+       4,
+       4,
+       4,
+       4,
+       4
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 6.323019663492839,
+       "loss_max": 6.340115547180176
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 6.86357847849528,
+       "loss_max": 6.8860650062561035
+      }
+     ],
+     "loss": 5.501608371734619
+    },
+    {
+     "radius_m": 0.04,
+     "fill_target": 0.016,
+     "mode": "phase_locked",
+     "posts_per_period": 2,
+     "half_angle_deg": 10.0,
+     "n_posts": 635,
+     "fill_realized": 0.016548652307109755,
+     "dropped": 0,
+     "n_rings": 365,
+     "max_posts_per_ring": 2,
+     "realize_s": 0.1,
+     "label": "a=4cm fill=1.6% phase_locked K=2",
+     "loss_tier0_full_band": 6.598871231079102,
+     "loss_tier0_capped_band": 4.50553035736084,
+     "echo_level_db_2d": -33.12706394428049,
+     "echo_level_db_3d": -47.32095177087923,
+     "harmonic_to_fundamental_db": [
+      11.581857651306201,
+      0.24589895463540537,
+      -9.4332486519872,
+      -26.21523645020352
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.2,
+      "note_cents_max": 961.16548891746,
+      "n_notes_detected": [
+       4,
+       4,
+       3,
+       5,
+       4
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.2,
+      "note_cents_max": 963.0000975554361,
+      "n_notes_detected": [
+       4,
+       4,
+       4,
+       4,
+       4
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 7.254672686258952,
+       "loss_max": 7.268407821655273
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 7.571897506713867,
+       "loss_max": 7.591519355773926
+      }
+     ],
+     "loss": 6.598871231079102
+    },
+    {
+     "radius_m": 0.04,
+     "fill_target": 0.016,
+     "mode": "phase_locked_uniform",
+     "posts_per_period": 4,
+     "half_angle_deg": 10.0,
+     "n_posts": 635,
+     "fill_realized": 0.016378479320809127,
+     "dropped": 0,
+     "n_rings": 575,
+     "max_posts_per_ring": 2,
+     "realize_s": 0.1,
+     "label": "a=4cm fill=1.6% phase_locked_uniform K=4",
+     "loss_tier0_full_band": 7.230923175811768,
+     "loss_tier0_capped_band": 5.045316696166992,
+     "echo_level_db_2d": -29.821776733159005,
+     "echo_level_db_3d": -44.491954350374996,
+     "harmonic_to_fundamental_db": [
+      -10.690378133559557,
+      -1.9163536772533525,
+      -8.292014570602936,
+      -37.00488369124923
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       5,
+       4,
+       4,
+       3,
+       6
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       4,
+       5,
+       5,
+       5,
+       6
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 7.322262763977051,
+       "loss_max": 7.328807830810547
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 7.494264443715413,
+       "loss_max": 7.5051984786987305
+      }
+     ],
+     "loss": 7.230923175811768
+    },
+    {
+     "radius_m": 0.04,
+     "fill_target": 0.016,
+     "mode": "phase_locked_uniform",
+     "posts_per_period": 6,
+     "half_angle_deg": 10.0,
+     "n_posts": 635,
+     "fill_realized": 0.016362517251890325,
+     "dropped": 0,
+     "n_rings": 629,
+     "max_posts_per_ring": 2,
+     "realize_s": 0.1,
+     "label": "a=4cm fill=1.6% phase_locked_uniform K=6",
+     "loss_tier0_full_band": 7.155780792236328,
+     "loss_tier0_capped_band": 4.9252448081970215,
+     "echo_level_db_2d": -30.514332351776506,
+     "echo_level_db_3d": -44.8848795348498,
+     "harmonic_to_fundamental_db": [
+      4.053069463709821,
+      -11.817708711286702,
+      -21.68323526870128,
+      -42.475823292843636
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       4,
+       6,
+       4,
+       6,
+       4
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       3,
+       5,
+       4,
+       5,
+       4
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 7.224203427632649,
+       "loss_max": 7.243325233459473
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 7.376696427663167,
+       "loss_max": 7.415302276611328
+      }
+     ],
+     "loss": 7.155780792236328
+    },
+    {
+     "radius_m": 0.04,
+     "fill_target": 0.016,
+     "mode": "sampling",
+     "posts_per_period": 1,
+     "half_angle_deg": 10.0,
+     "n_posts": 635,
+     "fill_realized": 0.016055146331184433,
+     "dropped": 0,
+     "n_rings": null,
+     "max_posts_per_ring": null,
+     "realize_s": 0.1,
+     "label": "a=4cm fill=1.6% sampling K=1",
+     "loss_tier0_full_band": 6.979401111602783,
+     "loss_tier0_capped_band": 4.729718208312988,
+     "echo_level_db_2d": -30.356576929468197,
+     "echo_level_db_3d": -44.64293252967379,
+     "harmonic_to_fundamental_db": [
+      -3.4786294310314174,
+      -7.2707684040962555,
+      -15.478651325026698,
+      -41.499487721699175
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       5,
+       6,
+       4,
+       4,
+       4
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       3,
+       5,
+       4,
+       4,
+       5
+      ]
+     },
+     "jitter": [
+      {
+       "sigma_m": 0.002,
+       "loss_mean": 7.127797762552897,
+       "loss_max": 7.135146141052246
+      },
+      {
+       "sigma_m": 0.005,
+       "loss_mean": 7.389360268910726,
+       "loss_max": 7.393786430358887
+      }
+     ],
+     "loss": 6.979401111602783
+    }
+   ],
+   "half_angle_rows": [
+    {
+     "half_angle_deg": 8.0,
+     "n_posts": 1015,
+     "fill_realized": 0.008211071012782251,
+     "dropped": 0,
+     "loss_tier0_full_band": 6.92214298248291,
+     "loss_tier0_capped_band": 4.613637924194336,
+     "echo_level_db_2d": -31.665650850704605,
+     "echo_level_db_3d": -46.496448888224805,
+     "harmonic_to_fundamental_db": [
+      4.351314705469953,
+      -5.252555976132767,
+      -22.782823841118326,
+      -35.461544837323856
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       4,
+       5,
+       4,
+       4,
+       3
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       5,
+       4,
+       4,
+       4,
+       5
+      ]
+     },
+     "loss_side_10cm": 7.111019134521484,
+     "loss_side_20cm": 7.313375473022461,
+     "tier1_cells_est": 1780218,
+     "loss": 6.92214298248291,
+     "label": "half-angle 8 deg"
+    },
+    {
+     "half_angle_deg": 10.0,
+     "n_posts": 1269,
+     "fill_realized": 0.008179659376470196,
+     "dropped": 0,
+     "loss_tier0_full_band": 6.843667984008789,
+     "loss_tier0_capped_band": 4.6029863357543945,
+     "echo_level_db_2d": -34.89656482796218,
+     "echo_level_db_3d": -49.813990542854846,
+     "harmonic_to_fundamental_db": [
+      7.164933165314562,
+      -7.246295413420974,
+      -18.979178869492678,
+      -47.592492403247334
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       2,
+       5,
+       4,
+       5,
+       5
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       4,
+       4,
+       4,
+       5,
+       5
+      ]
+     },
+     "loss_side_10cm": 7.116969108581543,
+     "loss_side_20cm": 7.344276428222656,
+     "tier1_cells_est": 2180230,
+     "loss": 6.843667984008789,
+     "label": "half-angle 10 deg"
+    },
+    {
+     "half_angle_deg": 12.0,
+     "n_posts": 1523,
+     "fill_realized": 0.00819341553148388,
+     "dropped": 0,
+     "loss_tier0_full_band": 6.741653919219971,
+     "loss_tier0_capped_band": 4.530087947845459,
+     "echo_level_db_2d": -31.32612296522486,
+     "echo_level_db_3d": -46.19338783989802,
+     "harmonic_to_fundamental_db": [
+      9.247604705937468,
+      -14.509785461211035,
+      -27.72137810868552,
+      -50.26429898596273
+     ],
+     "info_only_note_judge_full_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       3,
+       4,
+       4,
+       3,
+       3
+      ]
+     },
+     "info_only_note_judge_capped_band": {
+      "notes_in_order": 0.0,
+      "note_cents_max": 1200.0,
+      "n_notes_detected": [
+       4,
+       5,
+       4,
+       4,
+       5
+      ]
+     },
+     "loss_side_10cm": 7.10883903503418,
+     "loss_side_20cm": 7.419482231140137,
+     "tier1_cells_est": 2578504,
+     "loss": 6.741653919219971,
+     "label": "half-angle 12 deg"
+    }
+   ],
+   "wall_s": 578.5076808929443
   }
  },
  "criteria": {
@@ -1196,7 +3136,8 @@
   "scope": "all final runs' current results",
   "quote": "listening to the results, I think all of them are pass",
   "blind": false,
-  "note": "A human judgment, recorded as such; not an automated pass. Not a blind test: the listener knew each target, and knowing the target helps a listener hear it. A blind check is prepared in runs/_criteria/blind_test/. Written only on the runs the owner heard (metrics_v2.ACCEPTED_RUNS, pinned: the newest final run per test at the time of the statement, about 14:55; for stage 2 that is 20261125-122003-s2, since 20261125-145628-s2v2 was written at 14:57:45).",
+  "note": "A human judgment, recorded as such; not an automated pass. Not a blind test: the listener knew each target, and knowing the target helps a listener hear it. A blind check is prepared in runs/_criteria/blind_test/. Written only on the runs the owner heard (metrics_v2.ACCEPTED_RUNS, pinned to the newest final run per test before the statement, which the ledger logs at 15:04). Which of the two stage-2 designs the owner heard is not recorded; pinned to the first design (20261125-122003-s2) pending confirmation.",
   "run_id": "20261125-122003-s2"
- }
+ },
+ "design_study_reattached": "design_study re-attached on 2026-11-25 from runs/s2_motif/_studies/ (files dated before this run); the run's writer had joined the study path twice and stored 'missing' entries. No result changed; history.json has no study phase."
 }

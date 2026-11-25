@@ -1,4 +1,4 @@
-*Appendix of [REPORT.md](../../REPORT.md); generated 2026-11-25T17:15+02:00 by `uv run python -m stages.report`.*
+*Appendix of [REPORT.md](../../REPORT.md); generated 2026-11-25T17:53+02:00 by `uv run python -m stages.report`.*
 
 # Per-test scorecards
 
@@ -253,6 +253,8 @@ Study files for this stage (`runs/s1_bird/_studies`): `design_study_tier0.json`,
 | 20261125-033940-s1 | 1060 | -0.00224 | 0.00 | 0.331 | 0.957 | -0.503 | -10.78 | -11.69 | 0.00 | — |
 | 20261125-095837-s1 | 1060 | -0.00238 | 0.00 | 0.190 | 0.983 | -0.159 | -14.67 | -16.19 | 0.00 | — |
 | h2_echoes_phase_locked_K1_N420_a0.04.npz | 420 | -0.0057 | 0.00 | 0.0846 | 0.191 | -0.0312 | -0.161 | -0.797 | — | 0.04 |
+| 20261125-104529-s1 | 1060 | -0.00242 | 0.00 | 0.172 | 0.984 | -0.130 | -14.98 | -16.08 | 0.00 | — |
+| 20261125-150605-pilot_whistle80 | 500 | -0.00218 | 0.00 | 0.0144 | 0.939 | -0.000902 | -9.257 | -9.963 | 0.00 | — |
 
 ### Stage 2 — Motif
 
@@ -263,14 +265,14 @@ Study files for this stage (`runs/s1_bird/_studies`): `design_study_tier0.json`,
 | run | role | original spec thresholds | revised thresholds (owner_v2) | owner's ear |
 |---|---|---|---|---|
 | `20261125-145628-s2v2` | newest | missed: notes_in_order 0.400 (needs >= 1.000); note_cents_max 726.12 (needs <= 30.00) | not established | not heard by the owner |
-| `20261125-122003-s2` | earlier, heard by the owner | missed: notes_in_order 0.000 (needs >= 1.000); note_cents_max 1200.00 (needs <= 30.00) | not established | accepted by ear (owner, 2026-11-25, not blind) |
+| `20261125-122003-s2` | earlier, heard by the owner | missed: notes_in_order 0.000 (needs >= 1.000); note_cents_max 1200 (sentinel: notes not matched) (needs <= 30.00) | not established | accepted by ear (owner, 2026-11-25, not blind) |
 
 **Earlier attempts, Stage 2** (newest first; the first row is the result):
 
 | run | result | gating (Tier 1) | echo dB re direct | posts | fill % | tier gap dB | what changed vs the previous attempt (design config) |
 |---|---|---|---|---|---|---|---|
 | `20261125-145628-s2v2` (result) | FAIL | notes_in_order 0.400; note_cents_max 726.12 | -62.98 | 1543 | 0.12 | -2.70 | a_ref: 0.02 → 0.01; catalog: 0.02 → 0.01; correction_clip: — → 0.250, 4.000; half_angle_deg: 10.00 → 20.00; robustness_c_cases: — → —; robustness_jitter: — → yes; tag: s2 → s2v2; target_fill: 0.016 → 0.001 |
-| `20261125-122003-s2` | FAIL | notes_in_order 0.000; note_cents_max 1200.00 | -42.91 | 2538 | 1.66 | -2.84 | first attempt |
+| `20261125-122003-s2` | FAIL | notes_in_order 0.000; note_cents_max 1200 (sentinel: notes not matched) | -42.91 | 2538 | 1.66 | -2.84 | first attempt |
 
 #### Stage 2 — newest run, original thresholds: missed
 
@@ -309,11 +311,11 @@ Run `runs/s2_motif/20261125-145628-s2v2` (Motif C6 E6 G6 C7, 45 ms each (v2: 1 c
 
 | clap | tier | notes_in_order | note_cents_max | notes_in_order floor | note_cents_max floor |
 |---|---|---|---|---|---|
-| 0 | tier1 | 0.000 | 1200.00 | 1.000 | 14.98 |
+| 0 | tier1 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 14.98 |
 | 1 | tier1 | 1.000 | 15.65 | 1.000 | 5.000 |
 | 2 | tier1 | 1.000 | 14.98 | 1.000 | 5.000 |
-| 3 | tier1 | 0.000 | 1200.00 | 1.000 | 5.000 |
-| 4 | tier1 | 0.000 | 1200.00 | 1.000 | 14.98 |
+| 3 | tier1 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 5.000 |
+| 4 | tier1 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 14.98 |
 | 0 | tier0 | 1.000 | 14.98 | 1.000 | 14.98 |
 | 1 | tier0 | 1.000 | 14.98 | 1.000 | 5.000 |
 | 2 | tier0 | 1.000 | 5.000 | 1.000 | 5.000 |
@@ -325,14 +327,14 @@ Run `runs/s2_motif/20261125-145628-s2v2` (Motif C6 E6 G6 C7, 45 ms each (v2: 1 c
 | case | notes_in_order (delta) | note_cents_max (delta) | passes |
 |---|---|---|---|
 | Nominal design (`nominal`) | 0.400 (+0.000) | 726.12 (+0.000) | FAIL |
-| Listener moved 1 m sideways (`listener_side_1m`) | 0.000 (-0.400) | 1200.00 (+473.875) | FAIL |
-| Listener moved 1 m back (`listener_back_1m`) | 0.000 (-0.400) | 1200.00 (+473.875) | FAIL |
-| Posts jittered 5 mm, radii 1 mm (uniform) (`jitter`) | 0.000 (-0.400) | 1200.00 (+473.875) | FAIL |
-| Clap variant 0 alone (`clap_0`) | 0.000 (-0.400) | 1200.00 (+473.875) | FAIL |
+| Listener moved 1 m sideways (`listener_side_1m`) | 0.000 (-0.400) | 1200 (sentinel: notes not matched) (+473.875) | FAIL |
+| Listener moved 1 m back (`listener_back_1m`) | 0.000 (-0.400) | 1200 (sentinel: notes not matched) (+473.875) | FAIL |
+| Posts jittered 5 mm, radii 1 mm (uniform) (`jitter`) | 0.000 (-0.400) | 1200 (sentinel: notes not matched) (+473.875) | FAIL |
+| Clap variant 0 alone (`clap_0`) | 0.000 (-0.400) | 1200 (sentinel: notes not matched) (+473.875) | FAIL |
 | Clap variant 1 alone (`clap_1`) | 1.000 (+0.600) | 15.65 (-710.477) | PASS |
 | Clap variant 2 alone (`clap_2`) | 1.000 (+0.600) | 14.98 (-711.149) | PASS |
-| Clap variant 3 alone (`clap_3`) | 0.000 (-0.400) | 1200.00 (+473.875) | FAIL |
-| Clap variant 4 alone (`clap_4`) | 0.000 (-0.400) | 1200.00 (+473.875) | FAIL |
+| Clap variant 3 alone (`clap_3`) | 0.000 (-0.400) | 1200 (sentinel: notes not matched) (+473.875) | FAIL |
+| Clap variant 4 alone (`clap_4`) | 0.000 (-0.400) | 1200 (sentinel: notes not matched) (+473.875) | FAIL |
 
 **Stretch compensation** (`tier1_correction.stretch`: the post field slows sound; ε is the echo's time-axis stretch, the prior is ε per unit fill):
 
@@ -350,13 +352,91 @@ Run `runs/s2_motif/20261125-145628-s2v2` (Motif C6 E6 G6 C7, 45 ms each (v2: 1 c
 | 0 | 1543 | 4.261 | -31.16 | -1.73 | -0.000826 | 0.200 | 964.83 |
 | 1 | 1543 | 4.183 | -23.20 | -2.70 | -0.0008 | 0.400 | 726.12 |
 
-**Design study — `design_study_tier0`**
+**Design study — `design_study_tier0`**: Tier 0 design study, stage 2 (2D for losses/judges, 3D for level); phase-locked realization
 
-- missing: /home/shyam/projects/echo/runs/s2_motif/_studies/_studies/design_study_tier0.json
+- selection: designs compared by the Tier 0 spectrogram loss (window_loss, physical clap band 898-4000 Hz) and its mean under radial jitter only; the note judge (notes in order, cents) is recorded for information and never used to choose
+- band_full_hz: 898.44, 4000.00
+- band_capped_hz: 898.44, 2500.00
+- jitter: radial Gaussian sigma (0.002, 0.005) m, seeds (11, 12, 13)
+- wall_s: 578.51
 
-**Design study — `design_study_v2_tier0`**
+| # | band_full_hz | band_capped_hz |
+|---|---|---|
+| 1 | 898.44 | 898.44 |
+| 2 | 4000.00 | 2500.00 |
 
-- missing: /home/shyam/projects/echo/runs/s2_motif/_studies/_studies/design_study_v2_tier0.json
+*solve_rows:*
+
+| steps | lr | solve_best_loss | loss_after_equalize_rounds_0_1_2 | label | loss |
+|---|---|---|---|---|---|
+| 300 | 0.02 | 2.114 | 2.100, 2.052, 2.052 | solve 300 steps lr 0.02 | 2.100 |
+| 1200 | 0.05 | 2.062 | 2.039, 2.217, 2.224 | solve 1200 steps lr 0.05 | 2.039 |
+
+*rows:*
+
+| radius_m | fill_target | mode | posts_per_period | half_angle_deg | n_posts | fill_realized | dropped | n_rings | max_posts_per_ring | realize_s | label |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0.02 | 0.004 | phase_locked | 1 | 10.00 | 635 | 0.00407 | 0 | 252 | 4 | 0.10 | a=2cm fill=0.4% phase_locked K=1 |
+| 0.02 | 0.004 | phase_locked | 2 | 10.00 | 635 | 0.00414 | 0 | 365 | 2 | 0.40 | a=2cm fill=0.4% phase_locked K=2 |
+| 0.02 | 0.004 | phase_locked_uniform | 4 | 10.00 | 635 | 0.00412 | 0 | 543 | 3 | 0.10 | a=2cm fill=0.4% phase_locked_uniform K=4 |
+| 0.02 | 0.004 | phase_locked_uniform | 6 | 10.00 | 635 | 0.00412 | 0 | 620 | 2 | 0.10 | a=2cm fill=0.4% phase_locked_uniform K=6 |
+| 0.02 | 0.004 | sampling | 1 | 10.00 | 635 | 0.00402 | 0 | — | — | 0.10 | a=2cm fill=0.4% sampling K=1 |
+| 0.02 | 0.008 | phase_locked | 1 | 10.00 | 1269 | 0.00819 | 0 | 259 | 9 | 0.20 | a=2cm fill=0.8% phase_locked K=1 |
+| 0.02 | 0.008 | phase_locked | 2 | 10.00 | 1269 | 0.0082 | 0 | 503 | 4 | 0.30 | a=2cm fill=0.8% phase_locked K=2 |
+| 0.02 | 0.008 | phase_locked_uniform | 4 | 10.00 | 1269 | 0.00818 | 0 | 718 | 5 | 0.20 | a=2cm fill=0.8% phase_locked_uniform K=4 |
+| 0.02 | 0.008 | phase_locked_uniform | 6 | 10.00 | 1269 | 0.00818 | 0 | 921 | 3 | 0.20 | a=2cm fill=0.8% phase_locked_uniform K=6 |
+| 0.02 | 0.008 | sampling | 1 | 10.00 | 1269 | 0.00806 | 0 | — | — | 0.30 | a=2cm fill=0.8% sampling K=1 |
+| 0.02 | 0.016 | phase_locked | 1 | 10.00 | 2538 | 0.0163 | 0 | 263 | 19 | 0.60 | a=2cm fill=1.6% phase_locked K=1 |
+| 0.02 | 0.016 | phase_locked | 2 | 10.00 | 2538 | 0.0164 | 0 | 518 | 9 | 0.80 | a=2cm fill=1.6% phase_locked K=2 |
+
+*(18 more rows and more columns in `runs/s2_motif/20261125-145628-s2v2/metrics.json` key `design_study.design_study_tier0.rows`.)*
+
+*half_angle_rows:*
+
+| half_angle_deg | n_posts | fill_realized | dropped | loss_tier0_full_band | loss_tier0_capped_band | echo_level_db_2d | echo_level_db_3d | harmonic_to_fundamental_db | info_only_note_judge_full_band.notes_in_order | info_only_note_judge_full_band.note_cents_max | info_only_note_judge_full_band.n_notes_detected |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 8.000 | 1015 | 0.00821 | 0 | 6.922 | 4.614 | -31.67 | -46.50 | 4.35, -5.25, -22.78, -35.46 | 0.000 | 1200.00 | 4, 5, 4, 4, 3 |
+| 10.00 | 1269 | 0.00818 | 0 | 6.844 | 4.603 | -34.90 | -49.81 | 7.16, -7.25, -18.98, -47.59 | 0.000 | 1200.00 | 2, 5, 4, 5, 5 |
+| 12.00 | 1523 | 0.00819 | 0 | 6.742 | 4.530 | -31.33 | -46.19 | 9.25, -14.51, -27.72, -50.26 | 0.000 | 1200.00 | 3, 4, 4, 3, 3 |
+
+*(more columns in `runs/s2_motif/20261125-145628-s2v2/metrics.json` key `design_study.design_study_tier0.half_angle_rows`.)*
+
+**Design study — `design_study_v2_tier0`**: Tier 0 design study v2 (1 cm posts, 20 deg): optical-depth budget, K, levels
+
+- selection: lowest mean Tier 0 loss under 2/5 mm radial jitter (full band 898-4000 Hz) among fills whose predicted two-way extinction at C7 at the far end is <= 6 dB; judges information only
+- profile_solve_loss: 2.246
+- wall_s: 658.56
+
+*sigma:*
+
+| f_hz | sigma_mm | ka |
+|---|---|---|
+| 1047.00 | 0.513 | 0.192 |
+| 1319.00 | 1.010 | 0.242 |
+| 1568.00 | 1.663 | 0.287 |
+| 2093.00 | 3.704 | 0.383 |
+| 2500.00 | 5.856 | 0.458 |
+
+*rows:*
+
+| fill_target | posts_per_period | n_posts | fill_realized | dropped | loss_tier0_full_band | loss_tier0_capped_band | jitter_loss_mean | echo_level_db_3d | note_level_db_3d | note_spl_db | harmonic_to_fundamental_db |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0.001 | 1 | 1269 | 0.00102 | 0 | 6.174 | 3.643 | 6.709 | -50.15 | -50.15, -57.75, -62.02, -73.75 | 60.31, 52.71, 48.44, 36.71 | 20.96, 15.95, 4.79, -26.05 |
+| 0.001 | 2 | 1269 | 0.00103 | 0 | 5.845 | 3.163 | 6.899 | -51.43 | -51.43, -68.23, -72.06, -76.81 | 59.03, 42.23, 38.40, 33.65 | -0.21, -3.25, -12.99, -50.70 |
+| 0.001 | 3 | 1269 | 0.00103 | 0 | 6.275 | 4.032 | 7.396 | -54.57 | -54.57, -68.79, -72.90, -76.44 | 55.89, 41.67, 37.56, 34.02 | 20.95, 2.20, -13.68, -25.41 |
+| 0.002 | 1 | 2538 | 0.00205 | 0 | 6.027 | 3.557 | 6.474 | -44.68 | -44.94, -49.75, -54.86, -67.35 | 65.52, 60.71, 55.60, 43.11 | 24.28, 17.22, 5.38, -24.95 |
+| 0.002 | 2 | 2538 | 0.00204 | 0 | 5.798 | 3.068 | 6.696 | -49.87 | -49.87, -61.57, -66.99, -72.06 | 60.59, 48.89, 43.47, 38.40 | 4.23, -1.19, -12.42, -43.24 |
+| 0.002 | 3 | 2538 | 0.00203 | 0 | 5.815 | 3.281 | 6.798 | -53.24 | -53.24, -63.46, -67.24, -73.79 | 57.22, 47.00, 43.22, 36.67 | 4.06, 1.85, -10.84, -38.65 |
+| 0.004 | 1 | 5077 | 0.00407 | 0 | 5.925 | 3.557 | 6.317 | -37.78 | -37.99, -42.86, -48.52, -61.41 | 72.47, 67.60, 61.94, 49.05 | 24.88, 17.42, 5.79, -23.49 |
+| 0.004 | 2 | 5077 | 0.00407 | 0 | 5.612 | 2.862 | 6.377 | -45.67 | -45.67, -54.19, -61.03, -65.27 | 64.79, 56.27, 49.43, 45.19 | 7.10, -0.05, -11.88, -42.25 |
+| 0.004 | 3 | 5077 | 0.00409 | 0 | 5.596 | 3.050 | 6.496 | -51.23 | -51.23, -57.40, -61.09, -66.61 | 59.23, 53.06, 49.37, 43.85 | 10.87, 3.85, -8.15, -38.83 |
+
+*(more columns in `runs/s2_motif/20261125-145628-s2v2/metrics.json` key `design_study.design_study_v2_tier0.rows`.)*
+
+*pick:*
+
+- fill: 0.001
+- posts_per_period: 1
 
 **Caveats recorded in this run:**
 
@@ -395,7 +475,7 @@ Run `runs/s2_motif/20261125-122003-s2` (Motif C6 E6 G6 C7, 45 ms each), created 
 | tier | metric | value | threshold | result | judge floor (perfect echo) | gating |
 |---|---|---|---|---|---|---|
 | tier1 | Notes detected in order (fraction of claps) (`notes_in_order`) | 0.000 | >= 1.000 | FAIL | 1.000 | yes |
-| tier1 | Worst note pitch error (`note_cents_max`) | 1200.00 cents | <= 30.00 | FAIL | 8.990 | yes |
+| tier1 | Worst note pitch error (`note_cents_max`) | 1200 (sentinel: notes not matched) cents | <= 30.00 | FAIL | 8.990 | yes |
 | tier1 | Notes detected (`n_notes_detected`) | 1.000 | — | — | 4.000 | no |
 | tier1 | Spectrogram correlation, log-mel (`spec_corr`) | 0.103 | — | — | 0.956 | no |
 | tier0 | Notes detected in order (fraction of claps) (`notes_in_order`) | 1.000 | >= 1.000 | PASS | 1.000 | no |
@@ -407,11 +487,11 @@ Run `runs/s2_motif/20261125-122003-s2` (Motif C6 E6 G6 C7, 45 ms each), created 
 
 | clap | tier | notes_in_order | note_cents_max | notes_in_order floor | note_cents_max floor |
 |---|---|---|---|---|---|
-| 0 | tier1 | 0.000 | 1200.00 | 1.000 | 14.98 |
-| 1 | tier1 | 0.000 | 1200.00 | 1.000 | 5.000 |
-| 2 | tier1 | 0.000 | 1200.00 | 1.000 | 5.000 |
-| 3 | tier1 | 0.000 | 1200.00 | 1.000 | 5.000 |
-| 4 | tier1 | 0.000 | 1200.00 | 1.000 | 14.98 |
+| 0 | tier1 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 14.98 |
+| 1 | tier1 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 5.000 |
+| 2 | tier1 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 5.000 |
+| 3 | tier1 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 5.000 |
+| 4 | tier1 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 14.98 |
 | 0 | tier0 | 1.000 | 25.00 | 1.000 | 14.98 |
 | 1 | tier0 | 1.000 | 25.00 | 1.000 | 5.000 |
 | 2 | tier0 | 1.000 | 25.00 | 1.000 | 5.000 |
@@ -422,17 +502,17 @@ Run `runs/s2_motif/20261125-122003-s2` (Motif C6 E6 G6 C7, 45 ms each), created 
 
 | case | notes_in_order (delta) | note_cents_max (delta) | passes |
 |---|---|---|---|
-| Nominal design (`nominal`) | 0.000 (+0.000) | 1200.00 (+0.000) | FAIL |
-| Listener moved 1 m sideways (`listener_side_1m`) | 0.000 (+0.000) | 1200.00 (+0.000) | FAIL |
-| Listener moved 1 m back (`listener_back_1m`) | 0.000 (+0.000) | 1200.00 (+0.000) | FAIL |
-| Speed of sound 331 m/s (`c_331`) | 0.000 (+0.000) | 1200.00 (+0.000) | FAIL |
-| Speed of sound 349 m/s (`c_349`) | 0.000 (+0.000) | 1200.00 (+0.000) | FAIL |
-| Posts jittered 5 mm, radii 1 mm (uniform) (`jitter`) | 0.000 (+0.000) | 1200.00 (+0.000) | FAIL |
-| Clap variant 0 alone (`clap_0`) | 0.000 (+0.000) | 1200.00 (+0.000) | FAIL |
-| Clap variant 1 alone (`clap_1`) | 0.000 (+0.000) | 1200.00 (+0.000) | FAIL |
-| Clap variant 2 alone (`clap_2`) | 0.000 (+0.000) | 1200.00 (+0.000) | FAIL |
-| Clap variant 3 alone (`clap_3`) | 0.000 (+0.000) | 1200.00 (+0.000) | FAIL |
-| Clap variant 4 alone (`clap_4`) | 0.000 (+0.000) | 1200.00 (+0.000) | FAIL |
+| Nominal design (`nominal`) | 0.000 (+0.000) | 1200 (sentinel: notes not matched) (+0.000) | FAIL |
+| Listener moved 1 m sideways (`listener_side_1m`) | 0.000 (+0.000) | 1200 (sentinel: notes not matched) (+0.000) | FAIL |
+| Listener moved 1 m back (`listener_back_1m`) | 0.000 (+0.000) | 1200 (sentinel: notes not matched) (+0.000) | FAIL |
+| Speed of sound 331 m/s (`c_331`) | 0.000 (+0.000) | 1200 (sentinel: notes not matched) (+0.000) | FAIL |
+| Speed of sound 349 m/s (`c_349`) | 0.000 (+0.000) | 1200 (sentinel: notes not matched) (+0.000) | FAIL |
+| Posts jittered 5 mm, radii 1 mm (uniform) (`jitter`) | 0.000 (+0.000) | 1200 (sentinel: notes not matched) (+0.000) | FAIL |
+| Clap variant 0 alone (`clap_0`) | 0.000 (+0.000) | 1200 (sentinel: notes not matched) (+0.000) | FAIL |
+| Clap variant 1 alone (`clap_1`) | 0.000 (+0.000) | 1200 (sentinel: notes not matched) (+0.000) | FAIL |
+| Clap variant 2 alone (`clap_2`) | 0.000 (+0.000) | 1200 (sentinel: notes not matched) (+0.000) | FAIL |
+| Clap variant 3 alone (`clap_3`) | 0.000 (+0.000) | 1200 (sentinel: notes not matched) (+0.000) | FAIL |
+| Clap variant 4 alone (`clap_4`) | 0.000 (+0.000) | 1200 (sentinel: notes not matched) (+0.000) | FAIL |
 
 **Stretch compensation** (`tier1_correction.stretch`: the post field slows sound; ε is the echo's time-axis stretch, the prior is ε per unit fill):
 
@@ -447,10 +527,10 @@ Run `runs/s2_motif/20261125-122003-s2` (Motif C6 E6 G6 C7, 45 ms each), created 
 
 | round | posts | loss | score | tier_gap_db | stretch_eps_applied | notes_in_order | note_cents_max |
 |---|---|---|---|---|---|---|---|
-| 0 | 2538 | 5.568 | -39.00 | -2.84 | -0.0109 | 0.000 | 1200.00 |
-| 1 | 2538 | 5.775 | -39.00 | -7.78 | -0.00732 | 0.000 | 1200.00 |
+| 0 | 2538 | 5.568 | -39.00 | -2.84 | -0.0109 | 0.000 | 1200 (sentinel: notes not matched) |
+| 1 | 2538 | 5.775 | -39.00 | -7.78 | -0.00732 | 0.000 | 1200 (sentinel: notes not matched) |
 
-**Design study — `design_study_tier0`**
+**Design study — `design_study_tier0`**: Tier 0 design study, stage 2 (2D for losses/judges, 3D for level); phase-locked realization
 
 *Same content as `runs/s2_motif/20261125-145628-s2v2/metrics.json` key `design_study.design_study_tier0`.*
 
@@ -504,7 +584,7 @@ The spec's pass condition is the 100 ms melody; the 60 ms run answers an open qu
 
 | run | role | original spec thresholds | revised thresholds (owner_v2) | owner's ear |
 |---|---|---|---|---|
-| `20261125-131152-s3` | newest, heard by the owner | missed: notes_in_order 0.000 (needs >= 1.000); note_cents_max 1200.00 (needs <= 50.00) | not established | accepted by ear (owner, 2026-11-25, not blind) |
+| `20261125-131152-s3` | newest, heard by the owner | missed: notes_in_order 0.000 (needs >= 1.000); note_cents_max 1200 (sentinel: notes not matched) (needs <= 50.00) | not established | accepted by ear (owner, 2026-11-25, not blind) |
 
 #### Stage 3 — 100 ms — newest run, original thresholds: missed
 
@@ -531,11 +611,11 @@ Run `runs/s3_melody/20261125-131152-s3` (Melody, Ode to Joy opening (E6 E6 F6 G6
 | tier | metric | value | threshold | result | judge floor (perfect echo) | gating |
 |---|---|---|---|---|---|---|
 | tier1 | Notes detected in order (fraction of claps) (`notes_in_order`) | 0.000 | >= 1.000 | FAIL | 1.000 | yes |
-| tier1 | Worst note pitch error (`note_cents_max`) | 1200.00 cents | <= 50.00 | FAIL | 4.996 | yes |
+| tier1 | Worst note pitch error (`note_cents_max`) | 1200 (sentinel: notes not matched) cents | <= 50.00 | FAIL | 4.996 | yes |
 | tier1 | Notes detected (`n_notes_detected`) | 5.800 | — | — | 8.000 | no |
 | tier1 | Spectrogram correlation, log-mel (`spec_corr`) | 0.275 | — | — | 0.979 | no |
 | tier0 | Notes detected in order (fraction of claps) (`notes_in_order`) | 0.000 | >= 1.000 | FAIL | 1.000 | no |
-| tier0 | Worst note pitch error (`note_cents_max`) | 1200.00 cents | <= 50.00 | FAIL | 4.996 | no |
+| tier0 | Worst note pitch error (`note_cents_max`) | 1200 (sentinel: notes not matched) cents | <= 50.00 | FAIL | 4.996 | no |
 | tier0 | Notes detected (`n_notes_detected`) | 7.200 | — | — | 8.000 | no |
 | tier0 | Spectrogram correlation, log-mel (`spec_corr`) | 0.585 | — | — | 0.979 | no |
 
@@ -543,29 +623,29 @@ Run `runs/s3_melody/20261125-131152-s3` (Melody, Ode to Joy opening (E6 E6 F6 G6
 
 | clap | tier | notes_in_order | note_cents_max | notes_in_order floor | note_cents_max floor |
 |---|---|---|---|---|---|
-| 0 | tier1 | 0.000 | 1200.00 | 1.000 | 4.996 |
-| 1 | tier1 | 0.000 | 1200.00 | 1.000 | 4.996 |
-| 2 | tier1 | 0.000 | 1200.00 | 1.000 | 4.996 |
-| 3 | tier1 | 0.000 | 1200.00 | 1.000 | 4.996 |
-| 4 | tier1 | 0.000 | 1200.00 | 1.000 | 4.996 |
-| 0 | tier0 | 0.000 | 1200.00 | 1.000 | 4.996 |
-| 1 | tier0 | 0.000 | 1200.00 | 1.000 | 4.996 |
-| 2 | tier0 | 0.000 | 1200.00 | 1.000 | 4.996 |
-| 3 | tier0 | 0.000 | 1200.00 | 1.000 | 4.996 |
-| 4 | tier0 | 0.000 | 1200.00 | 1.000 | 4.996 |
+| 0 | tier1 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 4.996 |
+| 1 | tier1 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 4.996 |
+| 2 | tier1 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 4.996 |
+| 3 | tier1 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 4.996 |
+| 4 | tier1 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 4.996 |
+| 0 | tier0 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 4.996 |
+| 1 | tier0 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 4.996 |
+| 2 | tier0 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 4.996 |
+| 3 | tier0 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 4.996 |
+| 4 | tier0 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 4.996 |
 
 **Robustness** (Tier 1 value, change from nominal in brackets; cases not run are marked so):
 
 | case | notes_in_order (delta) | note_cents_max (delta) | passes |
 |---|---|---|---|
-| Nominal design (`nominal`) | 0.000 (+0.000) | 1200.00 (+0.000) | FAIL |
-| Listener moved 1 m sideways (`listener_side_1m`) | 0.000 (+0.000) | 1200.00 (+0.000) | FAIL |
-| Listener moved 1 m back (`listener_back_1m`) | 0.000 (+0.000) | 1200.00 (+0.000) | FAIL |
-| Clap variant 0 alone (`clap_0`) | 0.000 (+0.000) | 1200.00 (+0.000) | FAIL |
-| Clap variant 1 alone (`clap_1`) | 0.000 (+0.000) | 1200.00 (+0.000) | FAIL |
-| Clap variant 2 alone (`clap_2`) | 0.000 (+0.000) | 1200.00 (+0.000) | FAIL |
-| Clap variant 3 alone (`clap_3`) | 0.000 (+0.000) | 1200.00 (+0.000) | FAIL |
-| Clap variant 4 alone (`clap_4`) | 0.000 (+0.000) | 1200.00 (+0.000) | FAIL |
+| Nominal design (`nominal`) | 0.000 (+0.000) | 1200 (sentinel: notes not matched) (+0.000) | FAIL |
+| Listener moved 1 m sideways (`listener_side_1m`) | 0.000 (+0.000) | 1200 (sentinel: notes not matched) (+0.000) | FAIL |
+| Listener moved 1 m back (`listener_back_1m`) | 0.000 (+0.000) | 1200 (sentinel: notes not matched) (+0.000) | FAIL |
+| Clap variant 0 alone (`clap_0`) | 0.000 (+0.000) | 1200 (sentinel: notes not matched) (+0.000) | FAIL |
+| Clap variant 1 alone (`clap_1`) | 0.000 (+0.000) | 1200 (sentinel: notes not matched) (+0.000) | FAIL |
+| Clap variant 2 alone (`clap_2`) | 0.000 (+0.000) | 1200 (sentinel: notes not matched) (+0.000) | FAIL |
+| Clap variant 3 alone (`clap_3`) | 0.000 (+0.000) | 1200 (sentinel: notes not matched) (+0.000) | FAIL |
+| Clap variant 4 alone (`clap_4`) | 0.000 (+0.000) | 1200 (sentinel: notes not matched) (+0.000) | FAIL |
 | Speed of sound 331 m/s (`c_331`) | not run (cost) | not run (cost) | not run (cost) |
 | Speed of sound 349 m/s (`c_349`) | not run (cost) | not run (cost) | not run (cost) |
 | — (`jitter`) | not run (time/cost: the 100 ms run alone took ~30 min on the 2.5 kHz grid with the Tier 1 lock shared by three stages; free cases only) | not run (time/cost: the 100 ms run alone took ~30 min on the 2.5 kHz grid with the Tier 1 lock shared by three stages; free cases only) | not run (time/cost: the 100 ms run alone took ~30 min on the 2.5 kHz grid with the Tier 1 lock shared by three stages; free cases only) |
@@ -636,7 +716,7 @@ Grid and domain (`s3_extra.grid_and_domain`):
 
 | round | posts | loss | score | tier_gap_db | stretch_eps_applied | notes_in_order | note_cents_max |
 |---|---|---|---|---|---|---|---|
-| 0 | 2500 | 5.393 | -23.00 | -2.15 | -0.00195 | 0.000 | 1200.00 |
+| 0 | 2500 | 5.393 | -23.00 | -2.15 | -0.00195 | 0.000 | 1200 (sentinel: notes not matched) |
 
 **Design study — `design_study_tier0`**: Tier 0 design study, stage 3 (100 ms notes); 2D for losses/judges/levels, 3D for level
 
@@ -869,7 +949,7 @@ Reproduce: `uv run python -m stages.s3_melody` (seed 0, commit `891fd75`).
 
 | run | role | original spec thresholds | revised thresholds (owner_v2) | owner's ear |
 |---|---|---|---|---|
-| `20261125-133244-s3_60ms` | newest, heard by the owner | missed: notes_in_order 0.000 (needs >= 1.000); note_cents_max 1200.00 (needs <= 50.00) | not established | accepted by ear (owner, 2026-11-25, not blind) |
+| `20261125-133244-s3_60ms` | newest, heard by the owner | missed: notes_in_order 0.000 (needs >= 1.000); note_cents_max 1200 (sentinel: notes not matched) (needs <= 50.00) | not established | accepted by ear (owner, 2026-11-25, not blind) |
 
 #### Stage 3 — 60 ms — newest run, original thresholds: missed
 
@@ -896,11 +976,11 @@ Run `runs/s3_melody/20261125-133244-s3_60ms` (Melody, Ode to Joy opening (E6 E6 
 | tier | metric | value | threshold | result | judge floor (perfect echo) | gating |
 |---|---|---|---|---|---|---|
 | tier1 | Notes detected in order (fraction of claps) (`notes_in_order`) | 0.000 | >= 1.000 | FAIL | 1.000 | yes |
-| tier1 | Worst note pitch error (`note_cents_max`) | 1200.00 cents | <= 50.00 | FAIL | 5.996 | yes |
+| tier1 | Worst note pitch error (`note_cents_max`) | 1200 (sentinel: notes not matched) cents | <= 50.00 | FAIL | 5.996 | yes |
 | tier1 | Notes detected (`n_notes_detected`) | 8.400 | — | — | 8.000 | no |
 | tier1 | Spectrogram correlation, log-mel (`spec_corr`) | 0.302 | — | — | 0.976 | no |
 | tier0 | Notes detected in order (fraction of claps) (`notes_in_order`) | 0.000 | >= 1.000 | FAIL | 1.000 | no |
-| tier0 | Worst note pitch error (`note_cents_max`) | 1200.00 cents | <= 50.00 | FAIL | 5.996 | no |
+| tier0 | Worst note pitch error (`note_cents_max`) | 1200 (sentinel: notes not matched) cents | <= 50.00 | FAIL | 5.996 | no |
 | tier0 | Notes detected (`n_notes_detected`) | 8.600 | — | — | 8.000 | no |
 | tier0 | Spectrogram correlation, log-mel (`spec_corr`) | 0.550 | — | — | 0.976 | no |
 
@@ -908,29 +988,29 @@ Run `runs/s3_melody/20261125-133244-s3_60ms` (Melody, Ode to Joy opening (E6 E6 
 
 | clap | tier | notes_in_order | note_cents_max | notes_in_order floor | note_cents_max floor |
 |---|---|---|---|---|---|
-| 0 | tier1 | 0.000 | 1200.00 | 1.000 | 9.996 |
-| 1 | tier1 | 0.000 | 1200.00 | 1.000 | 4.996 |
-| 2 | tier1 | 0.000 | 1200.00 | 1.000 | 4.996 |
-| 3 | tier1 | 0.000 | 1200.00 | 1.000 | 4.996 |
-| 4 | tier1 | 0.000 | 1200.00 | 1.000 | 4.996 |
-| 0 | tier0 | 0.000 | 1200.00 | 1.000 | 9.996 |
-| 1 | tier0 | 0.000 | 1200.00 | 1.000 | 4.996 |
-| 2 | tier0 | 0.000 | 1200.00 | 1.000 | 4.996 |
-| 3 | tier0 | 0.000 | 1200.00 | 1.000 | 4.996 |
-| 4 | tier0 | 0.000 | 1200.00 | 1.000 | 4.996 |
+| 0 | tier1 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 9.996 |
+| 1 | tier1 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 4.996 |
+| 2 | tier1 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 4.996 |
+| 3 | tier1 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 4.996 |
+| 4 | tier1 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 4.996 |
+| 0 | tier0 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 9.996 |
+| 1 | tier0 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 4.996 |
+| 2 | tier0 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 4.996 |
+| 3 | tier0 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 4.996 |
+| 4 | tier0 | 0.000 | 1200 (sentinel: notes not matched) | 1.000 | 4.996 |
 
 **Robustness** (Tier 1 value, change from nominal in brackets; cases not run are marked so):
 
 | case | notes_in_order (delta) | note_cents_max (delta) | passes |
 |---|---|---|---|
-| Nominal design (`nominal`) | 0.000 (+0.000) | 1200.00 (+0.000) | FAIL |
-| Listener moved 1 m sideways (`listener_side_1m`) | 0.000 (+0.000) | 1200.00 (+0.000) | FAIL |
-| Listener moved 1 m back (`listener_back_1m`) | 0.000 (+0.000) | 1200.00 (+0.000) | FAIL |
-| Clap variant 0 alone (`clap_0`) | 0.000 (+0.000) | 1200.00 (+0.000) | FAIL |
-| Clap variant 1 alone (`clap_1`) | 0.000 (+0.000) | 1200.00 (+0.000) | FAIL |
-| Clap variant 2 alone (`clap_2`) | 0.000 (+0.000) | 1200.00 (+0.000) | FAIL |
-| Clap variant 3 alone (`clap_3`) | 0.000 (+0.000) | 1200.00 (+0.000) | FAIL |
-| Clap variant 4 alone (`clap_4`) | 0.000 (+0.000) | 1200.00 (+0.000) | FAIL |
+| Nominal design (`nominal`) | 0.000 (+0.000) | 1200 (sentinel: notes not matched) (+0.000) | FAIL |
+| Listener moved 1 m sideways (`listener_side_1m`) | 0.000 (+0.000) | 1200 (sentinel: notes not matched) (+0.000) | FAIL |
+| Listener moved 1 m back (`listener_back_1m`) | 0.000 (+0.000) | 1200 (sentinel: notes not matched) (+0.000) | FAIL |
+| Clap variant 0 alone (`clap_0`) | 0.000 (+0.000) | 1200 (sentinel: notes not matched) (+0.000) | FAIL |
+| Clap variant 1 alone (`clap_1`) | 0.000 (+0.000) | 1200 (sentinel: notes not matched) (+0.000) | FAIL |
+| Clap variant 2 alone (`clap_2`) | 0.000 (+0.000) | 1200 (sentinel: notes not matched) (+0.000) | FAIL |
+| Clap variant 3 alone (`clap_3`) | 0.000 (+0.000) | 1200 (sentinel: notes not matched) (+0.000) | FAIL |
+| Clap variant 4 alone (`clap_4`) | 0.000 (+0.000) | 1200 (sentinel: notes not matched) (+0.000) | FAIL |
 | Speed of sound 331 m/s (`c_331`) | not run (cost) | not run (cost) | not run (cost) |
 | Speed of sound 349 m/s (`c_349`) | not run (cost) | not run (cost) | not run (cost) |
 | — (`jitter`) | not run (time/cost: the 100 ms run alone took ~30 min on the 2.5 kHz grid with the Tier 1 lock shared by three stages; free cases only) | not run (time/cost: the 100 ms run alone took ~30 min on the 2.5 kHz grid with the Tier 1 lock shared by three stages; free cases only) | not run (time/cost: the 100 ms run alone took ~30 min on the 2.5 kHz grid with the Tier 1 lock shared by three stages; free cases only) |
@@ -1001,7 +1081,7 @@ Grid and domain (`s3_extra.grid_and_domain`):
 
 | round | posts | loss | score | tier_gap_db | stretch_eps_applied | notes_in_order | note_cents_max |
 |---|---|---|---|---|---|---|---|
-| 0 | 2500 | 5.158 | -23.00 | -1.74 | -0.00324 | 0.000 | 1200.00 |
+| 0 | 2500 | 5.158 | -23.00 | -1.74 | -0.00324 | 0.000 | 1200 (sentinel: notes not matched) |
 
 **Design study — `design_study_tier0`**: Tier 0 design study, stage 3 (100 ms notes); 2D for losses/judges/levels, 3D for level
 
@@ -1866,7 +1946,7 @@ Controls — the same recognizer on wrong echoes (`recognizer_controls.cases`):
 | Fill fraction of the wedge | 0.07 % | headline.fill_fraction |
 | Tier gap (Tier 1 − Tier 0 level, 2D) | -2.00 dB | headline.tier_gap_db |
 | Fragile (spec: works for only one clap or one listener) | no | fragile |
-| Robustness summary | 0/5 clap variants pass on their own; 2/3 listener positions pass (nominal, 1 m sideways, 1 m back) | fragile_reason |
+| Robustness summary | clap variants alone: not applicable (count rule); 2/3 listener positions pass (nominal, 1 m sideways, 1 m back) | fragile_reason |
 | Robustness verdict | partial | robust_summary |
 | Echo level with 2.0 m posts (info) | -65.34 dB re direct | headline.echo_level_db_re_direct_finite_height |
 
@@ -1903,11 +1983,11 @@ Controls — the same recognizer on wrong echoes (`recognizer_controls.cases`):
 | Nominal design (`nominal`) | — (—) | PASS |
 | Listener moved 1 m sideways (`listener_side_1m`) | — (—) | FAIL |
 | Listener moved 1 m back (`listener_back_1m`) | — (—) | PASS |
-| Clap variant 0 alone (`clap_0`) | — (—) | FAIL |
-| Clap variant 1 alone (`clap_1`) | — (—) | FAIL |
-| Clap variant 2 alone (`clap_2`) | — (—) | FAIL |
-| Clap variant 3 alone (`clap_3`) | — (—) | FAIL |
-| Clap variant 4 alone (`clap_4`) | — (—) | FAIL |
+| Clap variant 0 alone (`clap_0`) | — (—) | not applicable (the rule counts claps: at least 3 of 5; one clap alone cannot meet it) |
+| Clap variant 1 alone (`clap_1`) | — (—) | not applicable (the rule counts claps: at least 3 of 5; one clap alone cannot meet it) |
+| Clap variant 2 alone (`clap_2`) | — (—) | not applicable (the rule counts claps: at least 3 of 5; one clap alone cannot meet it) |
+| Clap variant 3 alone (`clap_3`) | — (—) | not applicable (the rule counts claps: at least 3 of 5; one clap alone cannot meet it) |
+| Clap variant 4 alone (`clap_4`) | — (—) | not applicable (the rule counts claps: at least 3 of 5; one clap alone cannot meet it) |
 | Speed of sound 331 m/s (`c_331`) | not run (cost) | not run (cost) |
 | Speed of sound 349 m/s (`c_349`) | not run (cost) | not run (cost) |
 | Posts jittered 5 mm, radii 1 mm (`jitter`) | not run (cost) | not run (cost) |

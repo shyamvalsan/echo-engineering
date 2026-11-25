@@ -109,7 +109,10 @@ def fmt(v, nd=2, signed=False):
 
 
 def num(v, mid=""):
-    """Value formatting by metric: percentages and dB with 2 decimals, correlations/fractions with 3."""
+    """Value formatting by metric: percentages and dB with 2 decimals, correlations/fractions with 3.
+    note_cents_max = 1200 is echo.metrics.note_sequence_score's sentinel for "notes not matched", not a measurement."""
+    if mid == "note_cents_max" and isinstance(v, (int, float)) and not isinstance(v, bool) and v >= 1200.0:
+        return "1200 (sentinel: notes not matched)"
     if isinstance(v, float) and not (math.isnan(v) or math.isinf(v)):
         if mid.endswith(("_pct", "_db", "_m", "_s", "_hz", "cents")) or abs(v) >= 10:
             return f"{v:.2f}"
@@ -621,6 +624,13 @@ def validation_section(data: Data):
                f"grid vs twice as fine, {fmt(dn.get('n_posts'))} posts), not against an exact solution. A bias shared "
                "by both grids would not show, so the effect of the angular errors above on dense-field echoes is "
                "not bounded.")
+    src = dn.get("source_scene")
+    if src:
+        gone = not (data.root / src).exists()
+        cav.append(f"- Reproducibility of the dense-patch check: `stages/validate.py` takes the latest stage-1 scene at "
+                   f"the time it runs; the scene it used is `{src}` (`checks.grid_convergence.dense.source_scene`)"
+                   + (", a run folder that was later deleted, so this check cannot be re-run exactly on the same posts "
+                      "(the solver and the validation file are frozen; the check was not re-run)." if gone else "."))
     cav += ["", "Caveats as recorded in the file (`caveats`):", ""]
     cav += [f"- {sanitize_caveat(fmt(x))}" for x in (v.get("caveats") or [])]
     return "\n".join(out + cav)
@@ -653,9 +663,28 @@ def _per_clap_table(run):
     return table(["clap", "tier"] + ids + [f"{i} floor" for i in ids], rows)
 
 
+# Gating metrics whose threshold counts claps across the family (hello_count >= 3 of 5). echo.robustness judges each
+# "clap variant alone" case against the same rule, which one clap can never meet: presented as "not applicable".
+COUNT_RULES = {"hello_count"}
+NA_CLAP = "not applicable (the rule counts claps: at least 3 of 5; one clap alone cannot meet it)"
+
+
+def count_rule(run):
+    return any(x.get("id") in COUNT_RULES for x in gating(run, "tier1") or gating(run))
+
+
+def fragile_text(run):
+    """metrics.fragile_reason, with the per-clap count replaced by "not applicable" for count rules."""
+    fr = (run.get("metrics") or {}).get("fragile_reason")
+    if fr and count_rule(run):
+        fr = re.sub(r"\d+/\d+ clap variants pass on their own", "clap variants alone: not applicable (count rule)", fr)
+    return fr
+
+
 def _robust_table(run):
     m = run["metrics"]
     ids = [x["id"] for x in gating(run, "tier1") or gating(run)]
+    cr = count_rule(run)
     if not ids:
         ids = sorted({k for r in m.get("robustness") or [] for k in (r.get("metrics") or {})})
     rows = []
@@ -663,7 +692,7 @@ def _robust_table(run):
         mm, dd = r.get("metrics") or {}, r.get("delta") or {}
         rows.append([fmt(r.get("label")) + f" (`{r.get('case')}`)"] +
                     [f"{num(mm.get(i), i)} ({fmt(dd.get(i), 2 if i.endswith('_pct') else 3, signed=True)})"
-                     for i in ids] + [pf(r.get("pass"))])
+                     for i in ids] + [NA_CLAP if cr and re.fullmatch(r"clap_\d+", str(r.get("case"))) else pf(r.get("pass"))])
     nr = list(m.get("robustness_not_run") or []) + list((m.get("s3_extra") or {}).get("robustness_not_run") or [])
     for r in nr:
         rows.append([fmt(r.get("label")) + f" (`{r.get('case')}`)"] + [fmt(r.get("status") or "not run")] * len(ids)
@@ -770,7 +799,7 @@ def run_card(data: Data, r, heading):
         ["Fragile (spec: works for only one clap or one listener)", fmt(m.get("fragile")), "fragile"],
     ]
     if m.get("fragile_reason"):
-        hrows.append(["Robustness summary", fmt(m["fragile_reason"]), "fragile_reason"])
+        hrows.append(["Robustness summary", fmt(fragile_text(r)), "fragile_reason"])
     if m.get("robust_summary"):
         hrows.append(["Robustness verdict", fmt(m["robust_summary"]), "robust_summary"])
     if h.get("echo_level_db_re_direct_finite_height") is not None:
@@ -1520,6 +1549,47 @@ def v1_values(run, with_floor=True):
     return "; ".join(out)
 
 
+def stored_other_words(metrics):
+    """The 4c run's stored other-word study (metrics.json controls.other_words): (heard as hello, total claps,
+    {word: hits}) over the control words (not "hello"), or None."""
+    rows = (((metrics or {}).get("controls") or {}).get("other_words") or {}).get("rows") or {}
+    words = {w: r for w, r in rows.items() if w != "hello" and r.get("tier0_hello_count") is not None}
+    if not words:
+        return None
+    hits = {w: int(r["tier0_hello_count"]) for w, r in words.items()}
+    total = sum(len(r.get("tier0_recognized_text") or []) or 5 for r in words.values())
+    return sum(hits.values()), total, hits
+
+
+def other_words_caveat(metrics, short=False):
+    """One sentence: the stored other-word study disagrees with the rescore's regenerated controls (I1)."""
+    ow = stored_other_words(metrics)
+    if not ow or not ow[0]:
+        return ""
+    n, tot, hits = ow
+    if short:
+        return (f" (the stored study from the same pipeline heard {n} of {tot} other-word control echoes as "
+                "\"hello\"; the regenerated controls disagree, cause unknown)")
+    return (f"The stored study from the same 4c pipeline (`metrics.json` `controls.other_words`) heard {n} of {tot} "
+            "other-word control echoes as \"hello\" (" + ", ".join(f"{w} {k}/5" for w, k in hits.items())
+            + "); the rescore regenerated these controls and heard \"hello\" in none of them, and why the two "
+            "disagree was not found (`runs/_criteria/summary.md`).")
+
+
+def residue_rows(data, td):
+    """((final stage-1 run id, its tier_diff row), (build pilot run id, its row)); a row is None when the study has
+    no row for that run. The final stage-1 run is the newest final stage-1 run in the index."""
+    rows = {str(r.get("run")): r for r in (td or {}).get("rows") or []}
+    s1 = next((r["run_id"] for r in data.unit_runs("1")), None)
+    pil = next((r["run_id"] for r in data.other if str(r.get("stage", "")).startswith("build")), None)
+    return (s1, rows.get(s1)), (pil, rows.get(pil))
+
+
+def _ow_metrics(data, t):
+    """metrics.json of a criteria test's accepted run (for the stored other-word study), or None."""
+    return (data.by_id.get(str((t or {}).get("accepted_run"))) or {}).get("metrics")
+
+
 def v2_values(row):
     """The numbers an owner_v2 verdict rests on, in a phrase."""
     t = row.get("test") or {}
@@ -1540,7 +1610,8 @@ def v2_values(row):
     if hc:
         bits.append(f"recognizer says \"hello\" on {fmt(int(hc['value']))} of 5 claps")
     if t.get("controls_total") is not None:
-        bits.append(f"controls rejected {fmt(t.get('controls_rejected'))}/{fmt(t.get('controls_total'))}")
+        bits.append(f"controls rejected {fmt(t.get('controls_rejected'))}/{fmt(t.get('controls_total'))}"
+                    + (other_words_caveat(run.get("metrics"), short=True) if hc else ""))
     elif ov.get("controls"):
         bits.append(f"controls rejected {sum(1 for c in ov['controls'] if c.get('pass') is False)}/{len(ov['controls'])}")
     return "; ".join(bits)
@@ -1555,8 +1626,11 @@ def came_back(row):
         return f"a falling whistle; worst-frame pitch error {num(g['pitch_err_pct'], '_pct')} %"
     if "notes_in_order" in g:
         k = g["notes_in_order"]
-        return (f"notes in the right order on {fmt(round(5 * k)) if k is not None else '—'} of 5 claps; "
-                f"worst note {n0(g.get('note_cents_max'))} cents off")
+        cm = g.get("note_cents_max")
+        tail = ("notes not matched on any clap (the judge's 1200-cent sentinel)" if isinstance(cm, (int, float))
+                and cm >= 1200 else f"worst note {n0(cm)} cents off (mean over claps; a clap whose notes are not "
+                "matched counts as 1200)")
+        return f"notes in the right order on {fmt(round(5 * k)) if k is not None else '—'} of 5 claps; {tail}"
     if "hello_count" in g:
         rt = m.get("recognized_text") or []
         tr = sorted({fmt(x.get("transcript")) for x in rt})
@@ -1610,8 +1684,10 @@ def what_works(data: Data, rows):
             f"±{fmt(cfg.get('half_angle_deg'), 0)}°, covering "
             f"{num(100 * h['fill_fraction'] if h.get('fill_fraction') is not None else None, '_pct')} % of the ground "
             f"(`metrics.json` `headline`, `manifest.json` `design`).",
-            f"- **How loud** (simulated): the echo is {n1(lvl)} dB re the clap at the ear "
-            f"(`manifest.audio.as_heard_echo_level_db`); for a 100 dB clap about {n1(h.get('echo_spl_db'))} dB "
+            f"- **How loud** (simulated): the echo is {n1(lvl)} dB re the clap at the ear for clap variant 0 "
+            f"(`manifest.audio.as_heard_echo_level_db`; mean over the clap variants "
+            f"{n1(h.get('echo_level_db_re_direct'))} dB, `headline.echo_level_db_re_direct`, the value BUILD.md "
+            f"quotes); for a 100 dB clap about {n1(h.get('echo_spl_db'))} dB "
             "SPL (`headline.echo_spl_db`), roughly quiet conversation.", "",
             "**Three verdicts, kept apart:**", ""]
     v1 = v1_word(w["v1"])
@@ -1661,7 +1737,7 @@ def what_works(data: Data, rows):
                 f"but that pass rests on the same recognizer and 3-of-5 rule as the original test plus "
                 f"{fmt((hrow['test'] or {}).get('controls_rejected'))}/{fmt((hrow['test'] or {}).get('controls_total'))}"
                 " rejected controls, so it is not an independent confirmation; owner's ear "
-                f"{ear_word(hrow['ear'])}.",
+                f"{ear_word(hrow['ear'])}. " + other_words_caveat(((hrow.get('run') or {}).get('metrics'))),
                 f"- Play: `listen/{run_tag(hrow['run_id'])}_echo_only.wav`. Details: "
                 f"[scorecard]({app('scorecards.md', '### Stage 4c — Word')}).", ""]
     return "\n".join(out)
@@ -1691,7 +1767,8 @@ def hear_and_try(data: Data):
            "([`viewer/README.md`](viewer/README.md#live-mode)).", "",
            "**Design from your own sound:** upload a file on the Live page (lab server), or run "
            "`uv run python -m stages.custom --target inputs/targets/<file>.wav --name \"my sound\"` (add `--tier1` "
-           "for one full-wave check of short targets). These are fast-model designs, marked unverified, with no "
+           "for one full-wave check of short targets). These are fast-model designs, marked unverified unless the "
+           "`--tier1` full-wave run completes (then `verified: true`, as for the example in `runs/custom/`), with no "
            "pass or fail ([`inputs/README.md`](inputs/README.md)).", "",
            "**Look:** the [viewer](viewer/) (review mode: scene, wave video, echo, spectrograms and the three "
            "verdicts per run), the lay [explainer](explainer/index.html), and the [build path](BUILD.md).", "",
@@ -1723,7 +1800,9 @@ def glance(data: Data, rows):
                   f"[card]({app('scorecards.md', hd)})" if hd else "—"])
     out = ["One row per test; the run is the one the owner listened to (`runs/_criteria/summary.json` "
            "`accepted_runs`). \"Not established\" means no automated criterion separates the echo from the negative "
-           "controls: it is neither a pass nor a fail. Level: true echo level re the clap / estimated level for a "
+           "controls: it is neither a pass nor a fail. Level: true echo level re the clap at the ear for clap variant 0 "
+           "(`manifest.audio.as_heard_echo_level_db`; BUILD.md quotes the mean over the clap variants, "
+           "`headline.echo_level_db_re_direct`, which differs by up to about a dB) / estimated level for a "
            "100 dB clap (simulated).", "",
            table(["test", "what came back", "original spec thresholds", "revised thresholds", "owner's ear",
                   "level", "depth / posts", "details"], t)]
@@ -1808,15 +1887,19 @@ def learned(data: Data, rows, commentary):
                     "   The first design (2 cm posts, narrow fan) lost its upper notes; the second (1 cm, wide fan) "
                     "kept them. Sources: `runs/s2_motif/_studies/v*_extinction.json`."]
     td = _load(data.runs_dir / "s1_bird" / "_studies" / "tier_diff.json") or {}
-    trs = [x for x in td.get("rows") or [] if str(x.get("run", "")).startswith("20")]
     thick = [x for x in td.get("rows") or [] if x.get("radius")]
-    if trs:
-        x = trs[-1]
-        item(f"**A broadband residue sits under the whistle.** The full-wave echo of the "
-             f"{fmt(x.get('n_posts'))}-post design differs from the fast model of the same posts by an incoherent "
-             f"residue {n1((x.get('tier1_vs_tier0') or {}).get('residue_db_stretched_fir33'))} dB below it, "
-             f"the size of {n1(1000 * x['equivalent_radial_jitter_m'] if x.get('equivalent_radial_jitter_m') else None)}"
-             " mm of random placement error"
+    (s1_id, x), (pil_id, xp) = residue_rows(data, td)
+    if x:
+        def mm(r):
+            return n1(1000 * r['equivalent_radial_jitter_m'] if r.get('equivalent_radial_jitter_m') else None)
+
+        item(f"**A broadband residue sits under the whistle.** The full-wave echo of the final stage-1 design "
+             f"(run `{s1_id}`, {fmt(x.get('n_posts'))} posts) differs from the fast model of the same posts by an "
+             f"incoherent residue {n1((x.get('tier1_vs_tier0') or {}).get('residue_db_stretched_fir33'))} dB below "
+             f"it, the size of {mm(x)} mm of random placement error"
+             + (f"; for the {fmt(xp.get('n_posts'))}-post build pilot (run `{pil_id}`) it is "
+                f"{n1((xp.get('tier1_vs_tier0') or {}).get('residue_db_stretched_fir33'))} dB ({mm(xp)} mm)"
+                if xp else "")
              + (f"; with {fmt(thick[0].get('n_posts'))} posts of {fmt(100 * thick[0]['radius'], 0)} cm it is "
                 f"{n1((thick[0].get('tier1_vs_tier0') or {}).get('residue_db_stretched_fir33'))} dB"
                 if thick else "")
@@ -1912,8 +1995,15 @@ def build_brief(data: Data):
         if mm:
             cost[ph] = re.sub(r"\s*\(est[^)]*\)?\)?", "", mm.group(1)).strip().lstrip("+~").strip()
     listeners = re.search(r"at least (\d+ of \d+) listeners", b)
-    res1 = re.search(r"residue of (-?[\d.]+) dB at 1 mm", b)
-    res0 = re.search(r"incoherent full-wave residue of (-?[\d.]+) dB", b)
+    td = _load(data.runs_dir / "s1_bird" / "_studies" / "tier_diff.json") or {}
+
+    def res(rid, r):
+        if not r:
+            return None
+        j = {round(1000 * y["sigma_m"], 1): y["residue_db_stretched_fir33"] for y in r.get("tier0_jitter_residue") or []}
+        return (f"`{rid}`: fast model {n1(j.get(1.0))} dB at 1 mm, full wave "
+                f"{n1((r.get('tier1_vs_tier0') or {}).get('residue_db_stretched_fir33'))} dB")
+    rr = [y for y in (res(*q) for q in residue_rows(data, td)[::-1]) if y]
     out.append(
         "From [`BUILD.md`](BUILD.md): **first**, an outdoor hearing test on a quiet site — one 20 mm bar, then a small "
         f"grating of posts — listened to by several people (estimated {cost.get('3a', 'a few hundred euros')}), because the "
@@ -1921,9 +2011,10 @@ def build_brief(data: Data):
         "ultrasonic tabletop model (estimated " + ", then ".join(cost[p] for p in ("2a", "2b", "2c") if p in cost)
         + " more), which answers fidelity and whether the residue is physics or solver, but not audibility. **Full scale** "
         f"(estimated {cost.get('3b', '—')}) only if at least {listeners.group(1) if listeners else '8 of 10'} listeners hear the "
-        "grating's tone after the clap and the scale model's residue lands near the fast model's "
-        f"{res1.group(1) if res1 else '—'} dB at 1 mm placement rather than the full-wave "
-        f"{res0.group(1) if res0 else '—'} dB.")
+        "grating's tone after the clap and the 1:10 model's residue, measured on the design drilled into the board, "
+        "lands near the fast model's residue at the board's placement accuracy rather than near that design's "
+        "full-wave residue (BUILD.md phase 2c; the numbers are per design"
+        + (": pilot " + "; stage-1 design ".join(rr) if rr else "") + ", `runs/s1_bird/_studies/tier_diff.json`).")
     pil = [r for r in data.other if r.get("stage", "").startswith("build")]
     w = next((r for r in data.unit_runs("1")), None)
     if pil:
@@ -1975,10 +2066,16 @@ def trust(data: Data, tests_line):
                 if x.get("pass_all_angles") is False:
                     e = (ext.get(gname) or {}).get("per_radius", {}).get(r) or {}
                     bad.append(f"{float(r) * 100:.0f} cm at {fmt(g.get('f_max'), 0)} Hz (forward "
-                               f"{num(e.get('forward'), '_db')} dB)")
+                               f"{num(e.get('forward'), '_db')} dB, 90° {num(e.get('bistatic_90'), '_db')} dB)")
+        back = [f"{float(r) * 100:.0f} cm at {fmt(g.get('f_max'), 0)} Hz ({num(x.get('max_abs_err_db'), '_db')} dB)"
+                for gname, g in _grids(v).items() for r, x in (g.get("per_radius") or {}).items()
+                if x.get("pass") is False]
         out += ["In plain words:", "",
                 "- The solver is checked against exact theory only for one post scattering straight back.",
-                "- Thin posts are off at other angles: " + ("; ".join(bad) if bad else "none recorded") + ".",
+                "- Thin posts are off at other angles (error against exact theory; threshold 1 dB): "
+                + ("; ".join(bad) if bad else "none recorded") + ".",
+                "- Backscatter itself fails for: " + ("; ".join(back) if back else "none recorded")
+                + " (threshold 1 dB; the overall pass is judged on the 4 kHz stage-1 grid only).",
                 "- Dense fields are checked only by comparing the solver with itself on a finer grid; a bias both "
                 "grids share would not show.",
                 "- Live mode's structure responses for full-wave runs are reconstructed from one echo and are "
@@ -1987,10 +2084,13 @@ def trust(data: Data, tests_line):
     out += ["**Automated versus human.** The original and revised thresholds are automated judges on simulated audio. "
             "The owner's verdict is a human judgment by ear, not blind; the blind kit has not been run.", "",
             "**What was reviewed independently.** The solver, the fast model, the design pipeline, the speech judges, "
-            "the build path and the revised criteria each had an independent review recorded in the ledger (the "
-            "revised-criteria review withdrew the motif's revised pass; see the "
-            f"[criteria appendix]({app('criteria.md')})). Stages 2–4 themselves, the explainer, the viewer and the "
-            "lab server were not separately reviewed.", "",
+            "the first build-path plan and the first version of the revised criteria each had an independent review "
+            "recorded in the ledger (the revised-criteria review withdrew the motif's revised pass; see the "
+            f"[criteria appendix]({app('criteria.md')})). **Not separately reviewed:** the criteria fix round that "
+            "produced every current revised-threshold number (no re-review), the BUILD.md rewrite and the build "
+            "pilot, the custom designer, this report generator, the third round of stage-1 work, the stage scripts "
+            "for stages 2–4, the viewer, the explainer and the lab server. The final review of the whole repository "
+            "was read-only spot-checking (about 40 numbers checked against the files), not a re-derivation.", "",
             "**Tests.**", "", TESTS_BEGIN, tests_line, TESTS_END]
     return "\n".join(out)
 
@@ -2117,7 +2217,8 @@ def criteria_appendix(data: Data, rows):
                 f"- Accepted echo: {fmt(json.dumps((t.get('accepted') or {}).get('values')))}; perfect echo: "
                 f"{fmt(json.dumps((t.get('perfect_echo') or {}).get('values')))}.",
                 f"- Controls rejected {fmt(t.get('controls_rejected'))}/{fmt(t.get('controls_total'))}: "
-                + "; ".join(f"{kk} {a}/{b}" for kk, (a, b) in kinds.items()) + "."]
+                + "; ".join(f"{kk} {a}/{b}" for kk, (a, b) in kinds.items()) + "."
+                + ((" " + other_words_caveat(_ow_metrics(data, t))) if any("other word" in str(k) for k in kinds) else "")]
         mp = (t.get("margin") or {}).get("pitch") or {}
         if mp:
             out.append(f"- Pitch threshold derivation: worst positive {n0(mp.get('worst_positive'))} cents, best "

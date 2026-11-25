@@ -1,6 +1,7 @@
 """Run-folder writer: contract fields (as the viewer reads them), no NaN/Infinity, index rebuild."""
 
 import json
+from pathlib import Path
 
 import numpy as np
 import soundfile as sf
@@ -145,3 +146,22 @@ def test_final_tier1_run_through_contract_checker(tmp_path):
     assert sp["panels"]["tier1"] is not None
     for k in (0, 1):
         assert (out / "iters" / f"r{k}" / "echo.wav").exists()
+
+
+def test_rel_path_strips_repo_root(tmp_path):
+    from echo.export import ROOT, rel_path
+
+    assert rel_path(ROOT / "runs" / "validation" / "metrics.json") == "runs/validation/metrics.json"
+    assert rel_path(tmp_path / "x") == str(tmp_path / "x")  # outside the repo: unchanged
+
+
+def test_build_pack_summary_run_path_relative():
+    import inspect
+
+    from echo import buildkit
+
+    src = inspect.getsource(buildkit)
+    assert '"run_path": rel_path(run_dir)' in src
+    pack = json.loads((Path(__file__).resolve().parents[1] / "build" / "s1_bird-20261125-104529-s1" / "pack.json")
+                      .read_text())
+    assert not Path(pack["run_path"]).is_absolute()

@@ -826,7 +826,7 @@
       text(g, 'decibels at the listener', w - 10, h - 4, palette.muted, 'right');
     }
     $('[data-out="caption"]', fig).textContent = res.length
-      ? 'Marked in colour: how loud each final design\'s echo is expected to be at the listener, from the simulation, for a 100 dB clap (green: the ones the automated tests confirm; every echo here was accepted by ear). These are three-dimensional estimates and could easily be off by several decibels. Remember that the clap itself is far louder still.'
+      ? 'Marked in colour: how loud each final design\'s echo is expected to be at the listener, from the simulation, for a 100 dB clap (green: the ones the automated tests confirm; every echo here was accepted by ear, by the owner, not in a blind test). These are three-dimensional estimates and could easily be off by several decibels. Remember that the clap itself is far louder still.'
       : 'When the simulation finishes, each design\'s expected echo loudness will be marked on this scale. Until then, it is a yardstick.';
     drawers.push(draw);
   })();

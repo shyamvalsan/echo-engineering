@@ -24,7 +24,9 @@ stairs or a picket fence comes back as a pitched chirp, because each step or pic
 period later. A uniform grating gives one note; the rings here give a glide.
 
 **It is audibly a whistle in simulation.** The owner listened to the full-wave (Tier 1) echoes on 25 Nov 2026 and
-heard recognizable bird whistles. Play them yourself (paths in the summary block below, "Audio to play"): the
+heard recognizable bird whistles (owner, knowing the target; not blind). The revised, listening-calibrated thresholds
+confirm the whistle, with all 26 of 26 control sounds rejected
+([criteria](docs/report/criteria.md#stage-1-bird-whistle)). Play them yourself (paths in the summary block below, "Audio to play"): the
 stage-1 run's `echo_tier1.wav` (the echo alone) and `as_heard.wav` (the clap, then the echo at its predicted level),
 and the same two files for the build pilot (also copied into the pilot's build pack, `listening/run_*.wav`).
 
@@ -33,7 +35,7 @@ the design narrowly misses them (summary block, verdict column): the pitch-track
 where even a physically perfect echo scores close to it (the judge floor printed beside the value); and the
 spectrogram-match score, which compares over a 60 dB range and is pulled down by a faint hiss well below the whistle,
 is short of 0.8. These are recorded as FAILED and stay so. The spec itself names a person listening as the final judge,
-and by ear the whistle is there; the build path is designed to settle that in the real world, cheaply.
+and by the owner's ear (not a blind test) the whistle is there; the build path is designed to settle that in the real world, cheaply.
 
 **Size, posts, loudness** (numbers in the summary block): about 13 m deep (the note is 80 ms long; 1 ms of echo is
 17 cm of range), a fan of ±20° (stage 1) or ±10° (pilot), about a thousand posts (stage 1) or a few hundred (pilot),
@@ -52,8 +54,8 @@ but above the spec's 35 dB line and above a quiet site's background.
 | s1_bird | 20261125-033940-s1 | FAILED | pitch_err_pct 5.59 (<= 3, fail) [floor 2.53]; spec_corr 0.64 (>= 0.8, fail) [floor 0.976] | 57.4 (+22.4) | 13.5 | 1060 | 0.351 % | -1.0 | - | `runs/s1_bird/20261125-033940-s1/metrics.json` |
 
 Audio to play (full-wave echo alone, and as heard after the clap at its predicted level): `runs/build_pilot/20261125-150605-pilot_whistle80/echo_tier1.wav`, `runs/build_pilot/20261125-150605-pilot_whistle80/as_heard.wav`; `runs/build_pilot/20261125-150605-pilot_whistle80/echo_tier1.wav`, `runs/build_pilot/20261125-150605-pilot_whistle80/as_heard.wav`.
-- Level, build_pilot 20261125-150605-pilot_whistle80: echo peak 55.8 dB SPL for a 100 dB clap at 1 m (-54.6 dB re the direct clap at the ear); +20.8 dB over the spec's 35 dB line; against a quiet rural / suburban / urban-park background of 25 / 35 / 45 dB(A): +31 / +21 / +11 dB (peak against a background level: optimistic). Source `runs/build_pilot/20261125-150605-pilot_whistle80/metrics.json` `headline`.
-- Level, s1_bird 20261125-104529-s1: echo peak 61.6 dB SPL for a 100 dB clap at 1 m (-48.9 dB re the direct clap at the ear); +26.6 dB over the spec's 35 dB line; against a quiet rural / suburban / urban-park background of 25 / 35 / 45 dB(A): +37 / +27 / +17 dB (peak against a background level: optimistic). Source `runs/s1_bird/20261125-104529-s1/metrics.json` `headline`.
+- Level, build_pilot 20261125-150605-pilot_whistle80: echo peak 55.8 dB SPL for a 100 dB clap at 1 m (-54.6 dB re the direct clap at the ear, mean over the clap variants; clap variant 0 alone, the value REPORT.md quotes: -55.4 dB, `manifest.json` `audio.as_heard_echo_level_db`); +20.8 dB over the spec's 35 dB line; against a quiet rural / suburban / urban-park background of 25 / 35 / 45 dB(A): +31 / +21 / +11 dB (peak against a background level: optimistic). Source `runs/build_pilot/20261125-150605-pilot_whistle80/metrics.json` `headline`.
+- Level, s1_bird 20261125-104529-s1: echo peak 61.6 dB SPL for a 100 dB clap at 1 m (-48.9 dB re the direct clap at the ear, mean over the clap variants; clap variant 0 alone, the value REPORT.md quotes: -49.7 dB, `manifest.json` `audio.as_heard_echo_level_db`); +26.6 dB over the spec's 35 dB line; against a quiet rural / suburban / urban-park background of 25 / 35 / 45 dB(A): +37 / +27 / +17 dB (peak against a background level: optimistic). Source `runs/s1_bird/20261125-104529-s1/metrics.json` `headline`.
 
 **Other stages** (not on the build path; one line each, verdicts exactly as in the files):
 
@@ -81,8 +83,8 @@ Listening spot (stage-1 design study, Tier 0, 1060 posts; waveform correlation o
 
 - Placement error (random, radial, Tier 0, latest stage-1 design 20261125-104529-s1): 1 mm: spectrogram correlation 0.828 (threshold >= 0.8, floor 0.976), waveform correlation 0.999; 2 mm: spectrogram correlation 0.764 (threshold >= 0.8, floor 0.976), waveform correlation 0.993; 5 mm: spectrogram correlation 0.650 (threshold >= 0.8, floor 0.976), waveform correlation 0.960. Hear it: `build/s1_bird-20261125-104529-s1/listening/`. Source `build/s1_bird-20261125-104529-s1/pack.json` key `physics.jitter`.
 - Temperature: the whole echo's pitch scales with the speed of sound: 0 C -3.4 %, 10 C -1.7 %, 20 C +0.1 %, 30 C +1.8 % against the 343 m/s design. Source `build/s1_bird-20261125-104529-s1/pack.json` key `physics.temperature`.
-- Thin posts, low coverage: 1060 posts of 1 cm at 0.35 % ground coverage leave an incoherent full-wave residue of -16.2 dB against the fast model (stretch -0.24 %); 420 posts of 4 cm (about 2.3 % coverage) leave -0.8 dB, i.e. the full-wave echo no longer resembles the designed one. Source `runs/s1_bird/_studies/tier_diff.json`.
-- Unresolved: that -16.2 dB residue matches 3.8 mm of random radial placement error on the fast model. Whether it is real forward scattering in the post field or the full-wave solver's rasterization of 1 cm posts (validated against exact theory for single-post backscatter only; see `runs/validation/metrics.json` `caveats`) is not settled. For the phase-2c residue test, the same fast-model fit gives a residue of -28.0 dB at 1 mm, -21.9 dB at 2 mm of random radial error (a CNC-drilled 1:10 board places pins to a fraction of a millimetre at full scale). Source `runs/s1_bird/_studies/tier_diff.json`.
+- Thin posts, low coverage: the stage-1 design (run 20261125-104529-s1), 1060 posts of 1 cm at 0.36 % ground coverage, leaves an incoherent full-wave residue of -16.1 dB against the fast model (stretch -0.24 %); 420 posts of 4 cm (about 2.3 % coverage) leave -0.8 dB, i.e. the full-wave echo no longer resembles the designed one. Source `runs/s1_bird/_studies/tier_diff.json`.
+- Unresolved: the full-wave echo differs from the fast model of the same posts by an incoherent residue. Whether it is real forward scattering in the post field or the full-wave solver's rasterization of 1 cm posts (validated against exact theory for single-post backscatter only; see `runs/validation/metrics.json` `caveats`) is not settled. Per design (clap 0; these residues are the two ends of the phase-2c residue test, the fast-model end read at the board's placement accuracy, a fraction of a millimetre at full scale for a CNC-drilled 1:10 board): stage-1 design run 20261125-104529-s1: full-wave residue -16.1 dB, matching 3.8 mm of random radial placement error on the fast model, whose own residue at 1 mm is -28.0 dB, 2 mm is -21.9 dB; build pilot run 20261125-150605-pilot_whistle80: full-wave residue -10.0 dB, matching 4.4 mm of random radial placement error on the fast model, whose own residue at 1 mm is -22.7 dB, 2 mm is -16.6 dB. Source `runs/s1_bird/_studies/tier_diff.json`.
 - Dense field extinguishes the echo (stage 2 first design, run 20261125-122003-s2): full-wave minus fast-model level per note 1047 Hz -9.5 dB, 1319 Hz -18.3 dB, 1568 Hz -33.0 dB, 2093 Hz -48.2 dB. Source `runs/s2_motif/_studies/v1_extinction.json`.
 - Build pilot (run 20261125-150605-pilot_whistle80): pitch_err_pct 5.39 (<= 3, fail) [floor 2.53]; spec_corr 0.611 (>= 0.8, fail) [floor 0.976]; 500 posts, minimum clear gap 5.3 cm, coverage 0.338 %; echo 55.8 dB SPL. Details: section Pilot design. Source `runs/build_pilot/20261125-150605-pilot_whistle80/metrics.json`.
 
@@ -100,7 +102,8 @@ this document is organized around it.
    gives an echo near the dB SPL in the "Level" line: for the whistle, about the level of quiet conversation.
 2. **What simulation does not cover: hearing.** A loud sound raises the ear's threshold for tens of milliseconds
    afterwards (forward masking). The whistle's echo starts only about 20 ms after the clap, because the field begins
-   about 3 m away (the pilot's audibility table gives the exact first-arrival time). Whether the masking from a clap 50 dB louder
+   about 3 m away (the pilot: 20.2 ms, first row of its audibility table; the stage-1 design, whose first posts stand
+   a little closer, slightly under 20 ms). Whether the masking from a clap 50 dB louder
    hides the start of the whistle, or all of it, is **an open perceptual risk, not a computed result**. No masking
    numbers are given here; the experiment below measures it.
 3. **The levers, and what each costs** (pilot section of the detailed block, "Audibility levers", fast model):
@@ -182,7 +185,7 @@ more posts and land (cost) than the whistle. Details and causes: `REPORT.md`. No
 | 1. Desk (done) | Simulations, build packs, listening files | 0 | done | What the models support (section 1) | **Go to 2:** always (R1). Listen to the files first (phase 1). |
 | 2a. Rig check, 1:10 | Ultrasonic rig plus one pin | ~€0.7–1.5k (est.) | 1 week | The rig measures what the fast model predicts for one post, with 3D, the board as hard ground and real post height | Single pin: echo level within ±2 dB of the fast-model rigid-ground prediction at the same heights. |
 | 2b. One note, 1:10 | A uniform grating of pins (rings at one spacing) | +€50–100 (est.) | days | A tone comes back at the predicted pitch; the precedent reproduced in the rig | Tone frequency within ±0.5 % of c/(2Δρ) at the measured c. |
-| 2c. The pilot whistle, 1:10 | Every post of the pilot design as 2 mm pins in a CNC-drilled or laser-cut board | +€0.3–0.6k (est.) | 1–2 weeks | Whether the full-wave residue is physics or solver (section 1, "What decides", point 6), and whether the design sounds right in 3D | First: in-band SNR ≥ the detailed block's **SNR gate**. Then the **residue test**: the measured echo (temperature-corrected, scaled to full size) against the fast-model echo of the as-built pin positions, after the same stretch-and-filter fit the solver comparison used. Residue within the measurement repeatability of the fast model's residue at the board's placement accuracy → the solver was the cause → go to 3b. Residue near the full-wave residue (summary block, "Unresolved") → physics → redesign before any full-scale build. Then the stage-1 judges, read with the **Measurement margins**. |
+| 2c. The pilot whistle, 1:10 | Every post of the pilot design as 2 mm pins in a CNC-drilled or laser-cut board | +€0.3–0.6k (est.) | 1–2 weeks | Whether the full-wave residue is physics or solver (section 1, "The other things that decide whether a visitor actually hears it", point 5, "One open fidelity question"), and whether the design sounds right in 3D | First: in-band SNR ≥ the detailed block's **SNR gate**. Then the **residue test**: the measured echo (temperature-corrected, scaled to full size) against the fast-model echo of the as-built pin positions, after the same stretch-and-filter fit the solver comparison used. Residue within the measurement repeatability of the fast model's residue at the board's placement accuracy → the solver was the cause → go to 3b. Residue near the full-wave residue of the same design (summary block, "Unresolved", the pilot's row) → physics → redesign before any full-scale build. Then the stage-1 judges, read with the **Measurement margins**. |
 | 3a. Audibility by ear, full scale (do first, alongside 2) | 1 post, then a 30-post grating (or the pilot's first few metres), on a quiet candidate site | ~€0.2–0.5k (est.) | 2 days | **Whether a person hears a tone after their own clap** (forward masking is not simulated and does not scale to 1:10); real ground, wind, background | Grating tone heard after the clap by at least 8 of 10 listeners at the marked ear position, reported separately for clapper = listener and clapper ≠ listener, with and without ear protection on the clapper. Single-post level within ±3 dB of the rigid-ground prediction on hard ground (state the offset on grass). If nobody hears it: try the levers (later start range, quieter site, separate clapper) before any larger build. |
 | 3b. Full-scale pilot (only after 3a and 2c say go) | The pilot design (section Pilot design) | ~€5–10k (est.: BOM count × per-post cost, plus survey and labour) | 3–8 weeks | A clap returns the whistle outdoors | In-band SNR ≥ the SNR gate. Judges against the stage-1 thresholds with the **Measurement margins**, on the measured echo resampled to c = 343 m/s. Level within ±3 dB of prediction. 8 of 10 naive listeners name the sound (bird) from a forced choice of 4. |
 | 4. Permanent installation | Durable version; longer pieces only after a short one works | €50–500k (est.) | months | That it lasts, is safe and can be visited | Permissions, safety review, maintenance plan. The 3b result repeated across seasons. |
@@ -479,8 +482,8 @@ post's placement error is a larger share of the echo. The stage-1 whistle at ±1
 the pilot is judged against the stage-1 pass marks directly, so its verdict is a real pass or fail, not a reference.
 
 **How it scored on the full-wave solver** (block: pilot rows, exactly as recorded): FAILED on both automated stage-1
-marks, and by more than the stage-1 design (about a thousand posts, ±20°) does. Fewer posts carry the same incoherent
-residue as a larger share of the echo, which the fast-model study already showed as lower waveform correlation under
+marks, and by more than the stage-1 design (about a thousand posts, ±20°) does. Fewer posts carry the incoherent
+residue as a larger share of the echo (summary block, "Unresolved": the pilot's residue against the stage-1 design's), which the fast-model study already showed as lower waveform correlation under
 placement error at lower post counts. Its echo is also a few dB quieter. Listen to it next to the stage-1 echo (pilot
 pack `listening/`: `run_echo_tier1.wav`, `echo_only.wav`, `clap_then_echo_boosted.wav`, `run_as_heard.wav`).
 
@@ -710,7 +713,7 @@ factory-cut holes) or a redesign with tolerance in the loss can. If it is below 
 
 | # | Risk | Kills because | Cheapest test that retires it | Status / rule |
 |---|---|---|---|---|
-| 0 | **Nobody hears the echo after their own clap** (forward masking by a clap tens of dB louder, first arrival only ~18 ms later) | The structure is silent in practice even if the echo is right | 3a by ear, several listeners (a few hundred euros) | Open; not simulated; does not scale to 1:10. Levers: later start range, quieter site, separate clapper and listener, clapper board (detailed block, Audibility levers). |
+| 0 | **Nobody hears the echo after their own clap** (forward masking by a clap tens of dB louder, first arrival only about 20 ms later: 20.2 ms for the pilot, slightly less for the stage-1 design) | The structure is silent in practice even if the echo is right | 3a by ear, several listeners (a few hundred euros) | Open; not simulated; does not scale to 1:10. Levers: later start range, quieter site, separate clapper and listener, clapper board (detailed block, Audibility levers). |
 | 1 | **The full-wave residue is physics** (forward scattering between thin posts), not the solver | Every many-post design carries a residue that fails the spectrogram judge, whatever the build accuracy | 2c residue test on the 1:10 model (about €1–2k) | Open; the reason the model comes first (R1). |
 | 2 | **The listening spot is centimetres wide** | Visitors move; the sound is only right at one point | Free: the pilot's listening-spot map; then 2c with the mic moved, and 3a | Known (summary). Rule R2: fix the ear with a jig; a narrow fan helps at a cost in level. |
 | 3 | **Placement tolerance against the spec's judges** | If the judges' millimetre budget stands (and is audible), driven posts outdoors cannot hold it | Free: the `listening/` files, judged blind by ear | If the listening test confirms it: CNC deck or 1:10-template setting out. A lower target pitch is not shown to help. If it is inaudible: set the budget by ear and log the deviation. |
@@ -932,12 +935,12 @@ Residual split, this design: jitter-induced residual r = jittered echo - g x nom
 
 | sigma (mm) | corr (clap mean) | below | in target band | above, to 4 kHz | above 4 kHz | total | above to 4 kHz, worst clap | max abs(1 - corr^2 - residual/jittered) |
 |---|---|---|---|---|---|---|---|---|
-| 1 | 0.995 | 0.03 % | 0.91 % | 0.13 % | 0.01 % | 1.08 % | 0.37 % | 7.9e-16 |
-| 2 | 0.975 | 0.18 % | 4.39 % | 0.55 % | 0.02 % | 5.14 % | 1.67 % | 7.3e-16 |
+| 1 | 0.995 | 0.03 % | 0.91 % | 0.13 % | 0.01 % | 1.08 % | 0.37 % | 5.6e-16 |
+| 2 | 0.975 | 0.18 % | 4.39 % | 0.55 % | 0.02 % | 5.14 % | 1.67 % | 7.2e-16 |
 | 3 | 0.938 | 0.36 % | 10.62 % | 1.51 % | 0.07 % | 12.56 % | 4.46 % | 5.4e-16 |
-| 5 | 0.863 | 0.96 % | 21.30 % | 2.95 % | 0.12 % | 25.34 % | 8.98 % | 2.8e-16 |
-| 10 | 0.532 | 3.09 % | 62.74 % | 6.26 % | 0.26 % | 72.36 % | 17.45 % | 2.2e-16 |
-| 20 | 0.213 | 7.07 % | 88.93 % | 11.66 % | 0.24 % | 107.90 % | 36.43 % | 3.3e-16 |
+| 5 | 0.863 | 0.96 % | 21.30 % | 2.95 % | 0.12 % | 25.34 % | 8.98 % | 2.5e-16 |
+| 10 | 0.532 | 3.09 % | 62.74 % | 6.26 % | 0.26 % | 72.36 % | 17.45 % | 3.3e-16 |
+| 20 | 0.213 | 7.07 % | 88.93 % | 11.66 % | 0.24 % | 107.90 % | 36.43 % | 4.4e-16 |
 
 Nominal echo, per clap: share of energy in the target band 100 %, 100 %, 100 %, 99 %, 99 %; above it 0 %, 0 %, 0 %, 1 %, 0 %; peak level -53.9, -54.1, -54.8, -49.6, -53.7 dB re direct (claps 0-4).
 
@@ -1096,12 +1099,12 @@ Residual split, this design: jitter-induced residual r = jittered echo - g x nom
 
 | sigma (mm) | corr (clap mean) | below | in target band | above, to 4 kHz | above 4 kHz | total | above to 4 kHz, worst clap | max abs(1 - corr^2 - residual/jittered) |
 |---|---|---|---|---|---|---|---|---|
-| 1 | 0.999 | 0.01 % | 0.24 % | 0.03 % | 0.00 % | 0.28 % | 0.09 % | 5.7e-16 |
+| 1 | 0.999 | 0.01 % | 0.24 % | 0.03 % | 0.00 % | 0.28 % | 0.09 % | 3.9e-16 |
 | 2 | 0.993 | 0.05 % | 1.12 % | 0.11 % | 0.01 % | 1.29 % | 0.35 % | 8.6e-16 |
-| 3 | 0.985 | 0.08 % | 2.42 % | 0.37 % | 0.02 % | 2.90 % | 1.08 % | 6.2e-16 |
-| 5 | 0.960 | 0.22 % | 5.27 % | 0.95 % | 0.03 % | 6.47 % | 2.95 % | 4.8e-16 |
+| 3 | 0.985 | 0.08 % | 2.42 % | 0.37 % | 0.02 % | 2.90 % | 1.08 % | 5.3e-16 |
+| 5 | 0.960 | 0.22 % | 5.27 % | 0.95 % | 0.03 % | 6.47 % | 2.95 % | 4.7e-16 |
 | 10 | 0.822 | 0.64 % | 14.48 % | 1.42 % | 0.06 % | 16.60 % | 4.16 % | 5.0e-16 |
-| 20 | 0.272 | 1.62 % | 23.73 % | 2.36 % | 0.06 % | 27.77 % | 6.83 % | 4.4e-16 |
+| 20 | 0.272 | 1.62 % | 23.73 % | 2.36 % | 0.06 % | 27.77 % | 6.83 % | 3.3e-16 |
 
 Nominal echo, per clap: share of energy in the target band 100 %, 100 %, 100 %, 100 %, 100 %; above it 0 %, 0 %, 0 %, 0 %, 0 %; peak level -46.7, -45.5, -46.2, -41.9, -49.0 dB re direct (claps 0-4).
 
@@ -1197,7 +1200,7 @@ Residual split, low-pitch variant: jitter-induced residual r = jittered echo - g
 
 | sigma (mm) | corr (clap mean) | below | in target band | above, to 4 kHz | above 4 kHz | total | above to 4 kHz, worst clap | max abs(1 - corr^2 - residual/jittered) |
 |---|---|---|---|---|---|---|---|---|
-| 1 | 0.933 | 0.00 % | 0.05 % | 17.70 % | 0.04 % | 17.80 % | 60.96 % | 9.8e-16 |
+| 1 | 0.933 | 0.00 % | 0.05 % | 17.70 % | 0.04 % | 17.80 % | 60.96 % | 9.9e-16 |
 | 2 | 0.811 | 0.00 % | 0.22 % | 85.26 % | 0.24 % | 85.72 % | 297.08 % | 5.9e-16 |
 | 3 | 0.731 | 0.00 % | 0.68 % | 177.49 % | 0.46 % | 178.64 % | 625.75 % | 4.5e-16 |
 | 5 | 0.611 | 0.00 % | 1.70 % | 414.92 % | 0.88 % | 417.50 % | 1361.28 % | 5.1e-16 |

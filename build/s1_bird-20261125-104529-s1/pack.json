@@ -1,7 +1,7 @@
 {
  "stage": "s1_bird",
  "run_id": "20261125-104529-s1",
- "run_path": "/home/shyam/projects/echo/runs/s1_bird/20261125-104529-s1",
+ "run_path": "runs/s1_bird/20261125-104529-s1",
  "status": "final",
  "verified": true,
  "posts": 1060,

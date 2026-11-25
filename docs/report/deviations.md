@@ -1,4 +1,4 @@
-*Appendix of [REPORT.md](../../REPORT.md); generated 2026-11-25T17:15+02:00 by `uv run python -m stages.report`.*
+*Appendix of [REPORT.md](../../REPORT.md); generated 2026-11-25T17:53+02:00 by `uv run python -m stages.report`.*
 
 # Deviations from the spec
 

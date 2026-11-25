@@ -5,6 +5,7 @@ Generated from the newest final full-wave run of each test. For each run:
 - `<tag>_target.wav`: the sound we aimed for.
 - `<tag>_echo_only.wav`: the simulated echo alone, turned up to full volume.
 - `<tag>_clap_then_echo_boosted.wav`: the clap, then the echo raised so it sits 12 dB under the clap. In reality it is much fainter than that: see the "true level" column. The run folder's own `as_heard.wav` keeps the true ratio, which is why only the clap is audible there.
+- Caveat: every echo file here has the shape of the 2D full-wave echo, scaled to the 3D level estimate (the solver is two-dimensional; the level is the run's 3D correction, not a 3D simulation).
 
 | stage | sub | run tag | true echo level re clap (dB) | boost applied here (dB) | estimated echo loudness for a 100 dB clap (dB SPL) | title |
 |---|---|---|---|---|---|---|

@@ -564,7 +564,7 @@
    0.08
   ],
   "source": "metrics.json:checks.cylinder.stage1_grid (f_max 4000.0 Hz, ppw 10.0)",
-  "path": "/home/shyam/projects/echo/runs/validation/metrics.json",
+  "path": "runs/validation/metrics.json",
   "engine": "fd8-3",
   "validation_engine": "fd8-3",
   "radii_used": [

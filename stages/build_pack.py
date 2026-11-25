@@ -360,6 +360,12 @@ def run_table(index_rows, runs_root=None) -> list[str]:
     return L
 
 
+def _clap0_level(rd):
+    """Clap variant 0's echo level re the clap at the ear (manifest.audio.as_heard_echo_level_db), or None."""
+    p = rd / "manifest.json"
+    return ((json.loads(p.read_text()).get("audio") or {}).get("as_heard_echo_level_db")) if p.exists() else None
+
+
 def _study(path):
     p = ROOT / path
     return (json.loads(p.read_text()), path) if p.exists() else (None, path)
@@ -371,7 +377,8 @@ def summary_block(index_rows, s1=None, pilot=None) -> str:
     index_rows: [(row, run_dir)]; s1 / pilot: (row, run_dir, pack_dir) or None."""
     mets = [(row, rd, json.loads((rd / "metrics.json").read_text())) for row, rd in index_rows]
     whistle = [(row, rd) for row, rd, m in mets if row["stage"] == "s1_bird" or row["stage"].startswith("build_")]
-    other = [(row, rd, m) for row, rd, m in mets if (row, rd) not in whistle]
+    # custom designs have no pass condition (stages.custom): not a stage result, so not listed here
+    other = [(row, rd, m) for row, rd, m in mets if (row, rd) not in whistle and row.get("stage") != "custom"]
     L = [SUMMARY_BEGIN, "", "**The ring-layout whistle** (stage-1 design family and the build pilot; every final run, newest "
          "first; the verdict column is the spec's automated pass marks on the full-wave solver, exactly as the files have "
          "them, with the judge floor -- the score of a physically perfect echo -- beside each value):", ""]
@@ -388,7 +395,9 @@ def summary_block(index_rows, s1=None, pilot=None) -> str:
             spl = m["headline"].get("echo_spl_db")
             if spl is not None:
                 L.append(f"- Level, {row['stage']} {row['run_id']}: echo peak {spl:.1f} dB SPL for a 100 dB clap at 1 m "
-                         f"({_f(m['headline'].get('echo_level_db_re_direct'))} dB re the direct clap at the ear); "
+                         f"({_f(m['headline'].get('echo_level_db_re_direct'))} dB re the direct clap at the ear, mean over "
+                         f"the clap variants; clap variant 0 alone, the value REPORT.md quotes: "
+                         f"{_f(_clap0_level(rd))} dB, `manifest.json` `audio.as_heard_echo_level_db`); "
                          f"{spl - 35:+.1f} dB over the spec's 35 dB line; against a quiet rural / suburban / urban-park "
                          f"background of 25 / 35 / 45 dB(A): {spl - 25:+.0f} / {spl - 35:+.0f} / {spl - 45:+.0f} dB "
                          f"(peak against a background level: optimistic). Source `{_rel(rd / 'metrics.json')}` `headline`.")
@@ -459,22 +468,35 @@ def summary_block(index_rows, s1=None, pilot=None) -> str:
                               r.get("equivalent_radial_jitter_m"),
                               {round(1000 * x["sigma_m"], 1): x["residue_db_stretched_fir33"]
                                for x in r.get("tier0_jitter_residue") or []})
-        thin = rows.get("20261125-095837-s1")
+        # the residue rows of the designs on the build path: the latest stage-1 run and the pilot, each by run id
+        s1_id = s1[0]["run_id"] if s1 else None
+        pilot_id = pilot[0]["run_id"] if pilot else None
+        thin = rows.get(s1_id)
+        pil = rows.get(pilot_id)
         thick = next((v for k, v in rows.items() if v[1] and v[1] >= 0.04), None)
         if thin and thick:
-            L.append(f"- Thin posts, low coverage: {thin[0]} posts of 1 cm at 0.35 % ground coverage leave an "
-                     f"incoherent full-wave residue of {thin[3]:.1f} dB against the fast model (stretch {100 * thin[2]:+.2f} %); "
-                     f"{thick[0]} posts of {100 * thick[1]:g} cm (about 2.3 % coverage) leave {thick[3]:.1f} dB, i.e. the "
-                     f"full-wave echo no longer resembles the designed one. Source `{tp}`.")
-        if thin and thin[4]:
-            L.append(f"- Unresolved: that {thin[3]:.1f} dB residue matches {1000 * thin[4]:.1f} mm of random radial "
-                     f"placement error on the fast model. Whether it is real forward scattering in the post field or the "
-                     f"full-wave solver's rasterization of 1 cm posts (validated against exact theory for single-post "
-                     f"backscatter only; see `runs/validation/metrics.json` `caveats`) is not settled. For the phase-2c "
-                     f"residue test, the same fast-model fit gives a residue of "
-                     + ", ".join(f"{v:.1f} dB at {k:g} mm" for k, v in sorted(thin[5].items()) if k <= 2.0)
-                     + f" of random radial error (a CNC-drilled 1:10 board places pins to a fraction of a millimetre at "
-                     f"full scale). Source `{tp}`.")
+            ff = json.loads((s1[1] / "metrics.json").read_text())["headline"].get("fill_fraction")
+            L.append(f"- Thin posts, low coverage: the stage-1 design (run {s1_id}), {thin[0]} posts of 1 cm at "
+                     f"{_f(100 * ff if ff is not None else None, '{:.2f}')} % ground coverage, leaves an incoherent full-wave residue of {thin[3]:.1f} dB against the "
+                     f"fast model (stretch {100 * thin[2]:+.2f} %); {thick[0]} posts of {100 * thick[1]:g} cm (about 2.3 % "
+                     f"coverage) leave {thick[3]:.1f} dB, i.e. the full-wave echo no longer resembles the designed one. "
+                     f"Source `{tp}`.")
+
+        def _res(rid, v):
+            return (f"run {rid}: full-wave residue {v[3]:.1f} dB, matching {1000 * v[4]:.1f} mm of random radial "
+                    f"placement error on the fast model, whose own residue at "
+                    + ", ".join(f"{k:g} mm is {x:.1f} dB" for k, x in sorted(v[5].items()) if k <= 2.0)) if v[4] else None
+
+        bits = [b for b in (_res(s1_id, thin) if thin else None,
+                            _res(pilot_id, pil) if pil else None) if b]
+        if bits:
+            L.append("- Unresolved: the full-wave echo differs from the fast model of the same posts by an incoherent "
+                     "residue. Whether it is real forward scattering in the post field or the full-wave solver's "
+                     "rasterization of 1 cm posts (validated against exact theory for single-post backscatter only; see "
+                     "`runs/validation/metrics.json` `caveats`) is not settled. Per design (clap 0; these residues are the "
+                     "two ends of the phase-2c residue test, the fast-model end read at the board's placement accuracy, "
+                     "a fraction of a millimetre at full scale for a CNC-drilled 1:10 board): stage-1 design "
+                     + "; build pilot ".join(bits) + f". Source `{tp}`.")
     ext, ep = _study("runs/s2_motif/_studies/v1_extinction.json")
     if ext:
         L.append(f"- Dense field extinguishes the echo (stage 2 first design, run {ext['run']}): full-wave minus fast-model "
@@ -1042,7 +1064,7 @@ def main(argv=None):
             pd = Path(a.out) / pack_name(load_run(rd))
             if not a.doc_only or not (pd / "pack.json").exists():
                 pd = build_pack(rd, **kw)
-                print(f"wrote {pd}")
+                print(f"wrote {_rel(pd)}")
             packs.append((row, rd, pd))
         if a.doc_only or a.refresh_doc:
             phys = [p for p in packs if (p[2] / "pack.json").exists()
@@ -1056,7 +1078,7 @@ def main(argv=None):
             refresh_doc(Path(a.doc), generated_block(phys, low, s1), summary_block(rows, s1, pilot))
             print(f"refreshed {a.doc}")
     for rd in a.run_dirs:
-        print(f"wrote {build_pack(rd, **kw)}")
+        print(f"wrote {_rel(build_pack(rd, **kw))}")
     if not (a.run_dirs or a.all or a.refresh_doc or a.lowpitch or a.doc_only):
         ap.print_help()
         return 2

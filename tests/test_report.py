@@ -296,3 +296,36 @@ def test_build_pilot_not_counted_as_stage(tmp_path):
     files = report.build_all(_tree(tmp_path, [pil]), run_test_suite=False)
     assert "no final results yet" in files["REPORT.md"].splitlines()[2]
     assert "runs/build_pilot/p1" in files["docs/report/design-studies.md"].split("### Build pilot")[1]
+
+
+def test_count_rule_per_clap_rows_not_applicable():
+    """4c's pass rule counts claps (hello_count >= 3 of 5): a lone clap can never meet it, so the per-clap robustness
+    rows read "not applicable" instead of FAIL (presentation only; the stored pass flags are unchanged)."""
+    run = {"metrics": {
+        "metrics": [{"id": "hello_count", "tier": "tier1", "gating": True, "value": 5, "comparator": ">=",
+                     "threshold": 3}],
+        "robustness": [{"case": "nominal", "label": "Nominal", "pass": True, "metrics": {"hello_count": 5},
+                        "delta": {"hello_count": 0}},
+                       {"case": "clap_0", "label": "Clap variant 0 alone", "pass": False,
+                        "metrics": {"hello_count": 1}, "delta": {"hello_count": -4}}],
+        "fragile_reason": "0/5 clap variants pass on their own; 2/3 listener positions pass"}}
+    t = report._robust_table(run)
+    row = next(ln for ln in t.splitlines() if "clap_0" in ln)
+    assert "not applicable" in row and "FAIL" not in row
+    assert "PASS" in next(ln for ln in t.splitlines() if "nominal" in ln)
+    assert report.fragile_text(run).startswith("clap variants alone: not applicable")
+    pitch = {"metrics": dict(run["metrics"], metrics=[{"id": "pitch_err_pct", "tier": "tier1", "gating": True}])}
+    assert "FAIL" in next(ln for ln in report._robust_table(pitch).splitlines() if "clap_0" in ln)
+    assert report.fragile_text(pitch).startswith("0/5")
+
+
+def test_note_cents_sentinel_and_other_word_caveat():
+    assert "not matched" in report.num(1200.0, "note_cents_max") and report.num(30.0, "note_cents_max") == "30.00"
+    m = {"controls": {"other_words": {"rows": {
+        "hello": {"tier0_hello_count": 5, "tier0_recognized_text": [{}] * 5},
+        "yellow": {"tier0_hello_count": 1, "tier0_recognized_text": [{}] * 5},
+        "mellow": {"tier0_hello_count": 2, "tier0_recognized_text": [{}] * 5},
+        "halo": {"tier0_hello_count": 0, "tier0_recognized_text": [{}] * 5}}}}}
+    assert report.stored_other_words(m)[:2] == (3, 15)
+    assert "3 of 15" in report.other_words_caveat(m) and "not found" in report.other_words_caveat(m)
+    assert report.other_words_caveat({}) == ""

@@ -1,4 +1,4 @@
-*Appendix of [REPORT.md](../../REPORT.md); generated 2026-11-25T17:15+02:00 by `uv run python -m stages.report`.*
+*Appendix of [REPORT.md](../../REPORT.md); generated 2026-11-25T17:53+02:00 by `uv run python -m stages.report`.*
 
 # Timeline and rulings
 
@@ -78,6 +78,9 @@ Timeline from the controller's ledger (`.superpowers/sdd/plan/progress.md`), fir
 - **16:57** T14 fix round 1 done (commits a35835e, 4e0d3da): stage 2 owner_v2 → null; owner_v2 confirms 2 of 9 (stage 1: identification + median pitch ≤40 c on ≥3/5 claps, 26/26 controls incl. near-miss …
 - **16:58** Final presentation pass dispatched: report (fresh opus af5349a56b193a7cd: short listening-first REPORT.md + docs/report appendices + README) and explainer (fresh opus a4f91453d8aaac6b4: what …
 - **17:13** Explainer final pass done (commit c517968; 1.68 MB): status '9 echoes designed and simulated.
+- **17:16** Final report pass done (commit bcedb76): REPORT.md 199 lines + docs/report/ appendices + public README; full suite on idle machine: 282 passed, 4 skipped, 1 xfailed.
+- **17:19** Viewer verdict fix done (commit 20e261a): 'not blind' + date beside owner's-ear verdict; real-data check on s1/4c/4a/earlier attempt/custom/pilot; custom runs read 'Verified on Tier 1, no pass …
+- **17:26** FINAL REVIEW (opus, read-only): overall 'yes, with fixes'; no Critical; 40 spot-checked numbers match; tallies consistent; scoring integrity intact.
 
 **Rulings the controller made on the owner's behalf** (every `Ruling:` in the ledger, in order):
 
