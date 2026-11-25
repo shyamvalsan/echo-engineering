@@ -1,0 +1,113 @@
+/home/shyam/projects/echo/echo/inverse.py:66: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
+  fb = librosa.filters.mel(sr=fs, n_fft=MEL_N_FFT, n_mels=MEL_N, fmin=band[0], fmax=band[1])
+step    0 loss 2.6061 (stft 1.5812 mel 1.0250) 15.9s
+step   25 loss 3.1845 (stft 1.6802 mel 1.5043) 19.6s
+step   50 loss 2.9380 (stft 1.6081 mel 1.3299) 21.5s
+step   75 loss 2.8098 (stft 1.5536 mel 1.2561) 23.0s
+step  100 loss 2.6892 (stft 1.5165 mel 1.1727) 26.0s
+step  125 loss 2.5849 (stft 1.4869 mel 1.0980) 29.4s
+step  150 loss 2.5671 (stft 1.4751 mel 1.0921) 31.6s
+step  175 loss 2.5550 (stft 1.4636 mel 1.0914) 34.5s
+step  200 loss 2.5564 (stft 1.4555 mel 1.1009) 37.6s
+step  225 loss 2.5510 (stft 1.4438 mel 1.1072) 40.6s
+step  250 loss 2.4928 (stft 1.4327 mel 1.0601) 44.1s
+step  275 loss 2.5096 (stft 1.4238 mel 1.0858) 46.6s
+step  300 loss 2.5296 (stft 1.4237 mel 1.1059) 48.5s
+step  325 loss 2.4532 (stft 1.3981 mel 1.0551) 50.1s
+step  350 loss 2.4878 (stft 1.4055 mel 1.0824) 51.7s
+step  375 loss 2.4513 (stft 1.3964 mel 1.0549) 53.6s
+step  400 loss 2.4149 (stft 1.3750 mel 1.0399) 55.0s
+step  425 loss 2.4793 (stft 1.3797 mel 1.0996) 55.8s
+step  450 loss 2.4901 (stft 1.4016 mel 1.0885) 56.6s
+step  475 loss 2.4568 (stft 1.3645 mel 1.0923) 57.9s
+step  500 loss 2.3982 (stft 1.3584 mel 1.0398) 60.0s
+step  525 loss 2.5069 (stft 1.4429 mel 1.0640) 62.0s
+step  550 loss 2.5251 (stft 1.4191 mel 1.1060) 62.8s
+step  575 loss 2.5053 (stft 1.3812 mel 1.1241) 65.3s
+step  600 loss 2.4154 (stft 1.3448 mel 1.0706) 68.5s
+step  625 loss 2.3776 (stft 1.3323 mel 1.0453) 72.1s
+step  650 loss 2.3938 (stft 1.3268 mel 1.0670) 74.9s
+step  675 loss 2.3461 (stft 1.3077 mel 1.0383) 77.7s
+step  700 loss 2.4211 (stft 1.3303 mel 1.0908) 80.8s
+step  725 loss 2.3742 (stft 1.3063 mel 1.0678) 82.6s
+step  750 loss 2.3262 (stft 1.2837 mel 1.0425) 84.2s
+step  775 loss 2.3949 (stft 1.3070 mel 1.0879) 85.5s
+step  800 loss 2.3837 (stft 1.2895 mel 1.0942) 86.8s
+step  825 loss 2.3558 (stft 1.2879 mel 1.0679) 87.6s
+step  850 loss 2.3456 (stft 1.2782 mel 1.0674) 88.7s
+step  875 loss 2.3041 (stft 1.2659 mel 1.0381) 89.7s
+step  900 loss 2.2640 (stft 1.2524 mel 1.0117) 91.4s
+step  925 loss 2.3037 (stft 1.2604 mel 1.0433) 92.8s
+step  950 loss 2.3866 (stft 1.2940 mel 1.0927) 94.1s
+step  975 loss 2.3165 (stft 1.2666 mel 1.0499) 95.0s
+step 1000 loss 2.3850 (stft 1.2610 mel 1.1239) 97.3s
+step 1025 loss 2.2944 (stft 1.2495 mel 1.0449) 97.9s
+step 1050 loss 2.2534 (stft 1.2390 mel 1.0144) 98.8s
+step 1075 loss 2.2851 (stft 1.2337 mel 1.0514) 99.9s
+step 1100 loss 2.2484 (stft 1.2239 mel 1.0245) 100.8s
+step 1125 loss 2.3323 (stft 1.2485 mel 1.0839) 102.2s
+step 1150 loss 2.3154 (stft 1.2355 mel 1.0799) 103.4s
+step 1175 loss 2.2280 (stft 1.2057 mel 1.0223) 104.5s
+step 1200 loss 2.2155 (stft 1.2066 mel 1.0089) 106.1s
+  realized 1543 posts, range scale 1-0.00083 (1 s)
+waiting for Tier 1 lock… (0 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (60 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+Tier 1 lock acquired after 113 s
+  stretch: applied -0.00083, measured (medium) -0.00080 (corr 0.971), timing residual +0.00003
+  tier1 845 s (empty cached: False)
+/home/shyam/projects/echo/.venv/lib/python3.11/site-packages/librosa/feature/spectral.py:2148: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
+  mel_basis = filters.mel(sr=sr, n_fft=n_fft, **kwargs)
+/home/shyam/projects/echo/echo/inverse.py:66: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
+  fb = librosa.filters.mel(sr=fs, n_fft=MEL_N_FFT, n_mels=MEL_N, fmin=band[0], fmax=band[1])
+correction round 0: loss 4.2609 score -31.1612 gains [0.25, 0.25, 0.25, 0.25, 0.25, 0.99, 1.09, 1.18, 1.02, 1.09, 1.1, 1.16, 1.21, 1.68, 1.88, 2.01, 1.99, 2.14, 1.0] (965 s)
+  realized 1543 posts, range scale 1-0.00080 (1 s)
+waiting for Tier 1 lock… (0 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (60 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (120 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (180 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (240 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (301 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (361 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (421 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (481 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (541 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (601 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (661 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (721 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+Tier 1 lock acquired after 738 s
+  stretch: applied -0.00080, measured (medium) -0.00066 (corr 0.978), timing residual +0.00014
+  tier1 388 s (empty cached: True)
+correction round 1: loss 4.1831 score -23.2042 gains [0.33, 0.25, 0.25, 0.37, 0.77, 1.19, 1.18, 1.16, 1.05, 1.11, 1.15, 1.12, 1.08, 1.17, 1.11, 1.06, 1.05, 1.13, 1.0] (1130 s)
+waiting for Tier 1 lock… (0 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (60 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (120 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (180 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (240 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (301 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (361 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (421 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (481 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+Tier 1 lock acquired after 531 s
+robustness jitter: {'notes_in_order': 0.0, 'note_cents_max': 1200.0, 'n_notes_detected': 4.2, 'spec_corr': 0.41124259843186756} pass False (1057 s)
+
+=== s2_motif  FAILED  verified=True  fragile=False ===
+run: /home/shyam/projects/echo/runs/s2_motif/20261125-145628-s2v2
+  [tier1*] notes_in_order         0.4                    thr >=1.0  pass False
+  [tier1*] note_cents_max         726.1245612327208      thr <=30.0  pass False
+  [tier1 ] n_notes_detected       4.2                    thr None  pass None
+  [tier1 ] spec_corr              0.46550278570784015    thr None  pass None
+  [tier0 ] notes_in_order         1.0                    thr >=1.0  pass True
+  [tier0 ] note_cents_max         12.980394277699116     thr <=30.0  pass True
+  judge floor (perfect echo): {'notes_in_order': 1.0, 'note_cents_max': 8.99, 'n_notes_detected': 4.0, 'spec_corr': 0.956}
+  echo level -63.0 dB re direct (raw 3D -60.3, 2.0 m posts -61.7), SPL 47.5 dB, tier gap -2.6984669564720223, depth 29.28 m, 1543 posts, fill 0.0012
+  robust nominal            pass False notes_in_order=0.4 note_cents_max=726 spec_corr=0.466
+  robust listener_side_1m   pass False notes_in_order=0 note_cents_max=1.2e+03 spec_corr=0.0265
+  robust listener_back_1m   pass False notes_in_order=0 note_cents_max=1.2e+03 spec_corr=0.33
+  robust jitter             pass False notes_in_order=0 note_cents_max=1.2e+03 spec_corr=0.411
+  robust clap_0             pass False notes_in_order=0 note_cents_max=1.2e+03 spec_corr=0.438
+  robust clap_1             pass True  notes_in_order=1 note_cents_max=15.6 spec_corr=0.452
+  robust clap_2             pass True  notes_in_order=1 note_cents_max=15 spec_corr=0.483
+  robust clap_3             pass False notes_in_order=0 note_cents_max=1.2e+03 spec_corr=0.469
+  robust clap_4             pass False notes_in_order=0 note_cents_max=1.2e+03 spec_corr=0.484
+  failure cause: Tier 1 notes detected in order (fraction of claps) = 0.4 misses >= 1.0 (judge floor on a perfect echo: 1); Tier 1 worst note pitch error = 726cents misses <= 30.0cents (judge floor on a perfect echo: 8.99cents)
+  wall: {'profile_solve_s': 108.6, 'realize_s': 1.4, 'tier1_loop_s': 2086.1, 'tier1_lock_wait_s': 1382.2, 'correction_loop_s': 2094.6, 'tier1_field_run_s': 495.1, 'robustness_s': 1072.4, 'field_video_s': 76.4, 'total_s': 3858.0}

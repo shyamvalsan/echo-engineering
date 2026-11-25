@@ -1,0 +1,673 @@
+{
+ "stage": "s2_motif",
+ "passed": false,
+ "verified": true,
+ "fragile": false,
+ "headline": {
+  "echo_level_db_re_direct": -62.97732763068499,
+  "echo_level_db_re_direct_raw3d": -60.278860674212964,
+  "echo_spl_db": 47.48024727492176,
+  "depth_m": 29.276387399145598,
+  "post_count": 1543,
+  "fill_fraction": 0.0012420237458041477,
+  "tier_gap_db": -2.6984669564720223,
+  "likely_inaudible_on_site": false,
+  "echo_level_db_re_direct_finite_height": -61.68085671608391,
+  "finite_height_m": 2.0
+ },
+ "metrics": [
+  {
+   "id": "notes_in_order",
+   "label": "Notes detected in order (fraction of claps)",
+   "value": 0.4,
+   "unit": "",
+   "threshold": 1.0,
+   "comparator": ">=",
+   "pass": false,
+   "tier": "tier1",
+   "gating": true
+  },
+  {
+   "id": "note_cents_max",
+   "label": "Worst note pitch error",
+   "value": 726.1245612327208,
+   "unit": "cents",
+   "threshold": 30.0,
+   "comparator": "<=",
+   "pass": false,
+   "tier": "tier1",
+   "gating": true
+  },
+  {
+   "id": "n_notes_detected",
+   "label": "Notes detected",
+   "value": 4.2,
+   "unit": "",
+   "threshold": null,
+   "comparator": null,
+   "pass": null,
+   "tier": "tier1",
+   "gating": false
+  },
+  {
+   "id": "spec_corr",
+   "label": "Spectrogram correlation, log-mel",
+   "value": 0.46550278570784015,
+   "unit": "",
+   "threshold": null,
+   "comparator": null,
+   "pass": null,
+   "tier": "tier1",
+   "gating": false
+  },
+  {
+   "id": "notes_in_order",
+   "label": "Notes detected in order (fraction of claps)",
+   "value": 1.0,
+   "unit": "",
+   "threshold": 1.0,
+   "comparator": ">=",
+   "pass": true,
+   "tier": "tier0",
+   "gating": false
+  },
+  {
+   "id": "note_cents_max",
+   "label": "Worst note pitch error",
+   "value": 12.980394277699116,
+   "unit": "cents",
+   "threshold": 30.0,
+   "comparator": "<=",
+   "pass": true,
+   "tier": "tier0",
+   "gating": false
+  },
+  {
+   "id": "n_notes_detected",
+   "label": "Notes detected",
+   "value": 4.0,
+   "unit": "",
+   "threshold": null,
+   "comparator": null,
+   "pass": null,
+   "tier": "tier0",
+   "gating": false
+  },
+  {
+   "id": "spec_corr",
+   "label": "Spectrogram correlation, log-mel",
+   "value": 0.5678439551082967,
+   "unit": "",
+   "threshold": null,
+   "comparator": null,
+   "pass": null,
+   "tier": "tier0",
+   "gating": false
+  }
+ ],
+ "per_clap": [
+  {
+   "clap": 0,
+   "tier": "tier1",
+   "metrics": {
+    "notes_in_order": 0.0,
+    "note_cents_max": 1200.0,
+    "n_notes_detected": 5.0,
+    "spec_corr": 0.4383596169693448
+   }
+  },
+  {
+   "clap": 1,
+   "tier": "tier1",
+   "metrics": {
+    "notes_in_order": 1.0,
+    "note_cents_max": 15.647191372184578,
+    "n_notes_detected": 4.0,
+    "spec_corr": 0.4523148690813705
+   }
+  },
+  {
+   "clap": 2,
+   "tier": "tier1",
+   "metrics": {
+    "notes_in_order": 1.0,
+    "note_cents_max": 14.97561479141929,
+    "n_notes_detected": 4.0,
+    "spec_corr": 0.48308801999865947
+   }
+  },
+  {
+   "clap": 3,
+   "tier": "tier1",
+   "metrics": {
+    "notes_in_order": 0.0,
+    "note_cents_max": 1200.0,
+    "n_notes_detected": 4.0,
+    "spec_corr": 0.46933331564130465
+   }
+  },
+  {
+   "clap": 4,
+   "tier": "tier1",
+   "metrics": {
+    "notes_in_order": 0.0,
+    "note_cents_max": 1200.0,
+    "n_notes_detected": 4.0,
+    "spec_corr": 0.4844181068485217
+   }
+  },
+  {
+   "clap": 0,
+   "tier": "tier0",
+   "metrics": {
+    "notes_in_order": 1.0,
+    "note_cents_max": 14.97561479141929,
+    "n_notes_detected": 4.0,
+    "spec_corr": 0.5319049906183652
+   }
+  },
+  {
+   "clap": 1,
+   "tier": "tier0",
+   "metrics": {
+    "notes_in_order": 1.0,
+    "note_cents_max": 14.97561479141929,
+    "n_notes_detected": 4.0,
+    "spec_corr": 0.5639746513183281
+   }
+  },
+  {
+   "clap": 2,
+   "tier": "tier0",
+   "metrics": {
+    "notes_in_order": 1.0,
+    "note_cents_max": 4.999512222818415,
+    "n_notes_detected": 4.0,
+    "spec_corr": 0.5929589286498619
+   }
+  },
+  {
+   "clap": 3,
+   "tier": "tier0",
+   "metrics": {
+    "notes_in_order": 1.0,
+    "note_cents_max": 14.97561479141929,
+    "n_notes_detected": 4.0,
+    "spec_corr": 0.5622763899075798
+   }
+  },
+  {
+   "clap": 4,
+   "tier": "tier0",
+   "metrics": {
+    "notes_in_order": 1.0,
+    "note_cents_max": 14.97561479141929,
+    "n_notes_detected": 4.0,
+    "spec_corr": 0.5881048150473485
+   }
+  }
+ ],
+ "robustness": [
+  {
+   "case": "nominal",
+   "label": "Nominal design",
+   "metrics": {
+    "notes_in_order": 0.4,
+    "note_cents_max": 726.1245612327208,
+    "n_notes_detected": 4.2,
+    "spec_corr": 0.46550278570784015
+   },
+   "delta": {
+    "notes_in_order": 0.0,
+    "note_cents_max": 0.0,
+    "n_notes_detected": 0.0,
+    "spec_corr": 0.0
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "notes_in_order": 1.0,
+    "note_cents_max": 12.980394277699116,
+    "n_notes_detected": 4.0,
+    "spec_corr": 0.5678439551082967
+   }
+  },
+  {
+   "case": "listener_side_1m",
+   "label": "Listener moved 1 m sideways",
+   "metrics": {
+    "notes_in_order": 0.0,
+    "note_cents_max": 1200.0,
+    "n_notes_detected": 4.0,
+    "spec_corr": 0.0265171935694647
+   },
+   "delta": {
+    "notes_in_order": -0.4,
+    "note_cents_max": 473.8754387672792,
+    "n_notes_detected": -0.20000000000000018,
+    "spec_corr": -0.43898559213837546
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "notes_in_order": 0.0,
+    "note_cents_max": 1200.0,
+    "n_notes_detected": 4.4,
+    "spec_corr": 0.017602144976060313
+   },
+   "listener": [
+    0.0,
+    1.3
+   ],
+   "window_shift_ms": 0.12595229072253186
+  },
+  {
+   "case": "listener_back_1m",
+   "label": "Listener moved 1 m back",
+   "metrics": {
+    "notes_in_order": 0.0,
+    "note_cents_max": 1200.0,
+    "n_notes_detected": 4.0,
+    "spec_corr": 0.3296935135115403
+   },
+   "delta": {
+    "notes_in_order": -0.4,
+    "note_cents_max": 473.8754387672792,
+    "n_notes_detected": -0.20000000000000018,
+    "spec_corr": -0.13580927219629985
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "notes_in_order": 0.0,
+    "note_cents_max": 1200.0,
+    "n_notes_detected": 4.0,
+    "spec_corr": 0.35059320565260266
+   },
+   "listener": [
+    -1.0,
+    0.3
+   ],
+   "window_shift_ms": 2.9150880511353794
+  },
+  {
+   "case": "jitter",
+   "label": "Posts jittered 5 mm, radii 1 mm (uniform)",
+   "metrics": {
+    "notes_in_order": 0.0,
+    "note_cents_max": 1200.0,
+    "n_notes_detected": 4.2,
+    "spec_corr": 0.41124259843186756
+   },
+   "delta": {
+    "notes_in_order": -0.4,
+    "note_cents_max": 473.8754387672792,
+    "n_notes_detected": 0.0,
+    "spec_corr": -0.05426018727597259
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "notes_in_order": 0.6,
+    "note_cents_max": 492.9853688748519,
+    "n_notes_detected": 3.8,
+    "spec_corr": 0.4400689749392507
+   },
+   "jitter": {
+    "distribution": "uniform",
+    "pos_half_width_m": 0.005,
+    "rad_half_width_m": 0.001,
+    "seed": 1000,
+    "max_abs_dxy_m": 0.004998492790987519,
+    "max_abs_dr_m": 0.0009999836230782724,
+    "min_gap_m": 0.04480329398536478
+   },
+   "tier1_wall_s": 525.8946359157562
+  },
+  {
+   "case": "clap_0",
+   "label": "Clap variant 0 alone",
+   "metrics": {
+    "notes_in_order": 0.0,
+    "note_cents_max": 1200.0,
+    "n_notes_detected": 5.0,
+    "spec_corr": 0.4383596169693448
+   },
+   "delta": {
+    "notes_in_order": -0.4,
+    "note_cents_max": 473.8754387672792,
+    "n_notes_detected": 0.7999999999999998,
+    "spec_corr": -0.02714316873849537
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "notes_in_order": 1.0,
+    "note_cents_max": 14.97561479141929,
+    "n_notes_detected": 4.0,
+    "spec_corr": 0.5319049906183652
+   }
+  },
+  {
+   "case": "clap_1",
+   "label": "Clap variant 1 alone",
+   "metrics": {
+    "notes_in_order": 1.0,
+    "note_cents_max": 15.647191372184578,
+    "n_notes_detected": 4.0,
+    "spec_corr": 0.4523148690813705
+   },
+   "delta": {
+    "notes_in_order": 0.6,
+    "note_cents_max": -710.4773698605362,
+    "n_notes_detected": -0.20000000000000018,
+    "spec_corr": -0.013187916626469676
+   },
+   "pass": true,
+   "metrics_tier0": {
+    "notes_in_order": 1.0,
+    "note_cents_max": 14.97561479141929,
+    "n_notes_detected": 4.0,
+    "spec_corr": 0.5639746513183281
+   }
+  },
+  {
+   "case": "clap_2",
+   "label": "Clap variant 2 alone",
+   "metrics": {
+    "notes_in_order": 1.0,
+    "note_cents_max": 14.97561479141929,
+    "n_notes_detected": 4.0,
+    "spec_corr": 0.48308801999865947
+   },
+   "delta": {
+    "notes_in_order": 0.6,
+    "note_cents_max": -711.1489464413015,
+    "n_notes_detected": -0.20000000000000018,
+    "spec_corr": 0.017585234290819318
+   },
+   "pass": true,
+   "metrics_tier0": {
+    "notes_in_order": 1.0,
+    "note_cents_max": 4.999512222818415,
+    "n_notes_detected": 4.0,
+    "spec_corr": 0.5929589286498619
+   }
+  },
+  {
+   "case": "clap_3",
+   "label": "Clap variant 3 alone",
+   "metrics": {
+    "notes_in_order": 0.0,
+    "note_cents_max": 1200.0,
+    "n_notes_detected": 4.0,
+    "spec_corr": 0.46933331564130465
+   },
+   "delta": {
+    "notes_in_order": -0.4,
+    "note_cents_max": 473.8754387672792,
+    "n_notes_detected": -0.20000000000000018,
+    "spec_corr": 0.0038305299334644993
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "notes_in_order": 1.0,
+    "note_cents_max": 14.97561479141929,
+    "n_notes_detected": 4.0,
+    "spec_corr": 0.5622763899075798
+   }
+  },
+  {
+   "case": "clap_4",
+   "label": "Clap variant 4 alone",
+   "metrics": {
+    "notes_in_order": 0.0,
+    "note_cents_max": 1200.0,
+    "n_notes_detected": 4.0,
+    "spec_corr": 0.4844181068485217
+   },
+   "delta": {
+    "notes_in_order": -0.4,
+    "note_cents_max": 473.8754387672792,
+    "n_notes_detected": -0.20000000000000018,
+    "spec_corr": 0.018915321140681562
+   },
+   "pass": false,
+   "metrics_tier0": {
+    "notes_in_order": 1.0,
+    "note_cents_max": 14.97561479141929,
+    "n_notes_detected": 4.0,
+    "spec_corr": 0.5881048150473485
+   }
+  }
+ ],
+ "failure_cause": "Tier 1 notes detected in order (fraction of claps) = 0.4 misses >= 1.0 (judge floor on a perfect echo: 1); Tier 1 worst note pitch error = 726cents misses <= 30.0cents (judge floor on a perfect echo: 8.99cents)",
+ "judge_floor": {
+  "per_clap": [
+   {
+    "clap": 0,
+    "metrics": {
+     "notes_in_order": 1.0,
+     "note_cents_max": 14.97561479141929,
+     "n_notes_detected": 4.0,
+     "spec_corr": 0.9493877218107869
+    }
+   },
+   {
+    "clap": 1,
+    "metrics": {
+     "notes_in_order": 1.0,
+     "note_cents_max": 4.999512222818415,
+     "n_notes_detected": 4.0,
+     "spec_corr": 0.9669793322871545
+    }
+   },
+   {
+    "clap": 2,
+    "metrics": {
+     "notes_in_order": 1.0,
+     "note_cents_max": 4.999512222818415,
+     "n_notes_detected": 4.0,
+     "spec_corr": 0.9569166222924982
+    }
+   },
+   {
+    "clap": 3,
+    "metrics": {
+     "notes_in_order": 1.0,
+     "note_cents_max": 4.999512222818415,
+     "n_notes_detected": 4.0,
+     "spec_corr": 0.9654437207762772
+    }
+   },
+   {
+    "clap": 4,
+    "metrics": {
+     "notes_in_order": 1.0,
+     "note_cents_max": 14.97561479141929,
+     "n_notes_detected": 4.0,
+     "spec_corr": 0.9435341390420773
+    }
+   }
+  ],
+  "mean": {
+   "notes_in_order": 1.0,
+   "note_cents_max": 8.989953250258765,
+   "n_notes_detected": 4.0,
+   "spec_corr": 0.9564523072417588
+  },
+  "note": "metrics of target * clap (band-limited): the floor set by the judge and the clap, not the design"
+ },
+ "verification": {
+  "validation_passed": true,
+  "radii": [
+   0.01,
+   0.02,
+   0.04,
+   0.08
+  ],
+  "radii_all_angles": [
+   0.04,
+   0.08
+  ],
+  "source": "metrics.json:checks.cylinder.stage2_grid (f_max 2500.0 Hz, ppw 10.0)",
+  "path": "/home/shyam/projects/echo/runs/validation/metrics.json",
+  "engine": "fd8-3",
+  "validation_engine": "fd8-3",
+  "radii_used": [
+   0.01
+  ],
+  "radii_ok": true,
+  "caveats": [
+   "1 cm and 2 cm posts: forward/side scattering off the analytic cylinder at the 4 kHz grid (1 cm forward 1.04 dB, 90-degree 1.77 dB; 2 cm forward 1.47 dB, 90-degree 0.43 dB) (backscatter within 1 dB; cause measured at the 4 kHz grid: dipole part ~10 % strong for sub-cell posts); effect on dense-field echoes is not bounded; shadowing and multiple scattering are checked by self-convergence only, not against an exact solution",
+   "1 cm and 2 cm posts: forward/side scattering off the analytic cylinder at the 2.5 kHz grid (1 cm forward 2.61 dB, 90-degree 0.51 dB; 2 cm forward 1.73 dB, 90-degree 1.65 dB) (backscatter within 1 dB; cause measured at the 4 kHz grid: dipole part ~10 % strong for sub-cell posts); effect on dense-field echoes is not bounded; shadowing and multiple scattering are checked by self-convergence only, not against an exact solution",
+   "1 cm posts at the 2.5 kHz grid (r/dx 0.73) pass backscatter at the 3 fixed offsets only: below the calibrated sub-cell range (area factor clamped), no held-out offsets checked there",
+   "1 cm posts fail backscatter at the 2 kHz grid: not validated there",
+   "the 1 cm backscatter match depends on an area factor fitted to backscatter (area factor 0.908; held-out offsets confirm backscatter only)",
+   "radii [0.01] used by this design are validated for backscatter but not at all angles at this grid (metrics.json:checks.cylinder.stage2_grid (f_max 2500.0 Hz, ppw 10.0))"
+  ],
+  "reason": "validation passed and every radius used is validated at this grid"
+ },
+ "caveats": [
+  "1 cm and 2 cm posts: forward/side scattering off the analytic cylinder at the 4 kHz grid (1 cm forward 1.04 dB, 90-degree 1.77 dB; 2 cm forward 1.47 dB, 90-degree 0.43 dB) (backscatter within 1 dB; cause measured at the 4 kHz grid: dipole part ~10 % strong for sub-cell posts); effect on dense-field echoes is not bounded; shadowing and multiple scattering are checked by self-convergence only, not against an exact solution",
+  "1 cm and 2 cm posts: forward/side scattering off the analytic cylinder at the 2.5 kHz grid (1 cm forward 2.61 dB, 90-degree 0.51 dB; 2 cm forward 1.73 dB, 90-degree 1.65 dB) (backscatter within 1 dB; cause measured at the 4 kHz grid: dipole part ~10 % strong for sub-cell posts); effect on dense-field echoes is not bounded; shadowing and multiple scattering are checked by self-convergence only, not against an exact solution",
+  "1 cm posts at the 2.5 kHz grid (r/dx 0.73) pass backscatter at the 3 fixed offsets only: below the calibrated sub-cell range (area factor clamped), no held-out offsets checked there",
+  "1 cm posts fail backscatter at the 2 kHz grid: not validated there",
+  "the 1 cm backscatter match depends on an area factor fitted to backscatter (area factor 0.908; held-out offsets confirm backscatter only)",
+  "radii [0.01] used by this design are validated for backscatter but not at all angles at this grid (metrics.json:checks.cylinder.stage2_grid (f_max 2500.0 Hz, ppw 10.0))"
+ ],
+ "fragile_reason": "2/5 clap variants pass on their own; 0/3 listener positions pass (nominal, 1 m sideways, 1 m back)",
+ "robust_summary": "partial",
+ "tier1_correction": {
+  "rounds": [
+   {
+    "round": 0,
+    "loss": 4.260896682739258,
+    "score": -31.161150369418003,
+    "posts": 1543,
+    "stretch_eps_applied": -0.0008264661949625979,
+    "stretch_fit": {
+     "eps": -0.0008000000000000437,
+     "tau_s": 1.1999999999999999e-05,
+     "corr": 0.9714904425079378
+    },
+    "gains_next": [
+     0.25,
+     0.25,
+     0.25,
+     0.25,
+     0.25,
+     0.9913918159808672,
+     1.0919761000241184,
+     1.1827991175317802,
+     1.0168210896680427,
+     1.0942989359687383,
+     1.097977673374104,
+     1.1583417496797879,
+     1.2059978575724197,
+     1.6804727906536048,
+     1.883755533491497,
+     2.014955168749434,
+     1.9872862824138013,
+     2.144776443028197,
+     1.0
+    ],
+    "tier_gap_db": -1.7344250546132671,
+    "wall_s": 965.026154756546,
+    "gating": {
+     "notes_in_order": 0.2,
+     "note_cents_max": 964.8345110825401
+    }
+   },
+   {
+    "round": 1,
+    "loss": 4.183093070983887,
+    "score": -23.204152041090694,
+    "posts": 1543,
+    "stretch_eps_applied": -0.0008000000000000437,
+    "stretch_fit": {
+     "eps": -0.000660000000000045,
+     "tau_s": 1.9999999999999998e-05,
+     "corr": 0.9776285181000014
+    },
+    "gains_next": [
+     0.3306245622526379,
+     0.25,
+     0.25,
+     0.3729526329682145,
+     0.7744668519904622,
+     1.1921986595800542,
+     1.178080951233523,
+     1.1579729821565197,
+     1.052025252375348,
+     1.1065606547798816,
+     1.1478872590030753,
+     1.1170452189466942,
+     1.0800328129520174,
+     1.1748702855036248,
+     1.1147688019575037,
+     1.0634330895679394,
+     1.05131647647939,
+     1.127604800208525,
+     1.0
+    ],
+    "tier_gap_db": -2.6984669564720223,
+    "wall_s": 1129.6206073760986,
+    "gating": {
+     "notes_in_order": 0.4,
+     "note_cents_max": 726.1245612327208
+    }
+   }
+  ],
+  "best_round": 1,
+  "tier1_runs": [
+   {
+    "what": "design",
+    "wall_s": 844.6813313961029,
+    "stretch_eps_applied": -0.0008264661949625979,
+    "stretch_eps_measured": -0.0008000000000000437,
+    "stretch_timing_residual": 2.6488086470655148e-05,
+    "stretch_corr": 0.9714904425079378,
+    "empty_cached": false,
+    "empty_s": 398.17039608955383,
+    "scene_s": 430.35107016563416
+   },
+   {
+    "what": "design",
+    "wall_s": 388.4627914428711,
+    "stretch_eps_applied": -0.0008000000000000437,
+    "stretch_eps_measured": -0.000660000000000045,
+    "stretch_timing_residual": 0.00014011208967179556,
+    "stretch_corr": 0.9776285181000014,
+    "empty_cached": true,
+    "empty_s": 0.0,
+    "scene_s": 387.4114694595337
+   }
+  ],
+  "stretch": {
+   "enabled": true,
+   "stretch_per_fill_prior": -0.68,
+   "definition": "Tier 1 echo(t) ~ Tier 0 echo of the same posts at t (1 + eps_measured) (the medium's stretch); ranges scaled by 1 + eps_applied; timing residual = (1 + eps_measured) / (1 + eps_applied) - 1; refit after each Tier 1 run",
+   "final_applied": -0.0008000000000000437,
+   "final_measured": -0.000660000000000045,
+   "final_timing_residual": 0.00014011208967179556
+  },
+  "field_run_ir_max_abs_diff": 0.0,
+  "field_colour": {
+   "limit": 0.00036550142525409687,
+   "percentile": 99.97,
+   "direct_excluded_halfwidth_m": 1.2,
+   "compress": "asinh",
+   "compress_k": 2.0,
+   "level_decay_exponent": -0.8983790227345563,
+   "time_gain_exponent": 0.5390274136407337,
+   "t_ref_s": 0.10965,
+   "zero_rgb": "#0e1620",
+   "crf": 54,
+   "bytes": 11242770
+  }
+ },
+ "design_study": {
+  "design_study_tier0": {
+   "missing": "/home/shyam/projects/echo/runs/s2_motif/_studies/_studies/design_study_tier0.json"
+  },
+  "design_study_v2_tier0": {
+   "missing": "/home/shyam/projects/echo/runs/s2_motif/_studies/_studies/design_study_v2_tier0.json"
+  }
+ }
+}
