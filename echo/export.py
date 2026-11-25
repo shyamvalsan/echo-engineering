@@ -133,13 +133,15 @@ def write_iteration(run_dir, name, scene: Scene, profile: dict, echo, metrics: d
 
 def write_run(stage, tag, title, *, scene: Scene, profile: dict, target_audio, t_echo0, claps, echo_t0, metrics,
               history, seed, command, echo_t1=None, solver=None, field=None, notes="", status=None,
-              as_heard_level_db=None, duration_s=None, runs_root=RUNS, run_id=None, iters=None, extra=None):
+              as_heard_level_db=None, duration_s=None, runs_root=RUNS, run_id=None, iters=None, extra=None, ir=None):
     """Write a full run folder. Returns its path.
 
     profile: {r0_m, dr_m, reflectivity, units}. target_audio: target at FS starting at its own t = 0; it is placed
     at t_echo0 (first echo arrival). echo_t0 / echo_t1: [K, n] 2D echoes (t = 0 emission); clap variant 0 is
     exported. as_heard_level_db: echo peak re direct for clap 0 (corrected 3D); defaults to metrics' headline level.
     iters: optional list of (name, scene, profile, echo, metrics) saved under iters/<name>/.
+    ir: optional {tier0: array, tier1: array|None, band: (lo, hi), source_t1: str|None} -> ir_tier0.wav /
+    ir_tier1.wav (unnormalized float, model units) and manifest['ir'] (write_ir), with reconstruction errors vs clap 0.
     """
     run_id = run_id or make_run_id(tag)
     d = Path(runs_root) / stage / run_id
@@ -212,6 +214,14 @@ def write_run(stage, tag, title, *, scene: Scene, profile: dict, target_audio, t
             raise ValueError(f"extra manifest keys collide with contract keys: {sorted(clash)}")
         manifest.update(extra)
     write_json(d / "manifest.json", manifest, indent=1)
+    if ir is not None:
+        i0_, i1_ = fit(ir["tier0"]), (fit(ir["tier1"]) if ir.get("tier1") is not None else None)
+        write_ir(d, i0_, ir["band"], i1_, ir.get("source_t1"), extra={"check": {
+            "tier0_reconstruction_error_db": ir_error_db(i0_, claps[0], w_t0),
+            "tier1_reconstruction_error_db": ir_error_db(i1_, claps[0], w_t1) if (i1_ is not None and w_t1 is not None)
+            else None,
+            "definition": "error_db = 10 log10(|clap_0 (*) ir - echo|^2 / |echo|^2) over the echo file",
+            "written_by": "echo.export.write_run"}})
     update_index(runs_root)
     return d
 
@@ -242,3 +252,103 @@ def update_index(runs_root=RUNS):
     runs.sort(key=lambda r: (r["created"], r["run_id"]), reverse=True)
     write_json(root / "index.json", {"runs": runs}, indent=1)
     return runs
+
+
+# ------------------------------------------------------------------------------------------- impulse responses
+# ir_tier0.wav / ir_tier1.wav: mono 32-bit float at FS, same t = 0 (emission) and length as the run's echo WAVs, in
+# the model's units (pressure re the direct sound at the listener): `source (*) ir` is the echo of any source at its
+# true level relative to that source heard directly. NOT normalized (values ~1e-3; float keeps them). Band-limited to
+# the run's band (manifest.design.loss_band_hz). The manifest gets an `ir` block (read-modify-write of that key only).
+IR_UNITS = "pressure re direct sound at listener"
+IR_SRC_T0 = "computed from scene.json"
+IR_SRC_T1_STORED = "stored at run time"
+IR_SRC_T1_CACHE = "solver cache"
+IR_SRC_T1_DECONV = "deconvolved from echo_tier1.wav (clap 0), in-band, regularized"
+DECONV_LAMBDA = 1e-3  # Tikhonov floor relative to max |C0(f)|^2 in band (-30 dB)
+
+
+def tier0_ir(scene: Scene, band, n, absorption=True):
+    """Tier 0 2D impulse response of scene.posts: irfft(post_transfer) on the FFT grid post_echo would use, first n
+    samples. clap (*) ir reproduces post_echo(posts, clap, scene, '2d', n_out=n, band=band) (the exported echo)."""
+    import torch
+
+    from echo.tier0 import choose_n_fft, post_transfer
+
+    posts = np.asarray(scene.posts, dtype=float).reshape(-1, 3)
+    if not len(posts):
+        return np.zeros(n)
+    r1 = np.linalg.norm(posts[:, :2] - np.asarray(scene.source)[None], axis=1)
+    r2 = np.linalg.norm(posts[:, :2] - np.asarray(scene.listener)[None], axis=1)
+    n_fft = choose_n_fft(n, float((r1 + r2).max()) / float(scene.c), 128)
+    H = post_transfer(torch.as_tensor(posts), scene, mode="2d", n_fft=n_fft, band=tuple(band), absorption=absorption)
+    return torch.fft.irfft(H, n=n_fft).numpy()[:n]
+
+
+def tier1_ir_from_result(result, band, listener=0):
+    """The Tier 1 IR whose convolution with a clap gives the exported Tier 1 echo: air absorption applied
+    (echo.tier1.absorb, as echo.tier1.echoes does) and band-limited to the run band (as the stage driver does)."""
+    from echo.clap import band_limit
+    from echo.tier1 import absorb
+
+    ir = np.asarray(result.ir[listener], dtype=float)
+    d = float(np.linalg.norm(np.asarray(result.listeners[listener]) - np.asarray(result.extra.get("source", np.zeros(2)))))
+    return band_limit(absorb(ir, result.fs, result.c, d_direct=d)[0], band[0], band[1])
+
+
+def convolve_trunc(x, ir, n=None):
+    """Linear convolution x (*) ir, first n samples (default len(ir))."""
+    n = len(ir) if n is None else n
+    nfft = 1 << int(np.ceil(np.log2(len(x) + len(ir))))
+    return np.fft.irfft(np.fft.rfft(x, nfft) * np.fft.rfft(ir, nfft), nfft)[:n]
+
+
+def deconvolve_ir(echo, clap, band, lam=DECONV_LAMBDA, fs=FS):
+    """Regularized in-band deconvolution of an exported echo by its clap.
+
+    IR(f) = E(f) C*(f) / (|C(f)|^2 + lam max_band |C|^2) where the run band's mask (echo.clap.band_limit's mask,
+    raised-cosine edges) is non-zero, 0 outside. Returns (ir [len(echo)], error_db), error_db = reconstruction error
+    10 log10(|clap (*) ir - echo|^2 / |echo|^2) over the echo's length."""
+    from echo.tier0 import band_mask
+
+    echo = np.asarray(echo, dtype=float)
+    clap = np.asarray(clap, dtype=float)
+    n = len(echo)
+    nfft = 1 << int(np.ceil(np.log2(2 * (n + len(clap)))))
+    f = np.fft.rfftfreq(nfft, 1.0 / fs)
+    E, C = np.fft.rfft(echo, nfft), np.fft.rfft(clap, nfft)
+    m = np.asarray(band_mask(f, band[0], band[1], fs), dtype=float)
+    sup = m > 0
+    C2 = np.abs(C) ** 2
+    floor = lam * C2[sup & (f >= band[0]) & (f <= band[1])].max()
+    H = np.zeros_like(E)
+    H[sup] = E[sup] * np.conj(C[sup]) / (C2[sup] + floor)
+    ir = np.fft.irfft(H, nfft)[:n]
+    return ir, ir_error_db(ir, clap, echo)
+
+
+def ir_error_db(ir, clap, echo):
+    """Reconstruction error (dB): 10 log10(|clap (*) ir - echo|^2 / |echo|^2) over the echo's length."""
+    echo = np.asarray(echo, dtype=float)
+    rec = convolve_trunc(np.asarray(clap, float), np.asarray(ir, float), len(echo))
+    return float(10 * np.log10(max(np.sum((rec - echo) ** 2), 1e-300) / max(np.sum(echo ** 2), 1e-300)))
+
+
+def write_ir(run_dir, ir_t0, band, ir_t1=None, source_t1=None, extra=None, source_t0=IR_SRC_T0):
+    """Write ir_tier0.wav (and ir_tier1.wav) as 32-bit float, unnormalized, and set manifest['ir'] (only that key
+    is changed: read-modify-write). Returns the ir block."""
+    d = Path(run_dir)
+    sf.write(d / "ir_tier0.wav", np.asarray(ir_t0, dtype=np.float32), FS, subtype="FLOAT")
+    if ir_t1 is not None:
+        sf.write(d / "ir_tier1.wav", np.asarray(ir_t1, dtype=np.float32), FS, subtype="FLOAT")
+    block = {"tier0": "ir_tier0.wav", "tier1": "ir_tier1.wav" if ir_t1 is not None else None, "fs": FS,
+             "band_hz": [float(band[0]), float(band[1])], "t0_s": 0.0, "units": IR_UNITS,
+             "source": {"tier0": source_t0, "tier1": source_t1 if ir_t1 is not None else None},
+             "peak": {"tier0": float(np.max(np.abs(ir_t0))),
+                      "tier1": float(np.max(np.abs(ir_t1))) if ir_t1 is not None else None}}
+    if extra:
+        block.update(extra)
+    mp = d / "manifest.json"
+    man = json.loads(mp.read_text())
+    man["ir"] = block
+    write_json(mp, man, indent=1)
+    return block

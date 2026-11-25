@@ -97,6 +97,8 @@ class StageConfig:
     #   Stage 3 uses it for an extinction pre-compensation (judge-free); it must not consult any judge
     tier0_equalize_rounds: int = 0  # after the solve: rounds of per-window level correction of the Tier 0 profile echo
     #   toward the physically perfect echo (echo.inverse.window_gains, the Tier 1 loop's rule; judge-free); 0 = off
+    stretch_prior_tier0: bool = False  # Tier 0-only runs: pre-scale ranges by 1 + stretch_per_fill * fill (the stretch
+    #   prior the Tier 1 path starts from), so a design that is never run on Tier 1 is still pre-compensated; off = 1.0
 
 
 @dataclass
@@ -449,7 +451,17 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
 
     if tier1 is None:
         t = time.time()
-        des = build_design(cfg, profile, claps, band, n_out)
+        rs0 = 1.0
+        if cfg.stretch_prior_tier0 and cfg.stretch_comp:
+            from echo.realize import wedge_area as _wa
+
+            _r_hi = cfg.r0 + C0 * len(target.audio) / FS / 2.0
+            _area = _wa(stage_scene(cfg).r_min, _r_hi, cfg.half_angle_deg)
+            if cfg.max_half_width_m is not None:
+                _area = min(_area, 2.0 * cfg.max_half_width_m * (_r_hi - stage_scene(cfg).r_min))
+            rs0 = 1.0 + cfg.stretch_per_fill * float(profile.sum()) * np.pi * cfg.a_ref ** 2 / _area
+        des = build_design(cfg, profile, claps, band, n_out, range_scale=rs0)
+        des.extra["stretch_eps_applied"] = rs0 - 1.0
         wall["realize_s"] = time.time() - t
         e1_final, best_res = None, None
     else:
@@ -719,13 +731,20 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
                         "solve_wall_s": res.history["wall_s"], "realize_wall_s": wall.get("realize_s"),
                         "total_wall_s": wall["total_s"]},
              "wall_s": wall, "caveats": (metrics.get("caveats") or [])}
+    ir = None  # impulse responses (ir_tier0.wav / ir_tier1.wav + manifest.ir); never fails the run
+    try:
+        ir_t1 = export.tier1_ir_from_result(best_res, band) if (tier1 is not None and best_res is not None) else None
+        ir = {"tier0": export.tier0_ir(sc, band, n_out), "tier1": ir_t1, "band": band,
+              "source_t1": export.IR_SRC_T1_STORED if ir_t1 is not None else None}
+    except Exception as exc:  # noqa: BLE001
+        say(f"  IR export skipped: {exc!r}")
     run_dir = export.write_run(cfg.stage, cfg.tag, cfg.title, scene=sc, profile=profile_dict(des.profile, cfg.r0, cfg.dr),
                                target_audio=target.audio, t_echo0=t_echo0, claps=claps, echo_t0=des.echo_t0_2d,
                                echo_t1=des.echo_t1_2d, metrics=metrics, history=history, seed=cfg.seed,
                                command=command or " ".join(["uv run python -m", f"stages.{cfg.stage}"] + sys.argv[1:]),
                                notes=notes, as_heard_level_db=lvl0, duration_s=cfg.duration_s, extra=extra,
                                solver=solver, field=field_block, iters=iters, run_id=run_id,
-                               status=cfg.status or (None if tier1 is None else "final"), **kw)
+                               status=cfg.status or (None if tier1 is None else "final"), ir=ir, **kw)
     if verbose:
         print_summary(run_dir, metrics, wall)
     return run_dir, des, res
