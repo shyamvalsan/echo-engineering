@@ -111,10 +111,12 @@ Contracts used (Live):
   (mono float, sample 0 = emission, `source ⊛ ir` = echo at true level re the direct sound). An IR at another rate
   is resampled and scaled by `fs_in / fs_out` (taps are a density per sample; the same scaling is applied when the
   16 kHz IR is resampled to the device rate).
-- The run's true level is the 3D, tier-gap-corrected `audio.as_heard_echo_level_db`. An IR file whose clap echo
-  differs from it by more than 3 dB is rescaled to it and the IR note says by how much. On 25 Nov the backfilled
-  `ir_tier1.wav` files carry the 2D level of `echo_tier1.wav` (stage 1: -32.6 dB vs -49.7 dB as heard), so they are
-  rescaled by about -17 dB.
+- Level: IRs are stored at the 2D model level (`manifest.ir.model_level`); the viewer multiplies by
+  `manifest.ir.gain_to_true_level[tier]` and shows "stored at the 2D model level; shown at the true 3D level using the
+  run's stated factor". True level shown = `ir.level_db.true_3d`. Only for IR files without that factor does it fall
+  back to rescaling the IR so the run's clap echo has `audio.as_heard_echo_level_db` (when off by more than 3 dB).
+- When `manifest.ir.source[tier]` says "deconvolved", the Response box adds "reconstructed from the stored echo;
+  trustworthy only inside the clap's band (band_hz)" and points to Tier 0.
 - Runs without `manifest.ir` (written before that contract): the IR is derived in the browser by a regularized,
   band-limited deconvolution of `echo_tier{0,1}.wav` by the clap (`as_heard.wav` from `t_direct` to the first echo or
   12 ms), scaled so the clap's echo has `audio.as_heard_echo_level_db`. On the stage-1 run this reconstructs the

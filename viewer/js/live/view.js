@@ -151,7 +151,7 @@ export class LiveView {
       };
       d.append(el("div", { class: "row" }, file), el("div", { class: "row" }, name),
         el("label", { class: "row check" }, verify, "also verify on full-wave (slow, minutes to hours)"),
-        el("div", { class: "row" }, go, el("span", { class: "hint" }, "fast model by default: several minutes")), bar, msg);
+        el("div", { class: "row" }, go, el("span", { class: "hint" }, "fast model by default: under a minute; full-wave adds minutes to hours")), bar, msg);
       if (LiveView.designMsg) msg.textContent = LiveView.designMsg;
     }
     // custom runs, hide-from-view only
@@ -167,12 +167,12 @@ export class LiveView {
     for (;;) {
       const j = await lab.job(id), el_s = Math.round((performance.now() - t0) / 1000);
       bar.firstChild.style.width = `${Math.round((j.progress ?? 0) * 100)}%`;
-      msg.textContent = `${j.stage ?? j.status}${j.message ? `: ${j.message}` : ""}${j.warnings?.length ? ` (${j.warnings.join("; ")})` : ""}, ${el_s < 60 ? `${el_s} s` : `${Math.floor(el_s / 60)} min ${el_s % 60} s`}`;
+      msg.textContent = `${j.status === "queued" ? "queued" : `${Math.round((j.progress ?? 0) * 100)} %, ${j.stage ?? j.status}`}${j.message ? `: ${j.message}` : ""}${j.warnings?.length ? ` (${j.warnings.join("; ")})` : ""}, ${el_s < 60 ? `${el_s} s` : `${Math.floor(el_s / 60)} min ${el_s % 60} s`}`;
       if (j.status === "error") throw new Error(j.message ?? "the lab reported an error");
       if (j.status === "done") { bar.hidden = true;
-        msg.textContent = LiveView.designMsg = `Done in ${Math.round(el_s / 60)} min${j.warnings?.length ? ` (${j.warnings.join("; ")})` : ""}: opened "${j.name ?? "the new design"}"${j.tier1 ? "" : " (fast model only, not verified)"}.`;
+        msg.textContent = LiveView.designMsg = `Done in ${el_s < 60 ? `${el_s} s` : `${Math.round(el_s / 60)} min`}${j.warnings?.length ? ` (${j.warnings.join("; ")})` : ""}: opened "${j.name ?? "the new design"}"${j.tier1 ? "" : " (fast model only, not verified)"}.`;
         await this.reloadRuns?.(j.run?.path); return; }
-      await new Promise((r) => setTimeout(r, 1000));
+      await new Promise((r) => setTimeout(r, 500));
     }
   }
 
@@ -206,6 +206,7 @@ export class LiveView {
       const run = this.run, ir = await loadIR(run, t); if (run !== this.run || t !== this.tier) return;
       this.ir = ir; await this.engine.setIR(ir);
       this.irNote.textContent = `${tierName(t)}: ${ir.note}.`;
+      if (ir.unreliable) this.irNote.append(el("span", { class: "irwarn" }, ` Reconstructed from the stored echo; trustworthy only inside the clap's band${ir.band ? ` (${Math.round(ir.band[0])}–${Math.round(ir.band[1])} Hz)` : ""}.${t === "tier1" ? " Tier 0 is computed directly from the posts." : ""}`));
       this.irNote.classList.toggle("derived", ir.origin === "derived");
       this._levelUI(); this._latencyUI(); this._howto();
       if (this.selTake()) await this.select(this.selTake().id);

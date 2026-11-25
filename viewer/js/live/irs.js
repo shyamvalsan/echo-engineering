@@ -60,7 +60,19 @@ async function build(run, tier) {
   // leading silence: geometry, never past the data's own onset (5 % of peak; band-limited deconvolved IRs ring a little before it)
   const pk = peakOf(data); let on = 0; while (on < data.length && Math.abs(data[on]) < 0.05 * pk) on++;
   const lead = Math.max(0, Math.min(geo, on / FS));
-  // true level: the run's clap through this IR, re the clap (direct)
+  // stated factor: the IR is stored at the 2D model level; source ⊛ ir × gain_to_true_level is the true 3D echo
+  const gain = origin === "file" ? irm?.gain_to_true_level?.[tier] : null;
+  let unreliable = false;
+  if (gain != null) {
+    data = data.map((v) => v * gain);
+    note = `structure response stored at the ${(irm.model_level ?? "2d").toUpperCase()} model level; shown at the true 3D level using the run's stated factor (×${gain.toPrecision(3)}, ${(20 * Math.log10(gain)).toFixed(1)} dB)`;
+    unreliable = /deconvolved/i.test(irm.source?.[tier] ?? "");
+    const lv = irm.level_db?.true_3d ?? m.audio?.as_heard_echo_level_db ?? null;
+    const pk2 = peakOf(data); let on2 = 0; while (on2 < data.length && Math.abs(data[on2]) < 0.05 * pk2) on2++;
+    return { data, fs: FS, lead: Math.max(0, Math.min(geo, on2 / FS)), tDirect, key: `${run.dir}|${tier}|stated`, origin, levelDb: lv, note, tier, unreliable,
+      band: irm.band_hz };
+  }
+  // fallback for run folders without a stated factor. True level: the run's clap through this IR, re the clap (direct)
   const asHeard = m.audio?.as_heard_echo_level_db ?? null; let levelDb = asHeard;
   if (origin === "file" || levelDb == null) { const clap = await runClap(run).catch(() => null);
     if (clap) levelDb = 20 * Math.log10(peakOf(convolve(clap.data, data)) + 1e-12); }
