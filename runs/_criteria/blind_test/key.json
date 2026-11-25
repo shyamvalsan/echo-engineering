@@ -1,0 +1,59 @@
+{
+ "seed": 20261125,
+ "samples": {
+  "sample_01.wav": {
+   "test": "s2_motif",
+   "title": "Stage 2 four-note motif",
+   "run_id": "20261125-145628-s2v2",
+   "source": "listen/s2v2_echo_only.wav"
+  },
+  "sample_02.wav": {
+   "test": "s1_bird",
+   "title": "Stage 1 bird whistle",
+   "run_id": "20261125-104529-s1",
+   "source": "listen/s1_echo_only.wav"
+  },
+  "sample_03.wav": {
+   "test": "s4b_ma",
+   "title": "4b syllable \"ma\"",
+   "run_id": "20261125-132102-s4_4b_ma",
+   "source": "listen/s4_4b_ma_echo_only.wav"
+  },
+  "sample_04.wav": {
+   "test": "s4b_om",
+   "title": "4b syllable \"om\"",
+   "run_id": "20261125-135718-s4_4b_om",
+   "source": "listen/s4_4b_om_echo_only.wav"
+  },
+  "sample_05.wav": {
+   "test": "s3_melody_60ms",
+   "title": "Stage 3 melody, 60 ms notes",
+   "run_id": "20261125-133244-s3_60ms",
+   "source": "listen/s3_60ms_echo_only.wav"
+  },
+  "sample_06.wav": {
+   "test": "s3_melody_100ms",
+   "title": "Stage 3 melody, 100 ms notes",
+   "run_id": "20261125-131152-s3",
+   "source": "listen/s3_echo_only.wav"
+  },
+  "sample_07.wav": {
+   "test": "s4a_ah",
+   "title": "4a vowel \"ah\"",
+   "run_id": "20261125-142346-s4_4a_ah",
+   "source": "listen/s4_4a_ah_echo_only.wav"
+  },
+  "sample_08.wav": {
+   "test": "s4b_ba",
+   "title": "4b syllable \"ba\"",
+   "run_id": "20261125-134325-s4_4b_ba",
+   "source": "listen/s4_4b_ba_echo_only.wav"
+  },
+  "sample_09.wav": {
+   "test": "s4c_hello",
+   "title": "4c word \"hello\"",
+   "run_id": "20261125-124137-s4_4c_hello",
+   "source": "listen/s4_4c_hello_echo_only.wav"
+  }
+ }
+}

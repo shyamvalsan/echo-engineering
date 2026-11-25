@@ -4612,5 +4612,411 @@
    "full_wedge_definition": "Tier 0 3D per-note peak of the strip design + 20 log10(wedge width 2 rho tan 20 deg / strip width 2 m) at the note's mid range: ring populations scaled to the full wedge at the strip's areal density, coherent single scattering; not simulated"
   },
   "summary": "(1) the design is imperfect already on Tier 0 (notes in order for 0.0 of claps): the inner notes are clean tones (median -0.0 dB of note power at the note frequency) but the first and last notes are not (-18.8 / -21.9 dB: the ends of the 2500-post comb, 3.8 posts per carrier period) and the segmenter merges or drops notes (clap 0: 8 detected); (2) on Tier 1 a broadband residue dominates: the inner notes carry only -7.5 dB of their power at the note frequency, the Tier 1 inner-note level is +2.2 dB ABOVE Tier 0 (median) although coherent extinction predicts 5.5 dB below, and the pitch tracker locks to 1827-2063 Hz (the top of the 2.5 kHz band where the clap x (ka)^2 scattering residue is strongest; interpretation) instead of the 1175-1568 Hz notes; Tier 1 stretch -0.178 % (corr 0.51 -> 0.58 after it). Coherent extinction is not the binding cause (predicted 6.9 dB at the last note, mean tier gap -1.7 dB); the incoherent residue of a sparse comb of weak (ka ~ 0.2-0.3) posts is the binding cause on Tier 1, and the comb's ends on Tier 0"
+ },
+ "criteria": {
+  "spec_v1": {
+   "label": "spec_v1 (original spec thresholds)",
+   "passed": false,
+   "gating": [
+    {
+     "id": "notes_in_order",
+     "label": "Notes detected in order (fraction of claps)",
+     "value": 0.0,
+     "unit": "",
+     "threshold": 1.0,
+     "comparator": ">=",
+     "pass": false,
+     "tier": "tier1"
+    },
+    {
+     "id": "note_cents_max",
+     "label": "Worst note pitch error",
+     "value": 1200.0,
+     "unit": "cents",
+     "threshold": 50.0,
+     "comparator": "<=",
+     "pass": false,
+     "tier": "tier1"
+    }
+   ]
+  },
+  "owner_v2": {
+   "label": "owner_v2 (listening-calibrated, 2026-11-25)",
+   "passed": null,
+   "metrics": [
+    {
+     "id": "id_claps",
+     "label": "C1: claps whose echo is nearest its own target (closed set, log-mel DTW, 30 dB)",
+     "value": 3.0,
+     "unit": "claps",
+     "threshold": 3,
+     "comparator": ">=",
+     "pass": true,
+     "used": true,
+     "per_clap": [
+      {
+       "clap": 0,
+       "correct": false,
+       "margin": -1.1119838900658063,
+       "nearest": "s1_bird"
+      },
+      {
+       "clap": 1,
+       "correct": true,
+       "margin": 1.3545937608198404,
+       "nearest": "s3_melody_60ms"
+      },
+      {
+       "clap": 2,
+       "correct": true,
+       "margin": 0.13901751090441472,
+       "nearest": "s3_melody_60ms"
+      },
+      {
+       "clap": 3,
+       "correct": true,
+       "margin": 0.35240499025507077,
+       "nearest": "s3_melody_60ms"
+      },
+      {
+       "clap": 4,
+       "correct": false,
+       "margin": -0.788766709011588,
+       "nearest": "s1_bird"
+      }
+     ]
+    },
+    {
+     "id": "pitch_cents",
+     "label": "C2: median pitch deviation along the notes (3rd-best clap)",
+     "value": 384.99577150007804,
+     "unit": "cents",
+     "threshold": null,
+     "comparator": "<=",
+     "pass": null,
+     "per_clap": [
+      644.9957715000781,
+      74.99577150007802,
+      84.99577150007809,
+      594.9957715000785,
+      384.99577150007804
+     ]
+    },
+    {
+     "id": "claps_pass",
+     "label": "Claps passing every criterion (majority rule, verdict)",
+     "value": 0.0,
+     "unit": "claps",
+     "threshold": 3,
+     "comparator": ">=",
+     "pass": false,
+     "per_clap": [
+      false,
+      false,
+      false,
+      false,
+      false
+     ]
+    }
+   ],
+   "controls": [
+    {
+     "name": "wrong_target:s2_motif",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -10.858588660268225,
+      "pitch_cents": 1704.995771500078
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4a_ah",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -9.635221157731788,
+      "pitch_cents": 2165.0042284999217
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_om",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -7.64799687090224,
+      "pitch_cents": 1154.995771500078
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_ba",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -9.65500732406622,
+      "pitch_cents": 2165.0042284999217
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_ma",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -8.829239372204079,
+      "pitch_cents": 2165.0042284999217
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s3_melody_100ms",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -4.599563127757017,
+      "pitch_cents": 684.9957715000779
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4c_hello",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -7.990722908319276,
+      "pitch_cents": 2165.0042284999217
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s1_bird",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -15.617162890710118,
+      "pitch_cents": 1714.995771500078
+     },
+     "pass": false
+    },
+    {
+     "name": "clap_alone",
+     "kind": "b no structure",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -11.231122860174667,
+      "pitch_cents": 2165.0042284999217
+     },
+     "pass": false
+    },
+    {
+     "name": "noise_burst",
+     "kind": "b no structure",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -6.814839705696052,
+      "pitch_cents": 864.9957715000783
+     },
+     "pass": false
+    },
+    {
+     "name": "time_reversed",
+     "kind": "c reversed",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -1.434708904516432,
+      "pitch_cents": 384.9957715000777
+     },
+     "pass": false
+    },
+    {
+     "name": "phase_scrambled",
+     "kind": "d same long-term spectrum",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -6.691898860137414,
+      "pitch_cents": 2165.0042284999217
+     },
+     "pass": false
+    },
+    {
+     "name": "shift-2st",
+     "kind": "e mistuned",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -5.006133404121938,
+      "pitch_cents": 185.00422849992177
+     },
+     "pass": false
+    },
+    {
+     "name": "shift-1st",
+     "kind": "e mistuned",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -3.6687924588634466,
+      "pitch_cents": 254.99577150007806
+     },
+     "pass": false
+    },
+    {
+     "name": "shift+1st",
+     "kind": "e mistuned",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -3.9992902855071684,
+      "pitch_cents": 654.9957715000781
+     },
+     "pass": false
+    },
+    {
+     "name": "shift+2st",
+     "kind": "e mistuned",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -6.334969829057449,
+      "pitch_cents": 704.9957715000783
+     },
+     "pass": false
+    },
+    {
+     "name": "notes_3_4_swapped",
+     "kind": "e notes swapped (segments of the accepted echo)",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -2.2058430337727994,
+      "pitch_cents": 594.9957715000785
+     },
+     "pass": false
+    },
+    {
+     "name": "perfect_shift-2st",
+     "kind": "e mistuned perfect echo",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -14.879840069675106,
+      "pitch_cents": 195.00422849992162
+     },
+     "pass": false
+    },
+    {
+     "name": "perfect_shift-1st",
+     "kind": "e mistuned perfect echo",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -11.52552030454688,
+      "pitch_cents": 95.00422849992172
+     },
+     "pass": false
+    },
+    {
+     "name": "perfect_shift+1st",
+     "kind": "e mistuned perfect echo",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -11.813136123055138,
+      "pitch_cents": 104.99577150007828
+     },
+     "pass": false
+    },
+    {
+     "name": "perfect_shift+2st",
+     "kind": "e mistuned perfect echo",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -15.193017944155011,
+      "pitch_cents": 204.99577150007815
+     },
+     "pass": false
+    },
+    {
+     "name": "perfect_notes_3_4_swapped",
+     "kind": "e notes swapped (perfect echo)",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -3.051040040173693,
+      "pitch_cents": 4.9957715000784395
+     },
+     "pass": false
+    }
+   ],
+   "controls_all_fail": true,
+   "margin": {
+    "id": {
+     "c1_valid_on_perfect_echo": true,
+     "c1_used": true,
+     "c1_matches_frozen": true,
+     "accepted_median_margin": 0.13901751090441472,
+     "perfect_median_margin": 3.062334419962537,
+     "accepted_id_claps": 3,
+     "strongest_control": "time_reversed",
+     "strongest_control_values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -1.434708904516432,
+      "pitch_cents": 384.9957715000777
+     }
+    },
+    "pitch": {
+     "rule": "midway between worst positive and best mistuning control (3rd-best clap), 5-cent rounding",
+     "derived_threshold": null,
+     "frozen_threshold": null,
+     "matches_frozen": true,
+     "worst_positive": 384.99577150007804,
+     "best_mistuning_control": 185.00422849992177,
+     "margin_positive": null,
+     "margin_control": null
+    }
+   },
+   "note": "accepted by ear; no automated criterion separates this echo from the negative controls (the accepted echo fails the criterion; the perfect echo fails the criterion)",
+   "test": "s3_melody_60ms",
+   "accepted_run": "20261125-133244-s3_60ms",
+   "echo_source": {
+    "route": "ir_tier1.wav (echo_k = clap_k * ir)",
+    "clap0_rel_err_vs_echo_tier1_wav": 0.016111669746888563
+   },
+   "perfect_echo": {
+    "values": {
+     "claps_pass": 0,
+     "id_claps": 5,
+     "id_margin_median": 3.062334419962537,
+     "pitch_cents": 4.9957715000784395
+    },
+    "pass": false
+   }
+  }
+ },
+ "listening_verdict": {
+  "by": "owner",
+  "date": "2026-11-25",
+  "verdict": "pass",
+  "basis": "echo_tier1.wav (echo alone, normalized) by ear",
+  "scope": "all final runs' current results",
+  "quote": "listening to the results, I think all of them are pass",
+  "blind": false,
+  "note": "A human judgment, recorded as such; not an automated pass. Not a blind test: the listener knew each target, and knowing the target helps a listener hear it. A blind check is prepared in runs/_criteria/blind_test/."
  }
 }

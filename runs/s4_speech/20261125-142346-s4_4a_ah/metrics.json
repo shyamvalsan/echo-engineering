@@ -3363,5 +3363,252 @@
   "profile_model": 2.7450449466705322,
   "realized_tier0": 5.231081008911133,
   "realized_tier1": 5.456166744232178
+ },
+ "criteria": {
+  "spec_v1": {
+   "label": "spec_v1 (original spec thresholds)",
+   "passed": false,
+   "gating": [
+    {
+     "id": "formant_err_pct",
+     "label": "Worst of F1, F2 error vs target",
+     "value": null,
+     "unit": "%",
+     "threshold": 10.0,
+     "comparator": "<=",
+     "pass": false,
+     "tier": "tier1"
+    }
+   ]
+  },
+  "owner_v2": {
+   "label": "owner_v2 (listening-calibrated, 2026-11-25)",
+   "passed": null,
+   "metrics": [
+    {
+     "id": "id_claps",
+     "label": "C1: claps whose echo is nearest its own target (closed set, log-mel DTW, 30 dB)",
+     "value": 0.0,
+     "unit": "claps",
+     "threshold": 3,
+     "comparator": ">=",
+     "pass": false,
+     "used": true,
+     "per_clap": [
+      {
+       "clap": 0,
+       "correct": false,
+       "margin": -1.7575410847912796,
+       "nearest": "s3_melody_100ms"
+      },
+      {
+       "clap": 1,
+       "correct": false,
+       "margin": -2.339282933855541,
+       "nearest": "s3_melody_100ms"
+      },
+      {
+       "clap": 2,
+       "correct": false,
+       "margin": -1.8689792362795181,
+       "nearest": "s3_melody_100ms"
+      },
+      {
+       "clap": 3,
+       "correct": false,
+       "margin": -1.9412903561314803,
+       "nearest": "s3_melody_100ms"
+      },
+      {
+       "clap": 4,
+       "correct": false,
+       "margin": -1.6025671252155576,
+       "nearest": "s3_melody_100ms"
+      }
+     ]
+    },
+    {
+     "id": "claps_pass",
+     "label": "Claps passing every criterion (majority rule, verdict)",
+     "value": 0.0,
+     "unit": "claps",
+     "threshold": 3,
+     "comparator": ">=",
+     "pass": false,
+     "per_clap": [
+      false,
+      false,
+      false,
+      false,
+      false
+     ]
+    }
+   ],
+   "controls": [
+    {
+     "name": "wrong_target:s2_motif",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -3.0618215056786884
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_om",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -3.1577380680981424
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_ba",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -3.081083290137986
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s3_melody_60ms",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -3.6787225402930215
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_ma",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -3.009256706152442
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s3_melody_100ms",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -2.757418911730623
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4c_hello",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -3.0660145804359136
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s1_bird",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -10.133575339374557
+     },
+     "pass": false
+    },
+    {
+     "name": "clap_alone",
+     "kind": "b no structure",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -5.253702218667006
+     },
+     "pass": false
+    },
+    {
+     "name": "noise_burst",
+     "kind": "b no structure",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -2.5652989944541407
+     },
+     "pass": false
+    },
+    {
+     "name": "time_reversed",
+     "kind": "c reversed",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -2.725142561355149
+     },
+     "pass": false
+    },
+    {
+     "name": "phase_scrambled",
+     "kind": "d same long-term spectrum",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -2.911723925102674
+     },
+     "pass": false
+    }
+   ],
+   "controls_all_fail": true,
+   "margin": {
+    "id": {
+     "c1_valid_on_perfect_echo": true,
+     "c1_used": true,
+     "c1_matches_frozen": true,
+     "accepted_median_margin": -1.8689792362795181,
+     "perfect_median_margin": 3.2098864735782078,
+     "accepted_id_claps": 0,
+     "strongest_control": "noise_burst",
+     "strongest_control_values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -2.5652989944541407
+     }
+    },
+    "pitch": null
+   },
+   "note": "accepted by ear; no automated criterion separates this echo from the negative controls (the accepted echo fails the criterion)",
+   "test": "s4a_ah",
+   "accepted_run": "20261125-142346-s4_4a_ah",
+   "echo_source": {
+    "route": "saved per-clap Tier 1 echoes (runs/s4_speech/_studies/echoes_ah.npz)",
+    "clap0_rel_err_vs_echo_tier1_wav": 2.4374110132675935e-08
+   },
+   "perfect_echo": {
+    "values": {
+     "claps_pass": 5,
+     "id_claps": 5,
+     "id_margin_median": 3.2098864735782078
+    },
+    "pass": true
+   }
+  }
+ },
+ "listening_verdict": {
+  "by": "owner",
+  "date": "2026-11-25",
+  "verdict": "pass",
+  "basis": "echo_tier1.wav (echo alone, normalized) by ear",
+  "scope": "all final runs' current results",
+  "quote": "listening to the results, I think all of them are pass",
+  "blind": false,
+  "note": "A human judgment, recorded as such; not an automated pass. Not a blind test: the listener knew each target, and knowing the target helps a listener hear it. A blind check is prepared in runs/_criteria/blind_test/."
  }
 }

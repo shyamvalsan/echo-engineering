@@ -1,0 +1,2668 @@
+{
+ "label_v1": "spec_v1 (original spec thresholds)",
+ "label_v2": "owner_v2 (listening-calibrated, 2026-11-25)",
+ "thresholds_v2": {
+  "s1_bird": {
+   "pitch_cents": 40.0
+  },
+  "s2_motif": {
+   "pitch_cents": 240.0
+  },
+  "s3_melody_100ms": {
+   "pitch_cents": null
+  },
+  "s3_melody_60ms": {
+   "pitch_cents": null
+  },
+  "s4a_ah": {},
+  "s4b_ma": {},
+  "s4b_ba": {},
+  "s4b_om": {},
+  "s4c_hello": {
+   "c1": false
+  }
+ },
+ "majority": 3,
+ "listening_verdict": {
+  "by": "owner",
+  "date": "2026-11-25",
+  "verdict": "pass",
+  "basis": "echo_tier1.wav (echo alone, normalized) by ear",
+  "scope": "all final runs' current results",
+  "quote": "listening to the results, I think all of them are pass",
+  "blind": false,
+  "note": "A human judgment, recorded as such; not an automated pass. Not a blind test: the listener knew each target, and knowing the target helps a listener hear it. A blind check is prepared in runs/_criteria/blind_test/."
+ },
+ "runs": [
+  {
+   "test": "s1_bird",
+   "run_id": "20261125-104529-s1",
+   "newest": true,
+   "spec_v1": false,
+   "owner_v2": true,
+   "listening": "pass (owner, not blind)",
+   "controls_rejected": 20,
+   "controls_total": 20,
+   "echo_source": {
+    "route": "ir_tier1.wav (echo_k = clap_k * ir)",
+    "clap0_rel_err_vs_echo_tier1_wav": 0.0038961865266235155
+   }
+  },
+  {
+   "test": "s1_bird",
+   "run_id": "20261125-033940-s1",
+   "newest": false,
+   "spec_v1": false,
+   "owner_v2": true,
+   "listening": null,
+   "controls_rejected": 20,
+   "controls_total": 20,
+   "echo_source": {
+    "route": "ir_tier1.wav (echo_k = clap_k * ir)",
+    "clap0_rel_err_vs_echo_tier1_wav": 0.004337698678001676
+   }
+  },
+  {
+   "test": "s1_bird",
+   "run_id": "20261125-095837-s1",
+   "newest": false,
+   "spec_v1": false,
+   "owner_v2": true,
+   "listening": null,
+   "controls_rejected": 20,
+   "controls_total": 20,
+   "echo_source": {
+    "route": "ir_tier1.wav (echo_k = clap_k * ir)",
+    "clap0_rel_err_vs_echo_tier1_wav": 0.003751390932481665
+   }
+  },
+  {
+   "test": "s2_motif",
+   "run_id": "20261125-145628-s2v2",
+   "newest": true,
+   "spec_v1": false,
+   "owner_v2": true,
+   "listening": "pass (owner, not blind)",
+   "controls_rejected": 22,
+   "controls_total": 22,
+   "echo_source": {
+    "route": "ir_tier1.wav (echo_k = clap_k * ir)",
+    "clap0_rel_err_vs_echo_tier1_wav": 0.005656217815708695
+   }
+  },
+  {
+   "test": "s2_motif",
+   "run_id": "20261125-122003-s2",
+   "newest": false,
+   "spec_v1": false,
+   "owner_v2": false,
+   "listening": null,
+   "controls_rejected": 22,
+   "controls_total": 22,
+   "echo_source": {
+    "route": "ir_tier1.wav (echo_k = clap_k * ir)",
+    "clap0_rel_err_vs_echo_tier1_wav": 0.008881746861132408
+   }
+  },
+  {
+   "test": "s3_melody_100ms",
+   "run_id": "20261125-131152-s3",
+   "newest": true,
+   "spec_v1": false,
+   "owner_v2": null,
+   "listening": "pass (owner, not blind)",
+   "controls_rejected": 22,
+   "controls_total": 22,
+   "echo_source": {
+    "route": "ir_tier1.wav (echo_k = clap_k * ir)",
+    "clap0_rel_err_vs_echo_tier1_wav": 0.013277123580257084
+   }
+  },
+  {
+   "test": "s3_melody_60ms",
+   "run_id": "20261125-133244-s3_60ms",
+   "newest": true,
+   "spec_v1": false,
+   "owner_v2": null,
+   "listening": "pass (owner, not blind)",
+   "controls_rejected": 22,
+   "controls_total": 22,
+   "echo_source": {
+    "route": "ir_tier1.wav (echo_k = clap_k * ir)",
+    "clap0_rel_err_vs_echo_tier1_wav": 0.016111669746888563
+   }
+  },
+  {
+   "test": "s4a_ah",
+   "run_id": "20261125-142346-s4_4a_ah",
+   "newest": true,
+   "spec_v1": false,
+   "owner_v2": null,
+   "listening": "pass (owner, not blind)",
+   "controls_rejected": 12,
+   "controls_total": 12,
+   "echo_source": {
+    "route": "saved per-clap Tier 1 echoes (runs/s4_speech/_studies/echoes_ah.npz)",
+    "clap0_rel_err_vs_echo_tier1_wav": 2.4374110132675935e-08
+   }
+  },
+  {
+   "test": "s4b_ma",
+   "run_id": "20261125-132102-s4_4b_ma",
+   "newest": true,
+   "spec_v1": false,
+   "owner_v2": null,
+   "listening": "pass (owner, not blind)",
+   "controls_rejected": 12,
+   "controls_total": 12,
+   "echo_source": {
+    "route": "saved per-clap Tier 1 echoes (runs/s4_speech/_studies/echoes_ma.npz)",
+    "clap0_rel_err_vs_echo_tier1_wav": 2.4862300392259357e-08
+   }
+  },
+  {
+   "test": "s4b_ba",
+   "run_id": "20261125-134325-s4_4b_ba",
+   "newest": true,
+   "spec_v1": false,
+   "owner_v2": null,
+   "listening": "pass (owner, not blind)",
+   "controls_rejected": 12,
+   "controls_total": 12,
+   "echo_source": {
+    "route": "saved per-clap Tier 1 echoes (runs/s4_speech/_studies/echoes_ba.npz)",
+    "clap0_rel_err_vs_echo_tier1_wav": 2.5913986048934518e-08
+   }
+  },
+  {
+   "test": "s4b_om",
+   "run_id": "20261125-135718-s4_4b_om",
+   "newest": true,
+   "spec_v1": false,
+   "owner_v2": null,
+   "listening": "pass (owner, not blind)",
+   "controls_rejected": 12,
+   "controls_total": 12,
+   "echo_source": {
+    "route": "saved per-clap Tier 1 echoes (runs/s4_speech/_studies/echoes_om.npz)",
+    "clap0_rel_err_vs_echo_tier1_wav": 2.5128024586000315e-08
+   }
+  },
+  {
+   "test": "s4c_hello",
+   "run_id": "20261125-124137-s4_4c_hello",
+   "newest": true,
+   "spec_v1": true,
+   "owner_v2": true,
+   "listening": "pass (owner, not blind)",
+   "controls_rejected": 15,
+   "controls_total": 15,
+   "echo_source": {
+    "route": "saved per-clap Tier 1 echoes (runs/s4_speech/_studies/echoes_hello.npz)",
+    "clap0_rel_err_vs_echo_tier1_wav": 2.4960166388944046e-08
+   }
+  }
+ ],
+ "tests": {
+  "s1_bird": {
+   "title": "Stage 1 bird whistle",
+   "accepted_run": "20261125-104529-s1",
+   "band_hz": [
+    500.0,
+    4000.0
+   ],
+   "distractors": [
+    "s1_bird",
+    "s2_motif",
+    "s4a_ah",
+    "s4b_om",
+    "s4b_ba",
+    "s3_melody_60ms",
+    "s4b_ma",
+    "s3_melody_100ms",
+    "s4c_hello",
+    "s1_bird:reversed",
+    "s1_bird:shift-2",
+    "s1_bird:shift-1",
+    "s1_bird:shift+1",
+    "s1_bird:shift+2"
+   ],
+   "accepted": {
+    "values": {
+     "claps_pass": 5,
+     "id_claps": 5,
+     "id_margin_median": 1.6348656708441611,
+     "pitch_cents": 13.388610084581616
+    },
+    "pass": true
+   },
+   "perfect_echo": {
+    "values": {
+     "claps_pass": 5,
+     "id_claps": 5,
+     "id_margin_median": 1.2670575952826466,
+     "pitch_cents": 14.141752503068414
+    },
+    "pass": true,
+    "per_clap": [
+     {
+      "id_correct": true,
+      "id_margin": 1.2670575952826466,
+      "nearest": "s1_bird",
+      "pitch_cents": 10.832037577146393
+     },
+     {
+      "id_correct": true,
+      "id_margin": 2.0183625090283126,
+      "nearest": "s1_bird",
+      "pitch_cents": 14.141752503068414
+     },
+     {
+      "id_correct": true,
+      "id_margin": 1.250362935389668,
+      "nearest": "s1_bird",
+      "pitch_cents": 10.37657120924324
+     },
+     {
+      "id_correct": true,
+      "id_margin": 3.206265570964029,
+      "nearest": "s1_bird",
+      "pitch_cents": 15.700457179612231
+     },
+     {
+      "id_correct": true,
+      "id_margin": 0.9838309035543755,
+      "nearest": "s1_bird",
+      "pitch_cents": 16.961485805572654
+     }
+    ]
+   },
+   "controls": [
+    {
+     "name": "wrong_target:s2_motif",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -10.701184727247282,
+      "pitch_cents": 400.7266670993972
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4a_ah",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -9.45373013985525,
+      "pitch_cents": 3270.726667099397
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_om",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -10.021838200838564,
+      "pitch_cents": 3270.726667099397
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_ba",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -10.995176384704019,
+      "pitch_cents": 670.7266670993974
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s3_melody_60ms",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -12.173182979724174,
+      "pitch_cents": 400.7266670993972
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_ma",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -11.19265735536166,
+      "pitch_cents": 970.7266670993972
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s3_melody_100ms",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -7.567413067583139,
+      "pitch_cents": 360.7266670993973
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4c_hello",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -10.738064254107343,
+      "pitch_cents": 3270.726667099397
+     },
+     "pass": false
+    },
+    {
+     "name": "clap_alone",
+     "kind": "b no structure",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -12.652900742809207,
+      "pitch_cents": 3270.726667099397
+     },
+     "pass": false
+    },
+    {
+     "name": "noise_burst",
+     "kind": "b no structure",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -9.485701238545603,
+      "pitch_cents": 3270.726667099397
+     },
+     "pass": false
+    },
+    {
+     "name": "time_reversed",
+     "kind": "c reversed",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -17.601792014024802,
+      "pitch_cents": 330.271200731494
+     },
+     "pass": false
+    },
+    {
+     "name": "phase_scrambled",
+     "kind": "d same long-term spectrum",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -11.448001159785887,
+      "pitch_cents": 177.71462822405923
+     },
+     "pass": false
+    },
+    {
+     "name": "shift-2st",
+     "kind": "e mistuned",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -4.586929792797335,
+      "pitch_cents": 139.16796242285378
+     },
+     "pass": false
+    },
+    {
+     "name": "shift-1st",
+     "kind": "e mistuned",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -1.1329588528483825,
+      "pitch_cents": 68.52019048211584
+     },
+     "pass": false
+    },
+    {
+     "name": "shift+1st",
+     "kind": "e mistuned",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -2.2208158326701497,
+      "pitch_cents": 79.92110484133994
+     },
+     "pass": false
+    },
+    {
+     "name": "shift+2st",
+     "kind": "e mistuned",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -6.436387766628047,
+      "pitch_cents": 144.5972188709716
+     },
+     "pass": false
+    },
+    {
+     "name": "perfect_shift-2st",
+     "kind": "e mistuned perfect echo",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -4.902503920056851,
+      "pitch_cents": 144.94731476112563
+     },
+     "pass": false
+    },
+    {
+     "name": "perfect_shift-1st",
+     "kind": "e mistuned perfect echo",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -1.7334117373656666,
+      "pitch_cents": 72.74083814384399
+     },
+     "pass": false
+    },
+    {
+     "name": "perfect_shift+1st",
+     "kind": "e mistuned perfect echo",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -1.9894109192930087,
+      "pitch_cents": 72.84620862159342
+     },
+     "pass": false
+    },
+    {
+     "name": "perfect_shift+2st",
+     "kind": "e mistuned perfect echo",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -6.424954238998863,
+      "pitch_cents": 138.1700945919623
+     },
+     "pass": false
+    }
+   ],
+   "controls_rejected": 20,
+   "controls_total": 20,
+   "established": true,
+   "margin": {
+    "id": {
+     "c1_valid_on_perfect_echo": true,
+     "c1_used": true,
+     "c1_matches_frozen": true,
+     "accepted_median_margin": 1.6348656708441611,
+     "perfect_median_margin": 1.2670575952826466,
+     "accepted_id_claps": 5,
+     "strongest_control": "shift-1st",
+     "strongest_control_values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -1.1329588528483825,
+      "pitch_cents": 68.52019048211584
+     }
+    },
+    "pitch": {
+     "rule": "midway between worst positive and best mistuning control (3rd-best clap), 5-cent rounding",
+     "derived_threshold": 40.0,
+     "frozen_threshold": 40.0,
+     "matches_frozen": true,
+     "worst_positive": 14.141752503068414,
+     "best_mistuning_control": 68.52019048211584,
+     "margin_positive": 25.858247496931586,
+     "margin_control": 28.520190482115837
+    }
+   },
+   "note": null
+  },
+  "s2_motif": {
+   "title": "Stage 2 four-note motif",
+   "accepted_run": "20261125-145628-s2v2",
+   "band_hz": [
+    500.0,
+    2500.0
+   ],
+   "distractors": [
+    "s2_motif",
+    "s4a_ah",
+    "s4b_om",
+    "s4b_ba",
+    "s3_melody_60ms",
+    "s4b_ma",
+    "s3_melody_100ms",
+    "s4c_hello",
+    "s1_bird",
+    "s2_motif:reversed",
+    "s2_motif:shift-2",
+    "s2_motif:shift-1",
+    "s2_motif:shift+1",
+    "s2_motif:shift+2",
+    "s2_motif:swap34"
+   ],
+   "accepted": {
+    "values": {
+     "claps_pass": 3,
+     "id_claps": 3,
+     "id_margin_median": 1.1689135832099762,
+     "pitch_cents": 224.66421170961783
+    },
+    "pass": true
+   },
+   "perfect_echo": {
+    "values": {
+     "claps_pass": 5,
+     "id_claps": 5,
+     "id_margin_median": 6.277766488532924,
+     "pitch_cents": 4.664211709618193
+    },
+    "pass": true,
+    "per_clap": [
+     {
+      "id_correct": true,
+      "id_margin": 1.4090032168369397,
+      "nearest": "s2_motif",
+      "pitch_cents": 4.664211709618193
+     },
+     {
+      "id_correct": true,
+      "id_margin": 8.22635137837971,
+      "nearest": "s2_motif",
+      "pitch_cents": 4.664211709618193
+     },
+     {
+      "id_correct": true,
+      "id_margin": 9.158002790287913,
+      "nearest": "s2_motif",
+      "pitch_cents": 4.664211709618193
+     },
+     {
+      "id_correct": true,
+      "id_margin": 4.5391516040776345,
+      "nearest": "s2_motif",
+      "pitch_cents": 4.664211709618193
+     },
+     {
+      "id_correct": true,
+      "id_margin": 6.277766488532924,
+      "nearest": "s2_motif",
+      "pitch_cents": 4.664211709618193
+     }
+    ]
+   },
+   "controls": [
+    {
+     "name": "wrong_target:s4a_ah",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -10.845505891640462,
+      "pitch_cents": 2215.335788290382
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_om",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -10.126801496352481,
+      "pitch_cents": 724.664211709618
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_ba",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -12.814160991925212,
+      "pitch_cents": 685.0243852085804
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s3_melody_60ms",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -12.1449357412584,
+      "pitch_cents": 809.664211709618
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_ma",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -12.388822084403659,
+      "pitch_cents": 544.1725554126995
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s3_melody_100ms",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -11.459958229697808,
+      "pitch_cents": 674.6642117096178
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4c_hello",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -12.510401539611461,
+      "pitch_cents": 1160.335788290382
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s1_bird",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -19.040362550753095,
+      "pitch_cents": 679.6642117096177
+     },
+     "pass": false
+    },
+    {
+     "name": "clap_alone",
+     "kind": "b no structure",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -16.05090714086728,
+      "pitch_cents": 2215.335788290382
+     },
+     "pass": false
+    },
+    {
+     "name": "noise_burst",
+     "kind": "b no structure",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -11.727418156354892,
+      "pitch_cents": 774.664211709618
+     },
+     "pass": false
+    },
+    {
+     "name": "time_reversed",
+     "kind": "c reversed",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -10.26343862292677,
+      "pitch_cents": 334.35280862781593
+     },
+     "pass": false
+    },
+    {
+     "name": "phase_scrambled",
+     "kind": "d same long-term spectrum",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -13.066711771786267,
+      "pitch_cents": 654.6642117096177
+     },
+     "pass": false
+    },
+    {
+     "name": "shift-2st",
+     "kind": "e mistuned",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -10.927493618230182,
+      "pitch_cents": 299.67664820249837
+     },
+     "pass": false
+    },
+    {
+     "name": "shift-1st",
+     "kind": "e mistuned",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -5.957687797965974,
+      "pitch_cents": 259.6885969181982
+     },
+     "pass": false
+    },
+    {
+     "name": "shift+1st",
+     "kind": "e mistuned",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -6.350763656779122,
+      "pitch_cents": 484.6642117096176
+     },
+     "pass": false
+    },
+    {
+     "name": "shift+2st",
+     "kind": "e mistuned",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -10.853800709539577,
+      "pitch_cents": 599.6642117096179
+     },
+     "pass": false
+    },
+    {
+     "name": "notes_3_4_swapped",
+     "kind": "e notes swapped (segments of the accepted echo)",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -10.907199797202141,
+      "pitch_cents": 664.6642117096178
+     },
+     "pass": false
+    },
+    {
+     "name": "perfect_shift-2st",
+     "kind": "e mistuned perfect echo",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -13.825677288208261,
+      "pitch_cents": 195.7373179797421
+     },
+     "pass": false
+    },
+    {
+     "name": "perfect_shift-1st",
+     "kind": "e mistuned perfect echo",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -7.166589342746082,
+      "pitch_cents": 95.64719137218388
+     },
+     "pass": false
+    },
+    {
+     "name": "perfect_shift+1st",
+     "kind": "e mistuned perfect echo",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -7.819028212542841,
+      "pitch_cents": 104.97561479141966
+     },
+     "pass": false
+    },
+    {
+     "name": "perfect_shift+2st",
+     "kind": "e mistuned perfect echo",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -14.986606678826845,
+      "pitch_cents": 204.99951222281865
+     },
+     "pass": false
+    },
+    {
+     "name": "perfect_notes_3_4_swapped",
+     "kind": "e notes swapped (perfect echo)",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -11.744188916719166,
+      "pitch_cents": 34.688596918198215
+     },
+     "pass": false
+    }
+   ],
+   "controls_rejected": 22,
+   "controls_total": 22,
+   "established": true,
+   "margin": {
+    "id": {
+     "c1_valid_on_perfect_echo": true,
+     "c1_used": true,
+     "c1_matches_frozen": true,
+     "accepted_median_margin": 1.1689135832099762,
+     "perfect_median_margin": 6.277766488532924,
+     "accepted_id_claps": 3,
+     "strongest_control": "shift-1st",
+     "strongest_control_values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -5.957687797965974,
+      "pitch_cents": 259.6885969181982
+     }
+    },
+    "pitch": {
+     "rule": "midway between worst positive and best mistuning control (3rd-best clap), 5-cent rounding",
+     "derived_threshold": 240.0,
+     "frozen_threshold": 240.0,
+     "matches_frozen": true,
+     "worst_positive": 224.66421170961783,
+     "best_mistuning_control": 259.6885969181982,
+     "margin_positive": 15.335788290382169,
+     "margin_control": 19.688596918198186
+    }
+   },
+   "note": null
+  },
+  "s3_melody_100ms": {
+   "title": "Stage 3 melody, 100 ms notes",
+   "accepted_run": "20261125-131152-s3",
+   "band_hz": [
+    500.0,
+    2500.0
+   ],
+   "distractors": [
+    "s3_melody_100ms",
+    "s2_motif",
+    "s4a_ah",
+    "s4b_om",
+    "s4b_ba",
+    "s3_melody_60ms",
+    "s4b_ma",
+    "s4c_hello",
+    "s1_bird",
+    "s3_melody_100ms:reversed",
+    "s3_melody_100ms:shift-2",
+    "s3_melody_100ms:shift-1",
+    "s3_melody_100ms:shift+1",
+    "s3_melody_100ms:shift+2",
+    "s3_melody_100ms:swap34"
+   ],
+   "accepted": {
+    "values": {
+     "claps_pass": 0,
+     "id_claps": 0,
+     "id_margin_median": -1.5995118370400476,
+     "pitch_cents": 614.9957715000784
+    },
+    "pass": false
+   },
+   "perfect_echo": {
+    "values": {
+     "claps_pass": 0,
+     "id_claps": 5,
+     "id_margin_median": 3.0190635709372433,
+     "pitch_cents": 4.9957715000784395
+    },
+    "pass": false,
+    "per_clap": [
+     {
+      "id_correct": true,
+      "id_margin": 3.09591218932996,
+      "nearest": "s3_melody_100ms",
+      "pitch_cents": 4.9957715000784395
+     },
+     {
+      "id_correct": true,
+      "id_margin": 3.0190635709372433,
+      "nearest": "s3_melody_100ms",
+      "pitch_cents": 4.9957715000784395
+     },
+     {
+      "id_correct": true,
+      "id_margin": 2.5156285351960443,
+      "nearest": "s3_melody_100ms",
+      "pitch_cents": 4.9957715000784395
+     },
+     {
+      "id_correct": true,
+      "id_margin": 3.0844660045818992,
+      "nearest": "s3_melody_100ms",
+      "pitch_cents": 4.9957715000784395
+     },
+     {
+      "id_correct": true,
+      "id_margin": 2.4086575977204427,
+      "nearest": "s3_melody_100ms",
+      "pitch_cents": 4.9957715000784395
+     }
+    ]
+   },
+   "controls": [
+    {
+     "name": "wrong_target:s2_motif",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -13.397665516744693,
+      "pitch_cents": 1704.995771500078
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4a_ah",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -11.719242102703802,
+      "pitch_cents": 2165.0042284999217
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_om",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -10.123015666923262,
+      "pitch_cents": 1704.995771500078
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_ba",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -11.788963197999514,
+      "pitch_cents": 2165.0042284999217
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s3_melody_60ms",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -5.733559503719965,
+      "pitch_cents": 1704.995771500078
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_ma",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -10.946535590971997,
+      "pitch_cents": 2165.0042284999217
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4c_hello",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -10.072935982534059,
+      "pitch_cents": 2165.0042284999217
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s1_bird",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -15.922194255482898,
+      "pitch_cents": 1904.9957715000783
+     },
+     "pass": false
+    },
+    {
+     "name": "clap_alone",
+     "kind": "b no structure",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -13.237940636261662,
+      "pitch_cents": 2165.0042284999217
+     },
+     "pass": false
+    },
+    {
+     "name": "noise_burst",
+     "kind": "b no structure",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -7.909509097168485,
+      "pitch_cents": 864.9957715000783
+     },
+     "pass": false
+    },
+    {
+     "name": "time_reversed",
+     "kind": "c reversed",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -1.6376820021571383,
+      "pitch_cents": 564.9957715000786
+     },
+     "pass": false
+    },
+    {
+     "name": "phase_scrambled",
+     "kind": "d same long-term spectrum",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -8.459085734208935,
+      "pitch_cents": 2165.0042284999217
+     },
+     "pass": false
+    },
+    {
+     "name": "shift-2st",
+     "kind": "e mistuned",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -6.161677834261404,
+      "pitch_cents": 474.99577150007826
+     },
+     "pass": false
+    },
+    {
+     "name": "shift-1st",
+     "kind": "e mistuned",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -4.147250372097911,
+      "pitch_cents": 544.9957715000779
+     },
+     "pass": false
+    },
+    {
+     "name": "shift+1st",
+     "kind": "e mistuned",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -4.1332332446952815,
+      "pitch_cents": 674.9957715000784
+     },
+     "pass": false
+    },
+    {
+     "name": "shift+2st",
+     "kind": "e mistuned",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -6.618046412261428,
+      "pitch_cents": 714.9957715000785
+     },
+     "pass": false
+    },
+    {
+     "name": "notes_3_4_swapped",
+     "kind": "e notes swapped (segments of the accepted echo)",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -2.930522139772769,
+      "pitch_cents": 574.9957715000779
+     },
+     "pass": false
+    },
+    {
+     "name": "perfect_shift-2st",
+     "kind": "e mistuned perfect echo",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -15.167693742436342,
+      "pitch_cents": 195.00422849992162
+     },
+     "pass": false
+    },
+    {
+     "name": "perfect_shift-1st",
+     "kind": "e mistuned perfect echo",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -11.906083804499008,
+      "pitch_cents": 95.00422849992172
+     },
+     "pass": false
+    },
+    {
+     "name": "perfect_shift+1st",
+     "kind": "e mistuned perfect echo",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -12.240552184489724,
+      "pitch_cents": 104.99577150007828
+     },
+     "pass": false
+    },
+    {
+     "name": "perfect_shift+2st",
+     "kind": "e mistuned perfect echo",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -15.646133537498546,
+      "pitch_cents": 204.99577150007815
+     },
+     "pass": false
+    },
+    {
+     "name": "perfect_notes_3_4_swapped",
+     "kind": "e notes swapped (perfect echo)",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -2.886935166687277,
+      "pitch_cents": 4.9957715000784395
+     },
+     "pass": false
+    }
+   ],
+   "controls_rejected": 22,
+   "controls_total": 22,
+   "established": false,
+   "margin": {
+    "id": {
+     "c1_valid_on_perfect_echo": true,
+     "c1_used": true,
+     "c1_matches_frozen": true,
+     "accepted_median_margin": -1.5995118370400476,
+     "perfect_median_margin": 3.0190635709372433,
+     "accepted_id_claps": 0,
+     "strongest_control": "time_reversed",
+     "strongest_control_values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -1.6376820021571383,
+      "pitch_cents": 564.9957715000786
+     }
+    },
+    "pitch": {
+     "rule": "midway between worst positive and best mistuning control (3rd-best clap), 5-cent rounding",
+     "derived_threshold": null,
+     "frozen_threshold": null,
+     "matches_frozen": true,
+     "worst_positive": 614.9957715000784,
+     "best_mistuning_control": 474.99577150007826,
+     "margin_positive": null,
+     "margin_control": null
+    }
+   },
+   "note": "accepted by ear; no automated criterion separates this echo from the negative controls (the accepted echo fails the criterion; the perfect echo fails the criterion)"
+  },
+  "s3_melody_60ms": {
+   "title": "Stage 3 melody, 60 ms notes",
+   "accepted_run": "20261125-133244-s3_60ms",
+   "band_hz": [
+    500.0,
+    2500.0
+   ],
+   "distractors": [
+    "s3_melody_60ms",
+    "s2_motif",
+    "s4a_ah",
+    "s4b_om",
+    "s4b_ba",
+    "s4b_ma",
+    "s3_melody_100ms",
+    "s4c_hello",
+    "s1_bird",
+    "s3_melody_60ms:reversed",
+    "s3_melody_60ms:shift-2",
+    "s3_melody_60ms:shift-1",
+    "s3_melody_60ms:shift+1",
+    "s3_melody_60ms:shift+2",
+    "s3_melody_60ms:swap34"
+   ],
+   "accepted": {
+    "values": {
+     "claps_pass": 0,
+     "id_claps": 3,
+     "id_margin_median": 0.13901751090441472,
+     "pitch_cents": 384.99577150007804
+    },
+    "pass": false
+   },
+   "perfect_echo": {
+    "values": {
+     "claps_pass": 0,
+     "id_claps": 5,
+     "id_margin_median": 3.062334419962537,
+     "pitch_cents": 4.9957715000784395
+    },
+    "pass": false,
+    "per_clap": [
+     {
+      "id_correct": true,
+      "id_margin": 3.1382388283108704,
+      "nearest": "s3_melody_60ms",
+      "pitch_cents": 4.9957715000784395
+     },
+     {
+      "id_correct": true,
+      "id_margin": 3.062334419962537,
+      "nearest": "s3_melody_60ms",
+      "pitch_cents": 4.9957715000784395
+     },
+     {
+      "id_correct": true,
+      "id_margin": 2.5331395985847394,
+      "nearest": "s3_melody_60ms",
+      "pitch_cents": 4.9957715000784395
+     },
+     {
+      "id_correct": true,
+      "id_margin": 3.1675356102477483,
+      "nearest": "s3_melody_60ms",
+      "pitch_cents": 4.9957715000784395
+     },
+     {
+      "id_correct": true,
+      "id_margin": 2.4144858054258904,
+      "nearest": "s3_melody_60ms",
+      "pitch_cents": 4.9957715000784395
+     }
+    ]
+   },
+   "controls": [
+    {
+     "name": "wrong_target:s2_motif",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -10.858588660268225,
+      "pitch_cents": 1704.995771500078
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4a_ah",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -9.635221157731788,
+      "pitch_cents": 2165.0042284999217
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_om",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -7.64799687090224,
+      "pitch_cents": 1154.995771500078
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_ba",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -9.65500732406622,
+      "pitch_cents": 2165.0042284999217
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_ma",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -8.829239372204079,
+      "pitch_cents": 2165.0042284999217
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s3_melody_100ms",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -4.599563127757017,
+      "pitch_cents": 684.9957715000779
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4c_hello",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -7.990722908319276,
+      "pitch_cents": 2165.0042284999217
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s1_bird",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -15.617162890710118,
+      "pitch_cents": 1714.995771500078
+     },
+     "pass": false
+    },
+    {
+     "name": "clap_alone",
+     "kind": "b no structure",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -11.231122860174667,
+      "pitch_cents": 2165.0042284999217
+     },
+     "pass": false
+    },
+    {
+     "name": "noise_burst",
+     "kind": "b no structure",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -6.814839705696052,
+      "pitch_cents": 864.9957715000783
+     },
+     "pass": false
+    },
+    {
+     "name": "time_reversed",
+     "kind": "c reversed",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -1.434708904516432,
+      "pitch_cents": 384.9957715000777
+     },
+     "pass": false
+    },
+    {
+     "name": "phase_scrambled",
+     "kind": "d same long-term spectrum",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -6.691898860137414,
+      "pitch_cents": 2165.0042284999217
+     },
+     "pass": false
+    },
+    {
+     "name": "shift-2st",
+     "kind": "e mistuned",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -5.006133404121938,
+      "pitch_cents": 185.00422849992177
+     },
+     "pass": false
+    },
+    {
+     "name": "shift-1st",
+     "kind": "e mistuned",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -3.6687924588634466,
+      "pitch_cents": 254.99577150007806
+     },
+     "pass": false
+    },
+    {
+     "name": "shift+1st",
+     "kind": "e mistuned",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -3.9992902855071684,
+      "pitch_cents": 654.9957715000781
+     },
+     "pass": false
+    },
+    {
+     "name": "shift+2st",
+     "kind": "e mistuned",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -6.334969829057449,
+      "pitch_cents": 704.9957715000783
+     },
+     "pass": false
+    },
+    {
+     "name": "notes_3_4_swapped",
+     "kind": "e notes swapped (segments of the accepted echo)",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -2.2058430337727994,
+      "pitch_cents": 594.9957715000785
+     },
+     "pass": false
+    },
+    {
+     "name": "perfect_shift-2st",
+     "kind": "e mistuned perfect echo",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -14.879840069675106,
+      "pitch_cents": 195.00422849992162
+     },
+     "pass": false
+    },
+    {
+     "name": "perfect_shift-1st",
+     "kind": "e mistuned perfect echo",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -11.52552030454688,
+      "pitch_cents": 95.00422849992172
+     },
+     "pass": false
+    },
+    {
+     "name": "perfect_shift+1st",
+     "kind": "e mistuned perfect echo",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -11.813136123055138,
+      "pitch_cents": 104.99577150007828
+     },
+     "pass": false
+    },
+    {
+     "name": "perfect_shift+2st",
+     "kind": "e mistuned perfect echo",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -15.193017944155011,
+      "pitch_cents": 204.99577150007815
+     },
+     "pass": false
+    },
+    {
+     "name": "perfect_notes_3_4_swapped",
+     "kind": "e notes swapped (perfect echo)",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -3.051040040173693,
+      "pitch_cents": 4.9957715000784395
+     },
+     "pass": false
+    }
+   ],
+   "controls_rejected": 22,
+   "controls_total": 22,
+   "established": false,
+   "margin": {
+    "id": {
+     "c1_valid_on_perfect_echo": true,
+     "c1_used": true,
+     "c1_matches_frozen": true,
+     "accepted_median_margin": 0.13901751090441472,
+     "perfect_median_margin": 3.062334419962537,
+     "accepted_id_claps": 3,
+     "strongest_control": "time_reversed",
+     "strongest_control_values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -1.434708904516432,
+      "pitch_cents": 384.9957715000777
+     }
+    },
+    "pitch": {
+     "rule": "midway between worst positive and best mistuning control (3rd-best clap), 5-cent rounding",
+     "derived_threshold": null,
+     "frozen_threshold": null,
+     "matches_frozen": true,
+     "worst_positive": 384.99577150007804,
+     "best_mistuning_control": 185.00422849992177,
+     "margin_positive": null,
+     "margin_control": null
+    }
+   },
+   "note": "accepted by ear; no automated criterion separates this echo from the negative controls (the accepted echo fails the criterion; the perfect echo fails the criterion)"
+  },
+  "s4a_ah": {
+   "title": "4a vowel \"ah\"",
+   "accepted_run": "20261125-142346-s4_4a_ah",
+   "band_hz": [
+    500.0,
+    4000.0
+   ],
+   "distractors": [
+    "s4a_ah",
+    "s2_motif",
+    "s4b_om",
+    "s4b_ba",
+    "s3_melody_60ms",
+    "s4b_ma",
+    "s3_melody_100ms",
+    "s4c_hello",
+    "s1_bird",
+    "s4a_ah:reversed"
+   ],
+   "accepted": {
+    "values": {
+     "claps_pass": 0,
+     "id_claps": 0,
+     "id_margin_median": -1.8689792362795181
+    },
+    "pass": false
+   },
+   "perfect_echo": {
+    "values": {
+     "claps_pass": 5,
+     "id_claps": 5,
+     "id_margin_median": 3.2098864735782078
+    },
+    "pass": true,
+    "per_clap": [
+     {
+      "id_correct": true,
+      "id_margin": 4.042376534516311,
+      "nearest": "s4a_ah"
+     },
+     {
+      "id_correct": true,
+      "id_margin": 2.382846867203713,
+      "nearest": "s4a_ah"
+     },
+     {
+      "id_correct": true,
+      "id_margin": 2.8377907630906334,
+      "nearest": "s4a_ah"
+     },
+     {
+      "id_correct": true,
+      "id_margin": 3.5326949099590754,
+      "nearest": "s4a_ah"
+     },
+     {
+      "id_correct": true,
+      "id_margin": 3.2098864735782078,
+      "nearest": "s4a_ah"
+     }
+    ]
+   },
+   "controls": [
+    {
+     "name": "wrong_target:s2_motif",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -3.0618215056786884
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_om",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -3.1577380680981424
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_ba",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -3.081083290137986
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s3_melody_60ms",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -3.6787225402930215
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_ma",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -3.009256706152442
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s3_melody_100ms",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -2.757418911730623
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4c_hello",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -3.0660145804359136
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s1_bird",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -10.133575339374557
+     },
+     "pass": false
+    },
+    {
+     "name": "clap_alone",
+     "kind": "b no structure",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -5.253702218667006
+     },
+     "pass": false
+    },
+    {
+     "name": "noise_burst",
+     "kind": "b no structure",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -2.5652989944541407
+     },
+     "pass": false
+    },
+    {
+     "name": "time_reversed",
+     "kind": "c reversed",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -2.725142561355149
+     },
+     "pass": false
+    },
+    {
+     "name": "phase_scrambled",
+     "kind": "d same long-term spectrum",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -2.911723925102674
+     },
+     "pass": false
+    }
+   ],
+   "controls_rejected": 12,
+   "controls_total": 12,
+   "established": false,
+   "margin": {
+    "id": {
+     "c1_valid_on_perfect_echo": true,
+     "c1_used": true,
+     "c1_matches_frozen": true,
+     "accepted_median_margin": -1.8689792362795181,
+     "perfect_median_margin": 3.2098864735782078,
+     "accepted_id_claps": 0,
+     "strongest_control": "noise_burst",
+     "strongest_control_values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -2.5652989944541407
+     }
+    },
+    "pitch": null
+   },
+   "note": "accepted by ear; no automated criterion separates this echo from the negative controls (the accepted echo fails the criterion)"
+  },
+  "s4b_ma": {
+   "title": "4b syllable \"ma\"",
+   "accepted_run": "20261125-132102-s4_4b_ma",
+   "band_hz": [
+    500.0,
+    2500.0
+   ],
+   "distractors": [
+    "s4b_ma",
+    "s2_motif",
+    "s4a_ah",
+    "s4b_om",
+    "s4b_ba",
+    "s3_melody_60ms",
+    "s3_melody_100ms",
+    "s4c_hello",
+    "s1_bird",
+    "s4b_ma:reversed"
+   ],
+   "accepted": {
+    "values": {
+     "claps_pass": 0,
+     "id_claps": 0,
+     "id_margin_median": -9.877374436699638
+    },
+    "pass": false
+   },
+   "perfect_echo": {
+    "values": {
+     "claps_pass": 5,
+     "id_claps": 5,
+     "id_margin_median": 4.776692450841596
+    },
+    "pass": true,
+    "per_clap": [
+     {
+      "id_correct": true,
+      "id_margin": 5.44803610517479,
+      "nearest": "s4b_ma"
+     },
+     {
+      "id_correct": true,
+      "id_margin": 2.8491978102668405,
+      "nearest": "s4b_ma"
+     },
+     {
+      "id_correct": true,
+      "id_margin": 4.776692450841596,
+      "nearest": "s4b_ma"
+     },
+     {
+      "id_correct": true,
+      "id_margin": 3.6182970574521987,
+      "nearest": "s4b_ma"
+     },
+     {
+      "id_correct": true,
+      "id_margin": 5.378580502599371,
+      "nearest": "s4b_ma"
+     }
+    ]
+   },
+   "controls": [
+    {
+     "name": "wrong_target:s2_motif",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -12.662695351602467
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4a_ah",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -10.108705376764009
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_om",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -10.503962923770846
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_ba",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -11.288082117170504
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s3_melody_60ms",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -10.940872671597477
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s3_melody_100ms",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -9.734912300745048
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4c_hello",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -11.081816125026425
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s1_bird",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -18.555233054143216
+     },
+     "pass": false
+    },
+    {
+     "name": "clap_alone",
+     "kind": "b no structure",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -14.13699360430363
+     },
+     "pass": false
+    },
+    {
+     "name": "noise_burst",
+     "kind": "b no structure",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -10.375206826958054
+     },
+     "pass": false
+    },
+    {
+     "name": "time_reversed",
+     "kind": "c reversed",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -11.419113233997903
+     },
+     "pass": false
+    },
+    {
+     "name": "phase_scrambled",
+     "kind": "d same long-term spectrum",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -10.460814730123857
+     },
+     "pass": false
+    }
+   ],
+   "controls_rejected": 12,
+   "controls_total": 12,
+   "established": false,
+   "margin": {
+    "id": {
+     "c1_valid_on_perfect_echo": true,
+     "c1_used": true,
+     "c1_matches_frozen": true,
+     "accepted_median_margin": -9.877374436699638,
+     "perfect_median_margin": 4.776692450841596,
+     "accepted_id_claps": 0,
+     "strongest_control": "wrong_target:s3_melody_100ms",
+     "strongest_control_values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -9.734912300745048
+     }
+    },
+    "pitch": null
+   },
+   "note": "accepted by ear; no automated criterion separates this echo from the negative controls (the accepted echo fails the criterion)"
+  },
+  "s4b_ba": {
+   "title": "4b syllable \"ba\"",
+   "accepted_run": "20261125-134325-s4_4b_ba",
+   "band_hz": [
+    500.0,
+    2500.0
+   ],
+   "distractors": [
+    "s4b_ba",
+    "s2_motif",
+    "s4a_ah",
+    "s4b_om",
+    "s3_melody_60ms",
+    "s4b_ma",
+    "s3_melody_100ms",
+    "s4c_hello",
+    "s1_bird",
+    "s4b_ba:reversed"
+   ],
+   "accepted": {
+    "values": {
+     "claps_pass": 0,
+     "id_claps": 0,
+     "id_margin_median": -5.922897242176408
+    },
+    "pass": false
+   },
+   "perfect_echo": {
+    "values": {
+     "claps_pass": 5,
+     "id_claps": 5,
+     "id_margin_median": 6.0494873484100005
+    },
+    "pass": true,
+    "per_clap": [
+     {
+      "id_correct": true,
+      "id_margin": 6.712262815845386,
+      "nearest": "s4b_ba"
+     },
+     {
+      "id_correct": true,
+      "id_margin": 6.0494873484100005,
+      "nearest": "s4b_ba"
+     },
+     {
+      "id_correct": true,
+      "id_margin": 4.887486435104943,
+      "nearest": "s4b_ba"
+     },
+     {
+      "id_correct": true,
+      "id_margin": 6.386153438899574,
+      "nearest": "s4b_ba"
+     },
+     {
+      "id_correct": true,
+      "id_margin": 4.590446607562596,
+      "nearest": "s4b_ba"
+     }
+    ]
+   },
+   "controls": [
+    {
+     "name": "wrong_target:s2_motif",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -8.678239368068224
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4a_ah",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -6.107735839957096
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_om",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -6.421806934137322
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s3_melody_60ms",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -7.130744759786197
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_ma",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -5.631369935976272
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s3_melody_100ms",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -6.0170249207559205
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4c_hello",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -6.162844380640463
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s1_bird",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -14.588621826309845
+     },
+     "pass": false
+    },
+    {
+     "name": "clap_alone",
+     "kind": "b no structure",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -7.96947282212574
+     },
+     "pass": false
+    },
+    {
+     "name": "noise_burst",
+     "kind": "b no structure",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -5.807622710094423
+     },
+     "pass": false
+    },
+    {
+     "name": "time_reversed",
+     "kind": "c reversed",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -7.679323143584366
+     },
+     "pass": false
+    },
+    {
+     "name": "phase_scrambled",
+     "kind": "d same long-term spectrum",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -5.662717802314576
+     },
+     "pass": false
+    }
+   ],
+   "controls_rejected": 12,
+   "controls_total": 12,
+   "established": false,
+   "margin": {
+    "id": {
+     "c1_valid_on_perfect_echo": true,
+     "c1_used": true,
+     "c1_matches_frozen": true,
+     "accepted_median_margin": -5.922897242176408,
+     "perfect_median_margin": 6.0494873484100005,
+     "accepted_id_claps": 0,
+     "strongest_control": "wrong_target:s4b_ma",
+     "strongest_control_values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -5.631369935976272
+     }
+    },
+    "pitch": null
+   },
+   "note": "accepted by ear; no automated criterion separates this echo from the negative controls (the accepted echo fails the criterion)"
+  },
+  "s4b_om": {
+   "title": "4b syllable \"om\"",
+   "accepted_run": "20261125-135718-s4_4b_om",
+   "band_hz": [
+    500.0,
+    2500.0
+   ],
+   "distractors": [
+    "s4b_om",
+    "s2_motif",
+    "s4a_ah",
+    "s4b_ba",
+    "s3_melody_60ms",
+    "s4b_ma",
+    "s3_melody_100ms",
+    "s4c_hello",
+    "s1_bird",
+    "s4b_om:reversed"
+   ],
+   "accepted": {
+    "values": {
+     "claps_pass": 2,
+     "id_claps": 2,
+     "id_margin_median": -0.0056219129097563325
+    },
+    "pass": false
+   },
+   "perfect_echo": {
+    "values": {
+     "claps_pass": 5,
+     "id_claps": 5,
+     "id_margin_median": 6.392684220882659
+    },
+    "pass": true,
+    "per_clap": [
+     {
+      "id_correct": true,
+      "id_margin": 10.65304387168296,
+      "nearest": "s4b_om"
+     },
+     {
+      "id_correct": true,
+      "id_margin": 1.935269686522064,
+      "nearest": "s4b_om"
+     },
+     {
+      "id_correct": true,
+      "id_margin": 6.392684220882659,
+      "nearest": "s4b_om"
+     },
+     {
+      "id_correct": true,
+      "id_margin": 4.960627282260898,
+      "nearest": "s4b_om"
+     },
+     {
+      "id_correct": true,
+      "id_margin": 6.837854268373599,
+      "nearest": "s4b_om"
+     }
+    ]
+   },
+   "controls": [
+    {
+     "name": "wrong_target:s2_motif",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -12.083749424344646
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4a_ah",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -6.9728249320812665
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_ba",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -10.46289937510613
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s3_melody_60ms",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -10.42858934378792
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_ma",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -9.58039251489013
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s3_melody_100ms",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -10.23863795706784
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4c_hello",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -8.554698786804193
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s1_bird",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -17.3655325132145
+     },
+     "pass": false
+    },
+    {
+     "name": "clap_alone",
+     "kind": "b no structure",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -12.22641313248387
+     },
+     "pass": false
+    },
+    {
+     "name": "noise_burst",
+     "kind": "b no structure",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -9.429746945346748
+     },
+     "pass": false
+    },
+    {
+     "name": "time_reversed",
+     "kind": "c reversed",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -10.784639412692652
+     },
+     "pass": false
+    },
+    {
+     "name": "phase_scrambled",
+     "kind": "d same long-term spectrum",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -8.73524713831956
+     },
+     "pass": false
+    }
+   ],
+   "controls_rejected": 12,
+   "controls_total": 12,
+   "established": false,
+   "margin": {
+    "id": {
+     "c1_valid_on_perfect_echo": true,
+     "c1_used": true,
+     "c1_matches_frozen": true,
+     "accepted_median_margin": -0.0056219129097563325,
+     "perfect_median_margin": 6.392684220882659,
+     "accepted_id_claps": 2,
+     "strongest_control": "wrong_target:s4a_ah",
+     "strongest_control_values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -6.9728249320812665
+     }
+    },
+    "pitch": null
+   },
+   "note": "accepted by ear; no automated criterion separates this echo from the negative controls (the accepted echo fails the criterion)"
+  },
+  "s4c_hello": {
+   "title": "4c word \"hello\"",
+   "accepted_run": "20261125-124137-s4_4c_hello",
+   "band_hz": [
+    500.0,
+    2500.0
+   ],
+   "distractors": [
+    "s4c_hello",
+    "s2_motif",
+    "s4a_ah",
+    "s4b_om",
+    "s4b_ba",
+    "s3_melody_60ms",
+    "s4b_ma",
+    "s3_melody_100ms",
+    "s1_bird",
+    "s4c_hello:reversed"
+   ],
+   "accepted": {
+    "values": {
+     "claps_pass": 5,
+     "id_claps": 0,
+     "id_margin_median": -10.688102132085364,
+     "hello_claps": 5
+    },
+    "pass": true
+   },
+   "perfect_echo": {
+    "values": {
+     "claps_pass": 5,
+     "id_claps": 2,
+     "id_margin_median": -0.07271607250858914,
+     "hello_claps": 5
+    },
+    "pass": true,
+    "per_clap": [
+     {
+      "id_correct": true,
+      "id_margin": 12.525015821976321,
+      "nearest": "s4c_hello",
+      "hello_hit": true
+     },
+     {
+      "id_correct": false,
+      "id_margin": -0.07271607250858914,
+      "nearest": "s1_bird",
+      "hello_hit": true
+     },
+     {
+      "id_correct": false,
+      "id_margin": -3.239498191724545,
+      "nearest": "s1_bird",
+      "hello_hit": true
+     },
+     {
+      "id_correct": true,
+      "id_margin": 7.095131368076164,
+      "nearest": "s4c_hello",
+      "hello_hit": true
+     },
+     {
+      "id_correct": false,
+      "id_margin": -5.113118081575866,
+      "nearest": "s1_bird",
+      "hello_hit": true
+     }
+    ]
+   },
+   "controls": [
+    {
+     "name": "wrong_target:s2_motif",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -16.425972155186507,
+      "hello_claps": 0
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4a_ah",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -14.575005104055451,
+      "hello_claps": 0
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_om",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -13.48901642658321,
+      "hello_claps": 0
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_ba",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -13.81217798487143,
+      "hello_claps": 0
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s3_melody_60ms",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -13.08119352293712,
+      "hello_claps": 0
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s4b_ma",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -12.750392905879375,
+      "hello_claps": 0
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s3_melody_100ms",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -12.975960711815093,
+      "hello_claps": 0
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s1_bird",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -21.482688847732884,
+      "hello_claps": 0
+     },
+     "pass": false
+    },
+    {
+     "name": "clap_alone",
+     "kind": "b no structure",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -16.396206180210104,
+      "hello_claps": 0
+     },
+     "pass": false
+    },
+    {
+     "name": "noise_burst",
+     "kind": "b no structure",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -11.534078504177396,
+      "hello_claps": 0
+     },
+     "pass": false
+    },
+    {
+     "name": "time_reversed",
+     "kind": "c reversed",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -11.929553319765478,
+      "hello_claps": 0
+     },
+     "pass": false
+    },
+    {
+     "name": "phase_scrambled",
+     "kind": "d same long-term spectrum",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -11.437360889508795,
+      "hello_claps": 0
+     },
+     "pass": false
+    },
+    {
+     "name": "other_word:yellow",
+     "kind": "f other word (4c pipeline, Tier 0)",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -13.090800495103746,
+      "hello_claps": 0
+     },
+     "pass": false
+    },
+    {
+     "name": "other_word:mellow",
+     "kind": "f other word (4c pipeline, Tier 0)",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -13.89971763435711,
+      "hello_claps": 0
+     },
+     "pass": false
+    },
+    {
+     "name": "other_word:halo",
+     "kind": "f other word (4c pipeline, Tier 0)",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -13.185053080302774,
+      "hello_claps": 0
+     },
+     "pass": false
+    }
+   ],
+   "controls_rejected": 15,
+   "controls_total": 15,
+   "established": true,
+   "margin": {
+    "id": {
+     "c1_valid_on_perfect_echo": false,
+     "c1_used": false,
+     "c1_matches_frozen": true,
+     "accepted_median_margin": -10.688102132085364,
+     "perfect_median_margin": -0.07271607250858914,
+     "accepted_id_claps": 0,
+     "strongest_control": "phase_scrambled",
+     "strongest_control_values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -11.437360889508795,
+      "hello_claps": 0
+     }
+    },
+    "pitch": null
+   },
+   "note": null
+  }
+ }
+}
