@@ -19,7 +19,11 @@ Build path (from simulation to a real structure): [BUILD.md](BUILD.md), fabricat
 ```
 uv sync                                  # environment (Python >= 3.11, CPU torch)
 uv run python -m stages.validate         # solver validation -> runs/validation/metrics.json (slow)
-uv run python -m stages.s1_bird          # stage 1, bird note (stages 2-4 get their own module when built)
+uv run python -m stages.s1_bird          # stage 1, bird note
+uv run python -m stages.s2_motif         # stage 2, four-note motif
+uv run python -m stages.s3_melody        # stage 3, melody, 100 ms notes (add --note-ms 60 for the 60 ms run)
+uv run python -m stages.s4_speech --only 4a   # stage 4: 4a vowel, 4b syllables, 4c word (--only 4b / 4c)
+uv run python -m stages.build_pilot      # build-optimized pilot design (not one of the four stages)
 uv run python -m stages.report           # rewrite REPORT.md
 uv run pytest -q                         # fast test suite
 ```
