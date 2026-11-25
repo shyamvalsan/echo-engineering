@@ -1,4 +1,4 @@
-*Appendix of [REPORT.md](../../REPORT.md); generated 2026-11-25T17:53+02:00 by `uv run python -m stages.report`.*
+*Appendix of [REPORT.md](../../REPORT.md); generated 2026-11-25T18:04+02:00 by `uv run python -m stages.report`.*
 
 # Timeline and rulings
 
@@ -87,7 +87,7 @@ Timeline from the controller's ledger (`.superpowers/sdd/plan/progress.md`), fir
 | # | ruling | reason | cost if wrong |
 |---|---|---|---|
 | 1 | work on `main` in a fresh repo, no worktree | greenfield, user asked to implement here and review in the morning | costs nothing if wrong (history is linear, can branch later). |
-| 2 | repo root is /home/shyam/projects/echo, not `composed-echo/` | that is where the spec lives | rename is trivial if wrong. |
+| 2 | repo root is this repository's folder, not `composed-echo/` | that is where the spec lives | rename is trivial if wrong. |
 | 3 | "range" for delay = bistatic range (\\|PS\\|+\\|PL\\|)/2, arcs are confocal ellipses | listener is 0.3 m off the source so circular arcs smear delay by up to one period at 3.5 kHz | if wrong, posts sit a few cm off the spec's literal arcs. |
 | 4 | Tier 1 runs once per design with a broadband pulse; clap variants derived by linearity (H = (P_scene−P_empty)/P_empty) | 5x fewer full-wave runs | if wrong, per-clap echoes differ from direct simulation only by regularization error in band. |
 | 5 | FS = 16 kHz for all audio | 2x the design band top, native rate for whisper | if wrong, files sound band-limited (they are anyway). |

@@ -4,7 +4,7 @@
 
 [Viewer](viewer/) · [Live mode](viewer/?mode=live) · [Explainer](explainer/index.html) · [Build path](BUILD.md) · [Listen](listen/) · [Repository](https://github.com/shyamvalsan/echo-engineering)
 
-*Generated 2026-11-25T17:53+02:00 by `uv run python -m stages.report` from the files on disk. A passive field of rigid posts is designed so that a hand clap comes back as a chosen sound; everything here is simulated. Detailed tables: [Per-test scorecards](docs/report/scorecards.md) · [Criteria: original, revised, by ear](docs/report/criteria.md) · [Solver validation](docs/report/validation.md) · [Design studies and open questions](docs/report/design-studies.md) · [Timeline and rulings](docs/report/timeline-and-rulings.md) · [Deviations from the spec](docs/report/deviations.md).*
+*Generated 2026-11-25T18:04+02:00 by `uv run python -m stages.report` from the files on disk. A passive field of rigid posts is designed so that a hand clap comes back as a chosen sound; everything here is simulated. Detailed tables: [Per-test scorecards](docs/report/scorecards.md) · [Criteria: original, revised, by ear](docs/report/criteria.md) · [Solver validation](docs/report/validation.md) · [Design studies and open questions](docs/report/design-studies.md) · [Timeline and rulings](docs/report/timeline-and-rulings.md) · [Deviations from the spec](docs/report/deviations.md).*
 
 ## 1. What works
 
@@ -176,7 +176,7 @@ In plain words:
 **Tests.**
 
 <!-- TESTS:BEGIN -->
-`uv run pytest -q` (default fast suite) on 2026-11-25T17:53+02:00: `295 passed, 4 skipped, 1 xfailed, 4 warnings in 305.89s (0:05:05)`
+`uv run pytest -q` (default fast suite) on 2026-11-25T18:04+02:00: `295 passed, 4 skipped, 1 xfailed, 4 warnings in 302.32s (0:05:02)`
 <!-- TESTS:END -->
 
 ## 8. The spec's four open questions

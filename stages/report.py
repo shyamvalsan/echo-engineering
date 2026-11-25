@@ -303,6 +303,8 @@ class Data:
         self.validation = _load(self.runs_dir / "validation" / "metrics.json")
         self.val_path = "runs/validation/metrics.json"
         self.ledger = (self.root / LEDGER).read_text() if (self.root / LEDGER).exists() else ""
+        # no machine-specific paths in the published documents (the ledger is a local file)
+        self.ledger = self.ledger.replace(str(self.root.resolve()) + "/", "").replace(str(self.root.resolve()), "this repository's folder")
         self.decisions = (self.root / "DECISIONS.md").read_text() if (self.root / "DECISIONS.md").exists() else ""
         self.build_md = (self.root / "BUILD.md").read_text() if (self.root / "BUILD.md").exists() else ""
         self.speech = _load(self.root / "artifacts" / "speech" / "judge_sanity.json")
