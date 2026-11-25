@@ -196,11 +196,61 @@ def test_bom_markdown_has_no_hand_tolerance():
     assert "budget is about" not in md and "generated block" in md
 
 
-def test_coherence_estimate_hand_calc():
-    # sigma 2 mm at 2.6 kHz: sigma_phi = 4 pi 0.002 2600 / 343 = 0.1905; A = exp(-0.01815) = 0.9820;
-    # corr = 0.9820 / sqrt(0.9643 + 0.5 * 0.0357) = 0.9910
-    assert bk.coherence_corr(0.002, 2600.0) == pytest.approx(0.9910, abs=2e-4)
-    assert bk.coherence_corr(0.0, 2600.0) == pytest.approx(1.0)
+def test_coherent_factor_hand_calc():
+    # sigma 2 mm at 2.6 kHz: sigma_phi = 4 pi 0.002 2600 / 343 = 0.1905; A = exp(-0.1905^2 / 2) = 0.9820
+    assert bk.coherent_factor(0.002, 2600.0) == pytest.approx(0.9820, abs=2e-4)
+    assert bk.coherent_factor(0.0, 2600.0) == pytest.approx(1.0)
+
+
+def test_residual_split_sums_and_reconciles():
+    rng = np.random.default_rng(0)
+    ref = rng.normal(size=(3, 1001))
+    e = 0.7 * ref + 0.2 * rng.normal(size=(3, 1001))
+    for c in bk.residual_split(ref, e, 1000.0, 1750.0):
+        # the four bands partition 0..fs/2, so they sum to the total residual energy / nominal energy
+        assert sum(c["res_bands"]) == pytest.approx(c["res_total"], rel=1e-9)
+        assert sum(c["nominal_bands"]) == pytest.approx(1.0, rel=1e-9)
+        # |r|^2 / |e|^2 = 1 - corr^2 once the common gain is removed
+        assert c["res_over_e"] == pytest.approx(c["one_minus_corr2"], rel=1e-9)
+    # a pure tone at 1.4 kHz plus a 3 kHz perturbation puts the residual in the "above" band
+    t = np.arange(4000) / 16000
+    a = np.sin(2 * np.pi * 1400 * t)
+    b = a + 0.1 * np.sin(2 * np.pi * 3000 * t)
+    (c,) = bk.residual_split(a, b, 1000.0, 1750.0)
+    assert c["res_bands"][2] / c["res_total"] > 0.999
+
+
+def test_bias_to_signal():
+    x = 2.0 + np.sin(np.linspace(0, 20 * np.pi, 1000))  # mean 2, RMS modulation 1/sqrt(2)
+    b = bk.bias_to_signal({"reflectivity": list(x)})
+    assert b["ratio_amp"] == pytest.approx(2 * math.sqrt(2), rel=1e-2)
+
+
+def test_cached_json_invalidates_on_params_and_sources(tmp_path):
+    calls = []
+
+    def compute():
+        calls.append(1)
+        return {"v": len(calls)}
+
+    p = tmp_path / "c.json"
+    assert bk.cached_json(p, {"seeds": [0, 1]}, compute)["v"] == 1
+    assert bk.cached_json(p, {"seeds": [0, 1]}, compute)["v"] == 1  # cached
+    assert bk.cached_json(p, {"seeds": [0, 1, 2]}, compute)["v"] == 2  # params changed
+    assert bk.cached_json(p, {"seeds": [0, 1, 2]}, compute, sources=("def f(): pass",))["v"] == 3  # code changed
+    assert len(calls) == 3
+
+
+def test_snr_gate_and_margins():
+    from stages.build_pack import gate_margins, snr_gate
+
+    thr = {"spec_corr": (0.8, ">=")}
+    tab = [{"snr_db": s, "judges": {"spec_corr": {"mean": v, "min": v - 0.01, "max": v + 0.01}}}
+           for s, v in ((10, 0.5), (20, 0.85), (25, 0.79), (30, 0.9), (40, 0.95))]
+    g = snr_gate({"snr_table": tab}, thr, margin_db=6.0)
+    assert g == {"snr_pass_db": 30, "margin_db": 6.0, "gate_db": 36.0}  # the 20 dB pass is not a stable onset
+    m = gate_margins({"spec_corr": 0.976, "pitch_err_pct": 2.53}, {"spec_corr": (0.8, ">="), "pitch_err_pct": (3.0, "<=")})
+    assert "INCONCLUSIVE 0.624 to 0.8" in m[0] and "INCONCLUSIVE 3 to 3.47" in m[1]
 
 
 def test_grating_scene_staggered_and_spaced():

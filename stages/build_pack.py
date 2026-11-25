@@ -30,19 +30,63 @@ def _f(v, fmt="{:.1f}", none="-"):
     return none if v is None else fmt.format(v)
 
 
-def _j(j, ids):
-    """Judge values for the metric ids that have thresholds, e.g. 'pitch_err_pct 2.56, spec_corr 0.959'."""
+def _fl(floor, k):
+    return f" [floor {floor[k]:.3g}]" if floor and k in floor else ""
+
+
+def _j(j, ids, floor=None):
+    """Judge values for the thresholded ids, each with the judge floor: 'pitch_err_pct 2.84 [floor 2.53]'."""
     if not j:
         return "not judged"
-    return ", ".join(f"{k} {j[k]:.3g}" for k in ids if k in j) or "not judged"
+    return ", ".join(f"{k} {j[k]:.3g}{_fl(floor, k)}" for k in ids if k in j) or "not judged"
 
 
-def _jstats(js, ids):
-    """Multi-seed judge stats {id: {mean,min,max}} -> 'spec_corr 0.77 (0.76-0.78)'."""
+def _jstats(js, ids, floor=None):
+    """Multi-seed judge stats {id: {mean,min,max}} -> 'spec_corr 0.77 (0.76-0.78) [floor 0.976]'."""
     if not js:
         return "not judged"
-    return ", ".join(f"{k} {js[k]['mean']:.3g} ({js[k]['min']:.3g}-{js[k]['max']:.3g})" for k in ids
+    return ", ".join(f"{k} {js[k]['mean']:.3g} ({js[k]['min']:.3g}-{js[k]['max']:.3g}){_fl(floor, k)}" for k in ids
                      if js.get(k)) or "not judged"
+
+
+def gate_margins(floor, thr) -> list[str]:
+    """Explicit pass / inconclusive / fail bands per judged gate, from the threshold and the judge floor.
+
+    m = |threshold - floor| (how far a perfect echo sits from the threshold). PASS: on the pass side of the threshold.
+    INCONCLUSIVE (repeat, average more, listen): on the fail side by less than m. FAIL: on the fail side by more than m."""
+    out = []
+    for k, (t, cmp) in thr.items():
+        if not floor or k not in floor or cmp not in ("<=", ">="):
+            continue
+        m = abs(t - floor[k])
+        if cmp == "<=":
+            out.append(f"{k}: PASS <= {t:g}; INCONCLUSIVE {t:g} to {t + m:.3g}; FAIL > {t + m:.3g} (floor {floor[k]:.3g})")
+        else:
+            out.append(f"{k}: PASS >= {t:g}; INCONCLUSIVE {t - m:.3g} to {t:g}; FAIL < {t - m:.3g} (floor {floor[k]:.3g})")
+    return out
+
+
+def snr_gate(ex, thr, margin_db=6.0):
+    """Lowest SNR in the table at which every seed's judges pass (seed minimum/maximum), plus margin_db."""
+    tab = ex.get("snr_table") or []
+    ok = []
+    for row in sorted(tab, key=lambda r: r["snr_db"]):
+        js = row["judges"] or {}
+        good = bool(js)
+        for k, (t, cmp) in thr.items():
+            st = js.get(k)
+            if not st:
+                continue
+            good &= (st["max"] <= t) if cmp == "<=" else (st["min"] >= t) if cmp == ">=" else True
+        ok.append((row["snr_db"], good))
+    # the lowest SNR from which every higher SNR also passes
+    first = None
+    for snr, good in reversed(ok):
+        if good:
+            first = snr
+        else:
+            break
+    return None if first is None else {"snr_pass_db": first, "margin_db": margin_db, "gate_db": first + margin_db}
 
 
 def _means(js):
@@ -138,11 +182,7 @@ def readout(ph, met, thr, labels=None) -> list[str]:
                 f"{ff['judges'][k]['max']:.3g})" for k in bad)
                 + f", while the echo waveform is still {wc['mean']:.3f} correlated with the nominal echo and its level "
                 f"changes {ff['level_delta_db']['mean']:+.2f} dB")
-            nom = next((r for r in rows if r["kind"] == "nominal"), None)
-            if ff.get("corr_in_band") and nom and nom.get("energy_out_of_band"):
-                t += (f"; inside the target band the correlation is {ff['corr_in_band']['mean']:.4f}, and the share of "
-                      f"echo energy outside the target band goes from {100 * nom['energy_out_of_band']['mean']:.1f} % "
-                      f"to {100 * ff['energy_out_of_band']['mean']:.1f} %")
+            t += "; where the residual lands is in the residual split below"
         else:
             t += "; no failure among the sigmas tried"
         if unj:
@@ -234,6 +274,7 @@ def generated_block(packs, lowpitch=None) -> str:
                if m.get("threshold") is not None}
         if not ph:
             continue
+        fl = ph.get("judges_floor")
         ver = "Tier 0, unverified" if not ph["verified"] else "Tier 0 3D (design verified on Tier 1; these tables are Tier 0)"
         L += ["", f"#### Build physics for {row['stage']} / {row['run_id']} ({ver})", "",
               f"Source: `{_rel(pd / 'pack.json')}` key `physics`, computed by `echo.buildkit.physics_tables` from "
@@ -241,7 +282,7 @@ def generated_block(packs, lowpitch=None) -> str:
               f"clap at the listener (add 110.5 for dB SPL with a 100 dB clap at 1 m). Infinite free-space posts: "
               f"{ph['level_inf_db']:.1f} dB. Target band {ph['target_band_hz'][0]:.0f}-{ph['target_band_hz'][1]:.0f} Hz, "
               f"echo from {ph['timing']['t_first_echo_ms']:.1f} to {ph['timing']['t_last_echo_ms']:.1f} ms.", "",
-              f"Stage judges on the Tier 0 3D echo of the design as drawn: {_j(ph.get('judges_inf'), ids)}. "
+              f"Stage judges on the Tier 0 3D echo of the design as drawn: {_j(ph.get('judges_inf'), ids, fl)}. "
               f"{_floor_txt(ph, thr)}. Every judged row below should be read against this floor, not against a "
               f"perfect score." + ("" if ph.get("judge_status", "ok") == "ok" else
                                    f" Judges unavailable: {ph.get('judge_status')}."), "",
@@ -256,8 +297,10 @@ def generated_block(packs, lowpitch=None) -> str:
                   f"{gm['model_far_edge_m']:.2f} m from the emitter, keep hard surfaces beyond "
                   f"{gm['model_clearance_m']:.2f} m; time gate {gm['gate_model_ms'][0]:.2f}-{gm['gate_model_ms'][1]:.2f} ms "
                   f"model time ({gm['gate_full_ms'][0]:.1f}-{gm['gate_full_ms'][1]:.1f} ms full scale: first echo - 3 ms "
-                  f"to last echo + 10 ms). Site: no hard reflector within {gm['site_clearance_m']:.0f} m of the clap "
-                  f"point. Board: see the template extent in the build pack line below."]
+                  f"to last echo + 10 ms). Site: a hard reflector at distance d from the clap point echoes at about "
+                  f"2d/c, so keep hard reflectors beyond c (last echo + 10 ms) / 2 = "
+                  f"{343.0 * (ph['timing']['t_last_echo_ms'] + 10.0) / 2000:.1f} m, so their echoes land after the "
+                  f"analysis window. Board: see the template extent in the build pack line below."]
         if ph.get("rig_levels"):
             L += ["", "Field-test (phase 3a) echo levels, Tier 0 3D, free space, ear 1.5 m:", "",
                   "| case | post height | dB re direct | dB SPL peak (100 dB clap) |", "|---|---|---|---|"]
@@ -271,7 +314,7 @@ def generated_block(packs, lowpitch=None) -> str:
         for hf in ph["height_free"]:
             h = hf["post_height_m"]
             L.append(f"| {'infinite' if h is None else f'{h:g}'} | {hf['level_db']:.1f} | {hf['delta_db']:+.1f} | "
-                     f"{_j(hf.get('judges'), ids)} |")
+                     f"{_j(hf.get('judges'), ids, fl)} |")
         L += ["", "Echo level with a perfectly rigid flat ground (image method; posts stand on the ground, clap and ear "
               "at the same height):", "", "| ear height (m) | post height (m) | level (dB) | change (dB) | "
               "worst / best 10 ms window (dB) | judges |", "|---|---|---|---|---|---|"]
@@ -279,19 +322,24 @@ def generated_block(packs, lowpitch=None) -> str:
             h = g["post_height_m"]
             L.append(f"| {g['ear_height_m']:g} | {'infinite' if h is None else f'{h:g}'} | {g['level_db']:.1f} | "
                      f"{g['delta_db']:+.1f} | {g['worst_10ms_delta_db']:+.1f} / {g['best_10ms_delta_db']:+.1f} | "
-                     f"{_j(g.get('judges'), ids)} |")
+                     f"{_j(g.get('judges'), ids, fl)} |")
         L += ["", "(in brackets: change against infinite free-space posts; 'worst 10 ms': the largest drop of any 10 ms "
               "window of the echo against the same window with infinite free-space posts, which shows comb notches "
               "that the peak hides)", "", "Building only part of the wedge (posts with |bearing| up to the half-angle):",
               "", "| half-angle (deg) | posts | level (dB) | change (dB) | judges |", "|---|---|---|---|---|"]
         for s in ph["slices"]:
             L.append(f"| {s['half_angle_deg']:g} | {s['posts']} | {_f(s['level_db'])} | {_f(s['delta_db'], '{:+.1f}')} | "
-                     f"{_j(s.get('judges'), ids)} |")
-        L += jitter_lines(ph["jitter"], ids, ph.get("jitter_f_center_hz"))
+                     f"{_j(s.get('judges'), ids, fl)} |")
+        L += jitter_lines(ph["jitter"], ids, ph.get("jitter_f_center_hz"), fl)
+        exf = pd / "extras.json"
+        ex = json.loads(exf.read_text()) if exf.exists() else None
+        if ex:
+            L += residual_lines(ex, "Residual split, this design")
+        L += measurement_lines(ph, ex, thr, fl, ids, b_height=json.loads((pd / "bom.json").read_text())["post_height_m"])
         L += ["", "The built structure heard at other air temperatures (Tier 0 3D with c(T) = 331.3 sqrt(1 + T/273.15)):",
               "", "| T (C) | c (m/s) | level (dB) | judges |", "|---|---|---|---|"]
         for t in ph.get("temperature_judged", []):
-            L.append(f"| {t['T_c']:g} | {t['c']:.1f} | {t['level_db']:.1f} | {_j(t.get('judges'), ids)} |")
+            L.append(f"| {t['T_c']:g} | {t['c']:.1f} | {t['level_db']:.1f} | {_j(t.get('judges'), ids, fl)} |")
         rg = ph["range_gradient"]
         L += ["", f"Range gradient |grad rho| over the posts: {rg['min']:.4f}-{rg['max']:.4f} (a radial error becomes "
               f"that fraction of range error). A sideways error perpendicular to the line from the clap point (a "
@@ -334,6 +382,9 @@ def generated_block(packs, lowpitch=None) -> str:
         ph = json.loads((pd / "pack.json").read_text()).get("physics")
         thr = {m["id"]: (m["threshold"], m["comparator"]) for m in met.get("metrics", [])
                if m.get("threshold") is not None}
+        exf = pd / "extras.json"
+        if ph is not None and exf.exists():
+            ph["_extras"] = json.loads(exf.read_text())
         if ph and row["stage"] == "s1_bird":
             labels = {m["id"]: m.get("label", m["id"]) for m in met.get("metrics", [])}
             L += lowpitch_lines(lowpitch, ph, thr, list(dict.fromkeys(thr)), labels)
@@ -341,25 +392,109 @@ def generated_block(packs, lowpitch=None) -> str:
     return "\n".join(L)
 
 
-def jitter_lines(rows, ids, f_center):
+def jitter_lines(rows, ids, f_center, floor=None):
+    import math
+
     seeds = rows[0]["seeds"] if rows else []
     L = ["", f"Random placement error (Gaussian, every post, {len(seeds)} seeds per sigma: mean and range), free-space "
-         "infinite posts. Judge view: the spec's judges. Physical view: waveform correlation with the nominal echo, "
-         "measured, and the coherence estimate A / sqrt(A^2 + 0.5 (1 - A^2)), A = exp(-sigma_phi^2 / 2), "
-         f"sigma_phi = 4 pi sigma f / c at f = {f_center or float('nan'):.0f} Hz:", "",
-         "| direction | sigma (mm) | level change (dB) | waveform corr, measured | waveform corr, coherence estimate | "
-         "corr inside the target band | echo energy outside the target band | judges (mean, range) |",
-         "|---|---|---|---|---|---|---|---|"]
+         "infinite posts. Judge view: the spec's judges (with the judge floor). Physical view: measured waveform "
+         "correlation with the nominal echo (clap-family mean of per-clap correlations), next to the parameter-free "
+         f"coherent-loss factor A = exp(-(4 pi sigma f / c)^2 / 2) at f = {f_center or float('nan'):.0f} Hz (the "
+         "fraction of coherent amplitude kept in the target band; it says nothing about where the lost power goes):", "",
+         "| direction | sigma (mm) | level change (dB) | waveform corr, measured | coherent factor A | judges (mean, range) |",
+         "|---|---|---|---|---|---|"]
     for j in rows:
+        if j["kind"] == "nominal":
+            continue
         wc = j["waveform_corr"]
-        ce = j.get("corr_coherence_estimate")
-        ib, ob = j.get("corr_in_band"), j.get("energy_out_of_band")
-        ibt = "-" if not ib else f"{ib['mean']:.4f}"
-        obt = "-" if not ob else f"{100 * ob['mean']:.1f} %"
+        A = math.exp(-((4 * math.pi * j["sigma_mm"] / 1000 * (f_center or 0) / 343.0) ** 2) / 2)
         L.append(f"| {j['kind']} | {j['sigma_mm']:g} | {j['level_delta_db']['mean']:+.2f} | {wc['mean']:.3f} "
-                 f"({wc['min']:.3f}-{wc['max']:.3f}) | {'-' if ce is None else f'{ce:.3f}'} | "
-                 f"{ibt} | {obt} | "
-                 + ("as drawn (above)" if j["kind"] == "nominal" else _jstats(j.get("judges"), ids)) + " |")
+                 f"({wc['min']:.3f}-{wc['max']:.3f}) | {A:.3f} | {_jstats(j.get('judges'), ids, floor)} |")
+    return L
+
+
+def measurement_lines(ph, ex, thr, fl, ids, b_height=2.0):
+    """SNR table and gate, gate margins, phase-2b measurement height, phase-3a SNR estimate (all generated)."""
+    L = []
+    gate = None
+    if ex and ex.get("snr_table"):
+        w = ex["snr_window_s"]
+        L += ["", f"Measurement noise: the judges on the nominal echo plus in-band white noise (band-limited to the "
+              f"design loss band), SNR = echo energy / noise energy over {1000 * w[0]:.1f}-{1000 * w[1]:.1f} ms, "
+              f"{ex.get('snr_seeds_n', 3)} seeds:", "",
+              "| SNR (dB) | judges (mean, seed range) |", "|---|---|"]
+        for r in ex["snr_table"]:
+            L.append(f"| {r['snr_db']:g} | {_jstats(r['judges'], ids, fl)} |")
+        gate = snr_gate(ex, thr)
+        if gate:
+            L += ["", f"**SNR gate**: every seed passes from {gate['snr_pass_db']:g} dB up; with a {gate['margin_db']:g} dB "
+                  f"margin the measurement must reach **{gate['gate_db']:g} dB in-band SNR** over the echo window."]
+        else:
+            L += ["", "**SNR gate**: no SNR in the table passes on every seed; measure at the highest SNR achievable."]
+    gm = gate_margins(fl, thr)
+    if gm:
+        L += ["", "**Gate margins** (every judged gate; m = distance of the judge floor from the threshold): " + "; ".join(gm)
+              + ". Inconclusive: repeat with more averaging and decide by listening."]
+    ok = [g for g in ph.get("height_rigid_ground", []) if g["post_height_m"] == b_height
+          and _passes(g.get("judges"), thr)]
+    if ok:
+        z = max(g["ear_height_m"] for g in ok)
+        L += ["", f"**Phase-2b measurement height**: emitter and mic {1000 * z / 10:.0f} mm above the model ground plane "
+              f"(= {z:g} m at full scale), the highest clap/ear height whose rigid-ground row with {b_height:g} m posts "
+              f"passes the judges; passing heights: " + ", ".join(
+                  f"{g['ear_height_m']:g} m" for g in sorted(ok, key=lambda g: g["ear_height_m"]))
+              + ". Also measure at 150 mm (1.5 m) as the ground-model check; its predicted verdict is in the ground table."]
+    elif ph.get("height_rigid_ground"):
+        L += ["", f"**Phase-2b measurement height**: no rigid-ground row with {b_height:g} m posts passes the judges "
+              "(or none is judged); measure at every tabulated height and compare with the table."]
+    if ph.get("rig_levels") and gate:
+        import math
+
+        L += ["", f"Phase-3a SNR estimate (single hit of a 100 dB clap; peak echo SPL against a background level, an "
+              f"optimistic comparison; hits to average for the {gate['gate_db']:g} dB gate = 10^((gate - SNR1)/10)):", "",
+              "| case | post height | echo peak dB SPL | background 25 dB: SNR1 / hits | 35 dB | 45 dB |",
+              "|---|---|---|---|---|---|"]
+        for r in ph["rig_levels"]:
+            spl = 110.46 + r["level_db"]
+            cells = []
+            for bg in (25.0, 35.0, 45.0):
+                s1 = spl - bg
+                n = max(1, math.ceil(10 ** ((gate["gate_db"] - s1) / 10)))
+                cells.append(f"{s1:.0f} dB / {n}")
+            h = r["post_height_m"]
+            L.append(f"| {r['case']} | {'infinite' if h is None else f'{h:g} m'} | {spl:.1f} | " + " | ".join(cells) + " |")
+    return L
+
+
+def residual_lines(ex, title):
+    """Like-for-like residual split (per clap, then clap-family mean over seeds) and its reconciliation."""
+    import numpy as np
+
+    lo, hi = ex["f_band_hz"]
+    L = ["", f"{title}: jitter-induced residual r = jittered echo - g x nominal (common gain g removed), energy split "
+         f"into fixed bands below the target band (< {lo:.0f} Hz), the target band ({lo:.0f}-{hi:.0f} Hz) and above it "
+         f"({hi:.0f}-{ex['f_top_hz']:.0f} Hz), as % of the nominal echo energy; clap-family mean of per-clap values, "
+         f"mean over {len(ex['seeds'])} seeds. Check: residual/jittered energy equals 1 - corr^2 per clap.", "",
+         "| sigma (mm) | corr (clap mean) | residual below | in target band | above, to 4 kHz | above, worst clap "
+         "| max abs(1 - corr^2 - residual/jittered) |", "|---|---|---|---|---|---|---|"]
+    for row in ex["residual"]:
+        cl = [c for seed in row["per_seed_per_clap"] for c in seed]
+        rb = np.array([c["res_bands"] for c in cl])
+        nc = len(row["per_seed_per_clap"][0])
+        worst = max(np.mean([seed[k]["res_bands"][2] for seed in row["per_seed_per_clap"]]) for k in range(nc))
+        chk = max(abs(c["one_minus_corr2"] - c["res_over_e"]) for c in cl)
+        L.append(f"| {row['sigma_mm']:g} | {np.mean([c['corr'] for c in cl]):.3f} | {100 * rb[:, 0].mean():.2f} % | "
+                 f"{100 * rb[:, 1].mean():.2f} % | {100 * rb[:, 2].mean():.2f} % | {100 * worst:.2f} % | {chk:.1e} |")
+    nom = ex["nominal_per_clap"]
+    L += ["", "Nominal echo, per clap: share of energy in the target band " + ", ".join(
+        f"{100 * c['nominal_bands'][1]:.0f} %" for c in nom) + "; above it " + ", ".join(
+        f"{100 * c['nominal_bands'][2]:.0f} %" for c in nom) + "; peak level " + ", ".join(
+        f"{c['level_db']:.1f}" for c in nom) + " dB re direct (claps 0-4)."]
+    bs = ex.get("bias_to_signal")
+    if bs:
+        L += ["", f"Bias against modulation of the reflectivity profile (profile.json, active span): mean "
+              f"{bs['mean']:.4g}, RMS modulation {bs['rms_modulation']:.4g}, amplitude ratio {bs['ratio_amp']:.2f}, "
+              f"energy ratio {bs['ratio_energy']:.2f}."]
     return L
 
 
@@ -410,9 +545,21 @@ def lowpitch_tolerance(variant_dir, seeds=(0, 1, 2), sigmas=(1.0, 2.0, 3.0, 5.0,
 
     from echo.buildkit import Judge, _design_inputs, _echo3d, _level_db, jitter_table, load_run
 
-    out_json = Path(variant_dir) / "tolerance.json"
-    if out_json.exists():
-        return json.loads(out_json.read_text())
+    import inspect
+
+    from echo.buildkit import cached_json
+
+    params = {"seeds": list(seeds), "sigmas": list(sigmas), "target": LOWPITCH, "dir": _rel(variant_dir)}
+    return cached_json(Path(variant_dir) / "tolerance.json", params,
+                       lambda: _lowpitch_compute(variant_dir, seeds, sigmas),
+                       sources=(inspect.getsource(_lowpitch_compute),))
+
+
+def _lowpitch_compute(variant_dir, seeds, sigmas):
+    import math
+
+    from echo.buildkit import Judge, _design_inputs, _echo3d, _level_db, jitter_table, load_run
+
     run = load_run(variant_dir)
     claps, band, n_out = _design_inputs(run)
     sc = run["scene"]
@@ -425,8 +572,29 @@ def lowpitch_tolerance(variant_dir, seeds=(0, 1, 2), sigmas=(1.0, 2.0, 3.0, 5.0,
            "range_period_m": sc.c / (2 * LOWPITCH["f_start"]), "jitter_f_center_hz": fc,
            "jitter": jitter_table(sc.posts, sc, claps, band, n_out, judge, ref, fc, sigmas, (50.0,), seeds,
                                   tband=(LOWPITCH["f_end"], LOWPITCH["f_start"]))}
-    out_json.write_text(json.dumps(res, indent=1))
     return res
+
+
+def ensure_extras(run_dir, out_json, f_band=None, target=None):
+    """extras.json (residual split, bias ratio, SNR table) next to a pack or variant, cached by code and params."""
+    import inspect
+
+    from echo.buildkit import Judge, _design_inputs, cached_json, extra_tables, load_run
+
+    run = load_run(run_dir)
+
+    def compute():
+        _, band, _ = _design_inputs(run)
+        judge = Judge(run, band, target=target)
+        fb = f_band
+        if fb is None and judge.target is not None and judge.target.f_track is not None:
+            fb = (float(min(judge.target.f_track[1])), float(max(judge.target.f_track[1])))
+        d = extra_tables(run, fb, judge)
+        d["snr_seeds_n"] = 3
+        return d
+
+    return cached_json(out_json, {"run": _rel(run_dir), "f_band": f_band}, compute,
+                       sources=(inspect.getsource(ensure_extras),))
 
 
 def lowpitch_lines(res, main_ph, thr, ids, labels):
@@ -442,8 +610,23 @@ def lowpitch_lines(res, main_ph, thr, ids, labels):
     met = {"headline": {}}
     rb = [b for b in readout(ph, met, thr, labels) if b.startswith(("Design as drawn", "Radial", "Tangential"))]
     L += [f"- {b}" for b in rb]
-    L += jitter_lines(res["jitter"], ids, res["jitter_f_center_hz"])
+    L += jitter_lines(res["jitter"], ids, res["jitter_f_center_hz"], res.get("judges_floor"))
+    if res.get("extras"):
+        L += residual_lines(res["extras"], "Residual split, low-pitch variant")
+        mex = main_ph.get("_extras")
+        if mex and mex.get("bias_to_signal") and res["extras"].get("bias_to_signal"):
+            L += ["", f"Bias-to-modulation amplitude ratio: stage-1 design {mex['bias_to_signal']['ratio_amp']:.2f}, "
+                  f"low-pitch variant {res['extras']['bias_to_signal']['ratio_amp']:.2f}."]
     return L
+
+
+def with_variant_extras(vd):
+    if vd is None:
+        return None
+    low = lowpitch_tolerance(vd)
+    low["extras"] = ensure_extras(vd, vd / "extras.json", f_band=(LOWPITCH["f_end"], LOWPITCH["f_start"]),
+                                  target=lowpitch_target())
+    return low
 
 
 def main(argv=None):
@@ -476,8 +659,11 @@ def main(argv=None):
         from echo.buildkit import load_run, pack_name
 
         packs = [(row, rd, Path(a.out) / pack_name(load_run(rd))) for row, rd in index_runs()]
+        for row, rd, pd in packs:
+            if (pd / "pack.json").exists():
+                ensure_extras(rd, pd / "extras.json")
         vd = latest_variant()
-        low = lowpitch_tolerance(vd) if vd is not None and (vd / "tolerance.json").exists() else None
+        low = with_variant_extras(vd)
         refresh_doc(Path(a.doc), generated_block([p for p in packs if (p[2] / "pack.json").exists()], low))
         print(f"refreshed {a.doc} (from existing packs)")
         return 0
@@ -488,8 +674,10 @@ def main(argv=None):
             print(f"wrote {pd}")
             packs.append((row, rd, pd))
         if a.refresh_doc:
+            for row, rd, pd in packs:
+                ensure_extras(rd, pd / "extras.json")
             vd = latest_variant()
-            low = lowpitch_tolerance(vd) if vd is not None else None
+            low = with_variant_extras(vd)
             refresh_doc(Path(a.doc), generated_block(packs, low))
             print(f"refreshed {a.doc}")
     for rd in a.run_dirs:

@@ -643,17 +643,139 @@ def make_judge(run: dict, band, target=None) -> Judge:
     return Judge(run, band, target)
 
 
-def coherence_corr(sigma_m, f_hz, c=C0, g=0.5):
-    """Physical-view estimate of the waveform correlation after random range errors of sigma (m).
+def coherent_factor(sigma_m, f_hz, c=C0):
+    """Parameter-free coherent-loss factor A = exp(-sigma_phi^2 / 2), sigma_phi = 4 pi sigma f / c.
 
-    Each post's echo phase is 4 pi rho f / c, so a range error sigma gives a phase error sigma_phi = 4 pi sigma f / c.
-    The coherent echo keeps A = exp(-sigma_phi^2 / 2) of its amplitude; the lost power reappears as incoherent
-    scatter, a fraction g of it in the echo window (g ~ 0.5 fitted to the stage-1 seeds, an estimate). Correlation
-    with the nominal echo = A / sqrt(A^2 + g (1 - A^2)).
+    Each post's echo phase is 4 pi rho f / c, so Gaussian range errors of sigma keep a fraction A of the coherent echo
+    amplitude at frequency f. Where the lost power goes (incoherent scatter, and in which band) is not modelled here.
     """
     sp = 4 * math.pi * sigma_m * f_hz / c
-    a = math.exp(-sp**2 / 2)
-    return a / math.sqrt(a**2 + g * (1 - a**2))
+    return math.exp(-sp**2 / 2)
+
+
+def band_energies(x, edges, fs=FS):
+    """Energy of signal(s) x[..., n] in the frequency bands [edges[i], edges[i+1]) (Parseval on the rfft, exact:
+    the bands partition 0..fs/2 when edges start at 0 and end at >= fs/2). Returns [..., len(edges) - 1]."""
+    x = np.asarray(x, float)
+    n = x.shape[-1]
+    X = np.fft.rfft(x, axis=-1)
+    f = np.fft.rfftfreq(n, 1 / fs)
+    w = np.full(len(f), 2.0)
+    w[0] = 1.0
+    if n % 2 == 0:
+        w[-1] = 1.0
+    E = w * np.abs(X) ** 2 / n
+    out = [E[..., (f >= lo) & (f < hi)].sum(axis=-1) for lo, hi in zip(edges[:-1], edges[1:])]
+    return np.stack(out, axis=-1)
+
+
+def residual_split(ref, e, f_lo, f_hi, f_top=4000.0, fs=FS):
+    """Per clap: jitter-induced residual r = e - g ref (g = <e, ref>/<ref, ref>, the common gain removed), its energy
+    split into bands [0, f_lo), [f_lo, f_hi), [f_hi, f_top), [f_top, fs/2], as fractions of the nominal echo energy.
+
+    Identity check: |r|^2 / |e|^2 = 1 - corr^2 with corr = <e, ref> / (|e| |ref|). Returns a list of dicts."""
+    ref, e = np.atleast_2d(ref), np.atleast_2d(e)
+    out = []
+    for a, b in zip(ref, e):
+        aa = float(a @ a)
+        g = float(a @ b) / aa
+        r = b - g * a
+        corr = float(a @ b) / math.sqrt(aa * float(b @ b))
+        eb = band_energies(r, [0.0, f_lo, f_hi, f_top, fs / 2 + 1], fs) / aa
+        ea = band_energies(a, [0.0, f_lo, f_hi, f_top, fs / 2 + 1], fs) / aa
+        out.append({"corr": corr, "one_minus_corr2": 1 - corr**2, "res_over_e": float(r @ r) / float(b @ b),
+                    "res_bands": [float(v) for v in eb], "res_total": float(r @ r) / aa,
+                    "nominal_bands": [float(v) for v in ea], "level_db": 20 * math.log10(np.max(np.abs(a)) + 1e-30)})
+    return out
+
+
+def bias_to_signal(profile: dict) -> dict:
+    """Bias against modulation of a reflectivity profile (profile.json): over the active span (first to last bin above
+    1 % of the max), mean m and RMS of (x - m) s. Amplitude ratio m/s; energy ratio (m/s)^2."""
+    x = np.asarray(profile.get("reflectivity", []), float)
+    if x.size == 0 or x.max() <= 0:
+        return None
+    idx = np.nonzero(x > 0.01 * x.max())[0]
+    x = x[idx[0]: idx[-1] + 1]
+    m, sd = float(x.mean()), float(x.std())
+    return {"mean": m, "rms_modulation": sd, "ratio_amp": m / sd if sd > 0 else None,
+            "ratio_energy": (m / sd) ** 2 if sd > 0 else None}
+
+
+def cache_key(params: dict, sources=()) -> str:
+    """Hash of params, this module's source and any extra source strings (invalidates caches on code change)."""
+    import hashlib
+
+    h = hashlib.sha256(json.dumps(params, sort_keys=True, default=str).encode())
+    h.update(Path(__file__).read_bytes())
+    for src in sources:
+        h.update(str(src).encode())
+    return h.hexdigest()[:16]
+
+
+def cached_json(path, params: dict, compute, sources=()):
+    """Return the JSON at path if its stored key matches cache_key(params, sources); else compute(), store, return."""
+    path = Path(path)
+    key = cache_key(params, sources)
+    if path.exists():
+        d = json.loads(path.read_text())
+        if d.get("cache_key") == key:
+            return d
+    d = compute()
+    d["cache_key"] = key
+    path.write_text(json.dumps(d, indent=1))
+    return d
+
+
+def radial_dirs(posts, scene):
+    v = posts[:, :2] - scene.source
+    uS = v / np.hypot(v[:, 0], v[:, 1])[:, None]
+    r2v = posts[:, :2] - scene.listener
+    g = 0.5 * (uS + r2v / np.hypot(r2v[:, 0], r2v[:, 1])[:, None])
+    return g / np.linalg.norm(g, axis=1, keepdims=True)
+
+
+def extra_tables(run: dict, f_band, judge=None, seeds=(0, 1, 2), sigmas_mm=(1.0, 2.0, 3.0, 5.0, 10.0, 20.0),
+                 snrs_db=(10.0, 15.0, 20.0, 25.0, 30.0, 40.0), snr_seeds=(0, 1, 2)) -> dict:
+    """Like-for-like residual band split under radial jitter (same seeds as jitter_table), bias-to-signal ratio,
+    and (with a judge) the judges on the nominal echo plus in-band white noise at given SNRs. Tier 0 3D."""
+    from echo.clap import band_limit
+
+    scene = run["scene"]
+    posts = scene.posts
+    claps, band, n_out = _design_inputs(run)
+    ref = _echo3d(posts, scene, claps, band, n_out)
+    u = radial_dirs(posts, scene)
+    f_lo, f_hi = f_band
+    rows = []
+    for s in sigmas_mm:
+        per = []
+        for sd in seeds:
+            rng = np.random.default_rng(1000 * sd + int(round(10 * s)))  # same draws as jitter_table
+            p = posts.copy()
+            p[:, :2] += u * rng.normal(0, s / 1000, size=(len(p), 1))
+            per.append(residual_split(ref, _echo3d(p, scene, claps, band, n_out), f_lo, f_hi))
+        rows.append({"sigma_mm": s, "per_seed_per_clap": per})
+    out = {"f_band_hz": [f_lo, f_hi], "f_top_hz": 4000.0, "seeds": list(seeds), "residual": rows,
+           "nominal_per_clap": residual_split(ref, ref, f_lo, f_hi), "bias_to_signal": bias_to_signal(run["profile"])}
+    if judge is not None and judge.status == "ok":
+        rho = bistatic_range(posts[:, :2], scene.source, scene.listener)
+        i0, i1 = int(2 * rho.min() / scene.c * FS), int(2 * rho.max() / scene.c * FS) + int(0.01 * FS)
+        tab = []
+        for snr in snrs_db:
+            vals = []
+            for sd in snr_seeds:
+                rng = np.random.default_rng(500 + sd)
+                nz = band_limit(rng.normal(size=ref.shape), band[0], band[1])
+                es = np.sum(ref[:, i0:i1] ** 2, axis=1)
+                en = np.sum(nz[:, i0:i1] ** 2, axis=1)
+                y = ref + nz * np.sqrt(es / en / 10 ** (snr / 10))[:, None]
+                vals.append(judge(y))
+            keys = sorted({k for v in vals if v for k in v if "__" not in k})
+            tab.append({"snr_db": snr, "judges": {k: _stats([v.get(k) if v else None for v in vals]) for k in keys}})
+        out["snr_table"] = tab
+        out["snr_window_s"] = [i0 / FS, i1 / FS]
+    return out
 
 
 def _stats(vals):
@@ -708,14 +830,14 @@ def jitter_table(posts, scene, claps, band, n_out, judge, ref, f_center, sigmas_
                      "waveform_corr": _stats([q["waveform_corr"] for q in per]),
                      "corr_in_band": _stats([q.get("corr_in_band") for q in per]),
                      "energy_out_of_band": _stats([q.get("energy_out_of_band") for q in per]),
-                     "corr_coherence_estimate": coherence_corr(s / 1000, f_center, scene.c) if kind == "radial" else None,
+                     "coherent_factor": coherent_factor(s / 1000, f_center, scene.c) if kind == "radial" else None,
                      "judges": {k: _stats([q["judges"].get(k) if q["judges"] else None for q in per]) for k in keys}
                      or None})
     if tband is not None:
         rows.insert(0, {"kind": "nominal", "sigma_mm": 0.0, "seeds": list(seeds), "per_seed": [],
                         "level_delta_db": _stats([0.0]), "waveform_corr": _stats([1.0]), "corr_in_band": _stats([1.0]),
                         "energy_out_of_band": _stats([float(1 - np.sum(rb**2) / np.sum(ref**2))]),
-                        "corr_coherence_estimate": None, "judges": None})
+                        "coherent_factor": None, "judges": None})
     if wav_dir is not None and 0.0 in wav_sigmas:
         wavs[0.0] = ref
     if wav_dir is not None and wavs:
@@ -788,8 +910,8 @@ def ground_cross_posts(posts, scene: Scene, ear_height):
 
     With S and L at height z, the image source is at -z: the cross path is sqrt(L^2 + (2z)^2) instead of L = r1 + r2.
     Moving the post along its ray from S onto the equal-delay ellipse rho + d/2 (d = the extra length) gives exactly
-    that delay. The spreading change of the cross term (about d/L: up to ~11 % on the nearest rows at z = 1.5 m, under
-    1 % at z <= 0.5 m) is ignored, so the cross term is slightly too strong on near rows for high ears.
+    that delay. The spreading change of the cross term (a relative change of about d/L, largest on the nearest rows and
+    for high ears) is ignored, so the cross term is slightly too strong there.
     """
     p = np.asarray(posts, float).copy()
     v = p[:, :2] - scene.source
@@ -945,7 +1067,9 @@ def physics_tables(run: dict, heights=(0.5, 1.0, 1.5, 2.0, 3.0, None), ground_ea
         "model_clearance_m": r_far / SCALE + 0.5,
         "gate_full_ms": [1000 * t0 - 3.0, 1000 * t1 + 10.0],
         "gate_model_ms": [(1000 * t0 - 3.0) / SCALE, (1000 * t1 + 10.0) / SCALE],
-        "site_clearance_m": r_far + 17.0}
+        # a hard reflector at distance d from the clap point echoes at about 2 d / c; it stays out of the analysis
+        # window if that is later than the last design echo + 10 ms (clap length and tail)
+        "site_clearance_m": scene.c * (t1 + 0.010) / 2}
     out["rig_levels"] = rig_levels(claps, band)
     out["judge_errors"] = judge.errors[:5]
     return out

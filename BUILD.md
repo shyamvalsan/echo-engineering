@@ -22,11 +22,11 @@ prices, marked "(est.)".
 
 | Phase | What is built | Cost (order of magnitude) | Time | What it proves | Go / no-go number |
 |---|---|---|---|---|---|
-| 1. Desk (tonight) | Simulations and the build pack | 0 | done / ongoing | The design exists and scores in simulation. What tolerances, post height and ground it needs. | **Go to 2b:** the design passes on Tier 1, and the block's *Readout* shows the judges passing at radial sigma ≥ 2 mm (what the model can hold, ×10). **Otherwise** build 2a and 3a only, and let the robust pilot design (pending section) take the 2b slot. All judged gates in this table mean "passes the threshold, with the measurement's own SNR ≥ 30 dB in band, read against the judge floor in the block". |
+| 1. Desk (tonight) | Simulations and the build pack | 0 | done / ongoing | The design exists and scores in simulation. What tolerances, post height and ground it needs. | **Go to 2b:** the design passes on Tier 1, and the block's *Readout* shows the judges passing at radial sigma ≥ 2 mm (what the model can hold, ×10). **Otherwise** build 2a and 3a only, and let the robust pilot design (pending section) take the 2b slot. Every judged gate in this table is read with the block's **Gate margins** (PASS / INCONCLUSIVE / FAIL bands from the threshold and the judge floor), and only at in-band SNR ≥ the block's **SNR gate**. |
 | 2a. Scale-model rig check (1:10) | Ultrasonic rig plus one pin, then a 40-row "grating" of pins | ~€0.7–1.5k (est.) | 1–2 weeks | The rig measures what Tier 0 predicts for a single post and for a pure tone, including 3D, the board as hard ground and real post height | Single pin: echo level within ±2 dB of Tier 0 (rigid ground, same heights). Grating: tone frequency within ±0.5 % of c/(2Δρ) at the measured c. |
-| 2b. Full design at 1:10 | Every post of the design as 2 mm pins in laser-cut plates | +€0.3–0.6k (est.) | 1–2 weeks | The *design* works in 3D with ground, finite height and multiple scattering, and it can be heard (play back 10× slower) | First: in-band SNR ≥ 30 dB over the echo window (else it is a noise result, not a structure result). Then the measured echo, temperature-corrected to c = 343 m/s, scaled to full size and convolved with the clap family, **passes the stage's own thresholds** (stage 1: worst-frame pitch error ≤ 3 %, spectrogram correlation ≥ 0.8) at the emitter/mic height whose rigid-ground row in the block passes. The judge floor is close to the pitch threshold, so a pitch result between the floor and the threshold counts as a pass only with listening agreement. Level within ±3 dB of prediction. |
+| 2b. Full design at 1:10 | Every post of the design as 2 mm pins in laser-cut plates | +€0.3–0.6k (est.) | 1–2 weeks | The *design* works in 3D with ground, finite height and multiple scattering, and it can be heard (play back 10× slower) | First: in-band SNR ≥ the block's SNR gate over the echo window (else it is a noise result, not a structure result). Then the measured echo, temperature-corrected to c = 343 m/s, scaled to full size and convolved with the clap family, **passes the stage's own thresholds** (stage 1: worst-frame pitch error ≤ 3 %, spectrogram correlation ≥ 0.8) at the block's **Phase-2b measurement height**, read with the block's **Gate margins** (INCONCLUSIVE means repeat and decide by listening). Level within ±3 dB of prediction. |
 | 3a. Field calibration (full scale) | 1 post, then a 30-post grating, on the candidate site | ~€0.2–0.5k (est.) | 2 days | Real ground (grass or hard), wind, background noise, the clap as heard | Single-post level within ±3 dB of the rigid-ground prediction on hard ground (state the offset on grass). Grating tone audible to 8 of 10 listeners at the planned ear height. |
-| 3b. Full-scale pilot | The smallest worthwhile design (see the pending pilot section), on the site | ~€5–30k (est.: posts × per-post cost, see BOM) | 3–8 weeks | A clap returns the target sound outdoors | In-band SNR ≥ 30 dB. Judges pass on the measured echo after resampling it to c = 343 m/s (measured temperature), read against the judge floor. Level within ±3 dB of prediction. 8 of 10 naive listeners name the sound (bird / tune) from a forced choice of 4. |
+| 3b. Full-scale pilot | The smallest worthwhile design (see the pending pilot section), on the site | ~€5–30k (est.: posts × per-post cost, see BOM) | 3–8 weeks | A clap returns the target sound outdoors | In-band SNR ≥ the block's SNR gate. Judges PASS (block: Gate margins) on the measured echo after resampling it to c = 343 m/s (measured temperature). Level within ±3 dB of prediction. 8 of 10 naive listeners name the sound (bird / tune) from a forced choice of 4. |
 | 4. Permanent installation | Durable version, longer pieces (motif, melody) | €50–500k (est.) | months | That it lasts, is safe and can be visited | Permissions, safety review and a maintenance plan in place. Phase-3b result repeated across seasons. |
 
 **What to build first: 2a and 3a, in parallel, now.** Together they cost about €1–2k and take two weeks. They retire
@@ -44,21 +44,33 @@ over a 60 dB range, so for a narrowband whistle a residual 20 dB down fills the 
 Whether that residual is audible is a listening question. The pack's `listening/` folder answers it for free (phase 1).
 Until it is answered, treat the judge as binding.
 
-**Target pitch, and the clap's bandwidth, set the tolerance.** The range period c/(2f) is 4.9 cm at 3.5 kHz but
-16 cm at 1047 Hz (the motif's lowest note). Inside the target band, the allowed placement error scales with it. But
-the posts reflect every frequency the clap contains, and the design must stay quiet outside the target band: its
-positive bias cancels only through exact spacing. So the tolerance is set by the highest frequency that is both in the
-clap and required to stay silent, not by the target alone.
+**Does a lower target pitch buy tolerance? Not shown yet (hypothesis, Tier 0, unverified).** Inside the target band
+the allowed placement error scales with the range period c/(2f): 4.9 cm at 3.5 kHz, 16 cm at 1047 Hz (the motif's
+lowest note). The block's "Lower-pitch variant" section tests whether that carries over to a whole design. The test
+uses the bird glide shifted down to 1.75 → 1.0 kHz, the same pipeline, the same judges, multi-seed jitter, and a
+like-for-like residual split for both designs.
 
-The block's "Lower-pitch variant" section tests this. It is the bird glide shifted down to 1.75 → 1.0 kHz, run through
-the same pipeline, judges and multi-seed jitter. Read its rows as a rule:
-- If its radial budget is materially larger than stage 1's, lower pitch is the lever, and a lower-pitched glide is the
-  recommended candidate for the pending pilot section.
-- If it is not, and its "corr inside the target band" stays near 1 while the "echo energy outside the target band"
-  grows with sigma, the limit is the clap's top octave, not the target. Then lowering the target helps only together
-  with a band-limited source (a loudspeaker or a padded striker instead of a hand clap), a design that is robust to
-  jitter outside the target band (penalize out-of-band energy under jitter in the loss), or less bias (see "ways to
-  make it smaller or louder").
+Tier 0, unverified, one variant, 3 seeds: **the lower-pitched variant was not more tolerant**. Candidate causes:
+- (i) its weaker signal relative to the structure's bias (compare the two bias-to-modulation ratios and echo levels
+  in the block);
+- (ii) the clap exciting scatter above the target band, where the clap has most of its energy (the residual split
+  shows which band the residual lands in, per clap);
+- (iii) the spectrogram judge's sensitivity to residuals around −20 dB (the variant also fails that judge for 50 mm
+  *tangential* error, at a waveform correlation near 1).
+
+How to read the block for (i) and (ii):
+- If the two bias-to-modulation ratios are close, the profiles carry similar bias, and (i) can only act through the
+  clap's spectrum: the variant's target band sits where the clap is weak.
+- If the variant's residual lands almost entirely above its target band, per clap, while the stage-1 residual stays
+  inside its band, that favours (ii).
+
+Neither reading rules out (iii), and none of this is verified beyond Tier 0. The data so far do not separate the
+causes conclusively. Each has a direct test:
+- the same variant excited by a band-limited source (a loudspeaker sweep limited to the target band): tests (ii);
+- a variant re-scaled to the stage-1 bias-to-modulation ratio: tests (i);
+- a blind listening comparison of the variant's jittered echoes: tests (iii).
+
+Until then, the rule is: do not choose a lower target pitch for buildability alone.
 
 Low notes cost something regardless: posts scatter more weakly below ka ≈ 1, the clap has less energy there, and the
 Fresnel zone, and with it the needed post height, grows as 1/√f.
@@ -134,8 +146,9 @@ length by 10 and multiply every frequency by 10, and the pressure field is the s
   scale). Holes that cross a joint are cut on both panels (layer HOLES_SPLIT) and close up when the panels are butted.
   The DXF is drawn as seen from the top face, not mirrored.
 - *Pins.* One per post. Length = post height ÷ 10 + 56 mm for option A (plate stack), or + 15 mm for option B (hole
-  depth) (`bom.md`, model table). A pin cut to the option-B length and used in option A would stand only about 3/4 of
-  the design height: about 1.5 m instead of 2 m at full scale, which the block's height table shows to be a large loss.
+  depth) (`bom.md`, model table). A pin cut to the option-B length and used in option A would stand 56 − 15 = 41 mm short of the
+  design height (H/10 − 41 mm; for 2 m posts, 159 mm instead of 200 mm). Check the block's height table for what that
+  costs.
 - *Surround.* The board's own top surface must continue to the clap and mic marks (the S and L marks on the
   template). Put acoustic foam or a heavy blanket on the table edges.
 - *Space.* An echo from any surface at distance d arrives at 2d/c. Keep every hard surface (walls, ceiling, a person)
@@ -149,7 +162,7 @@ length by 10 and multiply every frequency by 10, and the pressure field is the s
 | Pins, 2 mm | Ø2.0 mm mild-steel TIG/gas filler rod, 1 m lengths (sold in 5 kg tubes, about 200 m each), or Ø2 mm silver steel / brass / carbon-fibre rod | `bom.md` model table (×1.05 spare) | €15–35 per 5 kg tube (est.) | Cut 4 pins per metre with a bench-mounted cutter and a length stop. Roll each on glass and reject any that rock (bow > 0.1 mm). |
 | Pins, 4 / 8 / 16 mm | silver steel, brass or aluminium rod; hardwood dowel for 8 and 16 mm | as `bom.md` | €1–5 per metre (est.) | Only if the design uses larger radii (stage 1 does not). |
 | Guide plates | 3 mm cast acrylic or birch ply, 600 × 400 mm | 2 × panel count | €8–20 per acrylic sheet, €3–8 per ply sheet (est.) | Or a laser-cutting service: €50–150 per hour (est.); about 3,000 small circles is roughly 30–60 min of cutting per layer. |
-| Base | 18 mm MDF, about 1.8 × 1.3 m, plus spacers | 1 | €30–60 (est.) | |
+| Base | 18 mm MDF, the block's "1:10 hole field extent" plus 100 mm all round, plus spacers | 1 | €30–60 (est.) | |
 | Emitter, broadband (pick one) | **(c) preferred:** a spark source, either a gas-lighter piezo igniter or a small HV spark gap. It gives a 20–50 µs impulse, broadband past 100 kHz, from a source a few mm across, so it is close to omnidirectional and can sit 30–50 mm above the board. (a) Avisoft Vifa ultrasonic dynamic speaker, 1–120 kHz ±12 dB, 92 dB SPL at 50 kHz (searched: spec only, price not found; ask Avisoft). (b) An air-motion-transformer or ribbon tweeter specified to 40 kHz. | 1 | (c) €5–50 (est.); (a) a few hundred € (est.); (b) €50–150 (est.) | (a) and (b) are several cm across. At 20–40 kHz (ka ≫ 1) they beam strongly, differ by tens of dB at 90° off axis, and their bodies scatter next to the mic. They cannot put an acoustic centre 30–50 mm above the board, so they are usable only for the 150 mm-height case and only with the on-axis calibration in step 3. A 40 kHz ultrasonic transducer (€2) is narrowband (±1–2 kHz): a single-frequency check only. Spark: HV safety, eye protection, no flammables; shot-to-shot level varies by a few dB, so normalize each shot by its own direct sound (valid for a spark, which is nearly omnidirectional, with a small MEMS capsule). |
 | Microphone (pick one) | (a) USB ultrasonic mic sampling at 384 kHz, e.g. Dodotronic Ultramic 384K EVO, €280 incl. VAT (searched, veldshop.nl, 2026-11-25); (b) Knowles SPU0410LR5H-class analog MEMS mic on a breakout (to about 80 kHz), into the interface; (c) a ¼-inch measurement mic rated to ≥50 kHz (several hundred €, est.) | 1 | see left | Prefer a bare MEMS capsule (port about 1 mm) on a thin stalk: small enough to be nearly omnidirectional at 40 kHz, and it barely scatters. MEMS capsules have a resonance above 20 kHz; step 3 calibrates it out. A USB mic's housing is a scatterer, so mount it with its capsule end towards S on a thin rod. |
 | Audio interface | 2 in / 2 out at ≥192 kHz (e.g. a Focusrite Scarlett 4th gen or similar) | 1 | €150–250 (est.) | At 192 kHz, Nyquist is 96 kHz. Check the response to 40 kHz with an output-to-input loopback cable on day 1. |
@@ -161,16 +174,16 @@ Total for phase 2a+2b: about €0.7–2k (est.), set mostly by the emitter and m
 
 **Measurement procedure.**
 1. Place the emitter's acoustic centre at S and the mic at L, 30 mm from S, at the same height above the ground
-   plane. Use the height whose rigid-ground row in the block passes the judges (the low-ear rows, ÷10). Then also
+   plane. Use the height named in the block's **Phase-2b measurement height** line. Then also
    measure at 150 mm (the standing-ear case). There the block predicts a judge failure from ground combing, and
    seeing that failure tests the ground model.
 2. *Stimulus.* Either a logarithmic sine sweep from 4 to 48 kHz over 1–2 s, repeated 8–16 times, deconvolved by the
    inverse sweep (Farina method), or repeated impulses (spark or a 20 µs click), 32–64 shots, aligned on their direct
    sound and averaged. Averaging N shots gains 10·log10(N) dB of SNR (+15 dB for 32).
-   *SNR requirement:* in-band SNR ≥ 30 dB over the echo window. Measure it as the echo-window energy against the
-   same window of a recording with the stimulus off. A noise floor only 17–20 dB below the echo already fails the
-   spectrogram judge on a perfect structure. Starting from a single-shot SNR, the number of shots needed is
-   N = 10^((30 − SNR₁)/10). The block's field-test levels give the echo level to expect for 3a.
+   *SNR requirement:* in-band SNR at least the block's **SNR gate** over the echo window. The gate is derived from the
+   block's noise table (the judges on the nominal echo with added in-band noise) plus a stated margin. Measure SNR as
+   the echo-window energy against the same window of a recording with the stimulus off. Starting from a single-shot
+   SNR₁, the number of shots needed is N = 10^((gate − SNR₁)/10). The block's field-test levels give the echo level to expect for 3a.
 3. *Calibration and normalization.* The project's convention is the echo relative to the free-field direct sound at
    the listener. The direct path in the rig leaves the emitter and enters the mic about 90° off the directions of the
    echoes, and the mic sits in the emitter's near field (a²/λ ≈ 26 mm at 40 kHz for a 15 mm-radius driver). So
@@ -188,8 +201,10 @@ Total for phase 2a+2b: about €0.7–2k (est.), set mostly by the emitter and m
    frequency ÷10 = full-scale frequency. In practice, relabel the 192 kHz recording as 19.2 kHz, then resample to
    16 kHz. **Temperature:** the measured echo is stretched by 343/c(T). Before scoring, resample the measured
    (full-scale) response in time by c(T)/343, with c(T) = 331.3·√(1 + T/273.15) from the measured air temperature;
-   correcting the prediction instead would leave the judges comparing a shifted echo with the fixed target. A 22–25 °C
-   room is already +0.4–0.9 % in c, which is a large share of the stage-1 pitch margin. Then convolve with the 5 claps
+   correcting the prediction instead would leave the judges comparing a shifted echo with the fixed target. How much
+   an uncorrected temperature moves the judges is in the block's temperature rows (0, 10 and 30 °C, with the judge
+   floor). Those rows set how much an omitted correction would bias a gate. The correction costs nothing, so apply it
+   whatever they show. Then convolve with the 5 claps
    of `echo.clap.clap_family` and score with the stage's judges.
    *(Tooling: a small `score_measurement` script is still to be written. It is not part of this task; see the report.)*
 6. *Listen.* Play the raw 192 kHz recording at 19.2 kHz (10× slower). You hear the full-scale event: a clap and its
@@ -198,7 +213,7 @@ Total for phase 2a+2b: about €0.7–2k (est.), set mostly by the emitter and m
    in particular has a floor not far below its threshold.
 
 **Pass / fail, and what to do on failure.** Check the failure branches in this order.
-- Noise first: if the in-band SNR is below 30 dB, the run is not a result. Average more shots, use a quieter room,
+- Noise first: if the in-band SNR is below the block's SNR gate, the run is not a result. Average more shots, use a quieter room,
   or use a louder source. Do not blame placement.
 - Temperature second: check that the c(T) resampling was applied with a measured temperature.
 - 2a: if the single pin is off by more than 2 dB, the rig is wrong, not the physics. Check the mic and emitter
@@ -223,8 +238,8 @@ Total for phase 2a+2b: about €0.7–2k (est.), set mostly by the emitter and m
   shadow of the previous one. `echo.buildkit.grating_scene()` gives the coordinates. It should return a 3 kHz tone
   about 10 ms long. Listen and record.
 - *Expected level and SNR.* The block's "Field-test echo levels" table gives the Tier 0 level of the single post and
-  of the grating. Compare it with the site background to pick the number of averaged hits for 30 dB SNR (formula in
-  phase 2, step 2).
+  of the grating. The block's "Phase-3a SNR estimate" table turns them into single-hit SNR and the number of averaged
+  hits needed for the SNR gate, at 25, 35 and 45 dB background.
 - *Parts.* 30 × Ø20 mm bars of 2.5 m (one 12 m bar cuts into 4), a steel tape, a sledge or post driver, a
   measurement mic (class-2 omni, about €40–100, est.), a 48 kHz recorder, a small PA speaker, a thermometer, and an
   anemometer (about €20–40, est.). Roughly €200–500 (est.).
@@ -301,13 +316,14 @@ Total for phase 2a+2b: about €0.7–2k (est.), set mostly by the emitter and m
 - The same procedure as the model, at full scale: a sweep at 0.3–8 kHz from a compact loudspeaker at S, or 30
   clapper-board hits, with a class-1 or class-2 mic at L. Use a 48 kHz recorder and log temperature and wind.
 - Pass:
-  - in-band SNR ≥ 30 dB over the echo window (otherwise: more averaging or a louder source; not a structure result);
+  - in-band SNR at least the block's SNR gate over the echo window (otherwise: more averaging or a louder source;
+    not a structure result);
   - the judges pass on the measured response after resampling it in time by c(T)/343 (measured temperature) and
     convolving with the clap family, read against the block's judge floor;
   - the level is within ±3 dB of prediction;
   - a forced-choice listening test with 10 naive listeners (target sound among 4 options) gets ≥ 8 correct.
 - Fail (check in this order):
-  - noise: SNR below 30 dB; see above;
+  - noise: SNR below the gate; see above;
   - judges fail and the level matches: placement. Re-survey 50 random posts at ear height. If σ is over budget,
     fix those posts.
   - level low: compare with the 3a single post. If that was also low, it is the ground or the site, not the
@@ -321,8 +337,8 @@ is a placeholder, and nothing in it is a result.*
 The agent fills in:
 1. **The constraints used.** Stock diameters nearest the catalog (from `bom.md`), a cap on post count (set it from
    the 3b budget: cost ≈ posts × per-post cost), and a minimum walk/mow spacing if feasible. Placement tolerance goes
-   into the objective, with radial jitter at the budget sigma in the loss and a penalty on echo energy outside the
-   target band under that jitter. That is what the low-pitch variant shows a design must survive. Also the chosen clap/ear height and ground (free space, or rigid deck) from the block's height
+   into the objective, with radial jitter at the budget sigma in the loss. As a suggestion following from hypothesis
+   (ii) above (not yet established), also penalize echo energy outside the target band under that jitter. Also the chosen clap/ear height and ground (free space, or rigid deck) from the block's height
    tables.
 2. **Run folder and verdict.** `runs/build_*/<run_id>/` with Tier 1 metrics, the tier gap and the robustness sweep,
    then `uv run python -m stages.build_pack --refresh-doc` so the run appears in the generated block with its
@@ -347,7 +363,7 @@ The agent fills in:
   liability insurance. Noise is not an issue: the structure is passive.
 - **Maintenance.** An annual impulse-response check against the acceptance recording. Re-plumb posts that moved more
   than the budget. Vegetation control on grass sites, because growth changes the ground.
-- **Longer pieces.** The motif (about 31 m deep) and the melody (about 137 m) scale cost and land with depth (spec
+- **Longer pieces.** The motif and the melody (depths in the spec's size table) scale cost and land with depth (spec
   table). They also run into turbulence (below). Build them only after a stage-1 pilot passes outdoors.
 
 ---
@@ -413,7 +429,7 @@ board is a perfect hard ground, so the model tests the rigid-ground rows directl
   phase. The phase variance grows with frequency and path length, so a coherent pattern that works at 30 m of round
   trip can wash out at 300 m.
 - That is why short structures (stage 1: block, "Design geometry", longest round trip) come first, why acceptance tests run in light wind,
-  and why the melody's 137 m depth is a separate risk. The 3a grating repeated on calm and windy days measures it.
+  and why the melody's depth (spec size table) is a separate risk. The 3a grating repeated on calm and windy days measures it.
 - Wind also bends posts. See `bom.md` for deflection, and pick stiff sections.
 
 ### Positional tolerance
@@ -421,15 +437,15 @@ board is a perfect hard ground, so the model tests the rigid-ground rows directl
   c/(2f) = 4.9 cm, so a 5 mm range error is a 37° phase error.
 - Random errors of σ (in range) reduce the coherent echo by exp(−σφ²/2), where σφ = 4πσ/λ. Hand value: σ = 5 mm at
   3.5 kHz gives −1.8 dB.
-- The lost coherent power reappears as incoherent scatter, at every frequency the posts reflect and the clap
-  contains. That includes frequencies where the design is meant to be silent, because the bias cancels there only
-  through exact spacing.
-  - *Physical view:* the correlation with the nominal echo is about A/√(A² + G(1−A²)), with A = exp(−σφ²/2) and
-    G ≈ 0.5 (a fit, an estimate).
-  - *Judge view:* the spec's spectrogram correlation compares log-mel spectrograms over a 60 dB range, so even scatter
-    20 dB down fills the empty time-frequency bins and pulls the score down.
-  - The block's jitter tables show both views, plus the correlation inside the target band and the share of echo
-    energy outside it. Those two columns separate "the note is damaged" from "noise appeared around the note".
+- The lost coherent power reappears as scatter. Where it lands is measured, not assumed: the block's residual split
+  takes, per clap, the jittered echo minus the nominal echo (common gain removed) and splits its energy into the
+  bands below, inside and above the target band. It checks that the split reconciles with 1 − corr².
+  - *Physical view:* the block's jitter tables give the measured waveform correlation next to the parameter-free
+    coherent factor A = exp(−σφ²/2) at the target band's centre. A says how much coherent amplitude survives in the
+    band, and nothing about the scatter.
+  - *Judge view:* the spec's spectrogram correlation compares log-mel spectrograms over a 60 dB range. A residual of
+    a few percent of the echo energy can fill empty time-frequency bins and pull the score down. The noise table in
+    the block shows how sensitive the judges are to an added residual.
 - *Direction matters.* The gradient of ρ = (|P−S|+|P−L|)/2 is the mean of the two unit vectors from S and L to the
   post. Its magnitude is cos(β/2), with β the bistatic angle (block: "range gradient" line). So a radial error
   becomes a range error one for one.
@@ -452,8 +468,8 @@ board is a perfect hard ground, so the model tests the rigid-ground rows directl
 
 Radial (range) budget σ_total = the largest radial sigma up to which the block's *Readout* says the judges pass
 (judge view). If the free listening test finds the judge failures at small sigma inaudible, use a physical criterion
-instead and log the deviation in DECISIONS.md: the largest sigma at which the in-target-band correlation stays ≥ 0.99
-and the out-of-band energy share rises by less than a few percent. Split the budget by root-sum-square:
+instead and log the deviation in DECISIONS.md: the largest sigma at which the in-target-band residual (block, residual
+split) stays below 1 % of the nominal echo energy and the residual outside the band below a few percent. Split the budget by root-sum-square:
 
 | Contribution | Method that controls it | Typical σ achievable (est.) | Share of budget |
 |---|---|---|---|
@@ -510,7 +526,7 @@ factory-cut holes) or a redesign with tolerance in the loss can. If it is below 
 
 | # | Risk | Kills because | Cheapest test that retires it | Status / rule |
 |---|---|---|---|---|
-| 1 | **Placement tolerance against the spec's judges** | If the judges' millimetre-level budget stands (and is audible), driven posts outdoors cannot hold it | Free: the pack's `listening/` files, judged by ear; Tier 0 multi-seed rows (done) | If the listening test confirms it: CNC deck, a design robust to jitter outside the target band, or a lower-pitched target together with a band-limited source (see "Target pitch, and the clap's bandwidth"). If it is inaudible: set the budget by ear and log the deviation from the judge. |
+| 1 | **Placement tolerance against the spec's judges** | If the judges' millimetre-level budget stands (and is audible), driven posts outdoors cannot hold it | Free: the pack's `listening/` files, judged by ear; Tier 0 multi-seed rows (done) | If the listening test confirms it: CNC deck, or a robust redesign. A lower target pitch is not shown to help (see "Does a lower target pitch buy tolerance?"). If it is inaudible: set the budget by ear and log the deviation from the judge. |
 | 2 | 3D, finite-height, multiple scattering and ground differ from the models | The real echo is not the designed sound | 1:10 model, 2a + 2b (about €1–2k) | Open; Tier 1 tonight covers 2D multiple scattering only. |
 | 3 | Echo inaudible next to the clap (forward masking, precedence) or in site noise | Nobody hears it even if it is right | Free desk listening test; then 3a on site | Open. Mitigation: start the structure farther away, a quieter site, a low ear over hard ground. |
 | 4 | Real ground (grass) combs or cancels the echo | Pitch or level wrong at the ear | 3a single post at 4 ear heights (about €100) | Open. Hard surface or deck removes it. |
@@ -574,13 +590,13 @@ uv run python -m stages.build_pack --all --post-height 1.0 --panel 600x400 --pap
 
 Source: `build/s1_bird-20261125-013334-s1/pack.json` key `physics`, computed by `echo.buildkit.physics_tables` from `runs/s1_bird/20261125-013334-s1/scene.json`. Levels are the clap-family mean echo peak in dB re the free-field direct clap at the listener (add 110.5 for dB SPL with a 100 dB clap at 1 m). Infinite free-space posts: -43.2 dB. Target band 1919-3553 Hz, echo from 18.2 to 97.8 ms.
 
-Stage judges on the Tier 0 3D echo of the design as drawn: pitch_err_pct 2.78, spec_corr 0.944. judge floor (the same judges on a physically perfect echo): pitch_err_pct 2.53 (single claps 1.86-3.86; threshold <= 3), spec_corr 0.976 (single claps 0.958-0.987; threshold >= 0.8). Every judged row below should be read against this floor, not against a perfect score.
+Stage judges on the Tier 0 3D echo of the design as drawn: pitch_err_pct 2.78 [floor 2.53], spec_corr 0.944 [floor 0.976]. judge floor (the same judges on a physically perfect echo): pitch_err_pct 2.53 (single claps 1.86-3.86; threshold <= 3), spec_corr 0.976 (single claps 0.958-0.987; threshold >= 0.8). Every judged row below should be read against this floor, not against a perfect score.
 
 **Readout** (evaluated by code from the tables below against the stage thresholds in metrics.json):
 
 - Loudness: echo peak 67.3 dB SPL for a 100 dB clap; margin over the spec's 35 dB line +32.3 dB; over a 30 / 40 / 50 dB(A) background +37 / +27 / +17 dB (peak against background level: an optimistic comparison).
 - Design as drawn on Tier 0 3D, free space: pass. judge floor (the same judges on a physically perfect echo): pitch_err_pct 2.53 (single claps 1.86-3.86; threshold <= 3), spec_corr 0.976 (single claps 0.958-0.987; threshold >= 0.8).
-- Radial placement (seed-mean of 3 seeds): the spec's judges pass for every sigma up to 1 mm; first failure at 2 mm on Spectrogram correlation, log-mel [spec_corr] 0.768 (0.764-0.774), while the echo waveform is still 0.991 correlated with the nominal echo and its level changes +0.47 dB; inside the target band the correlation is 0.9918, and the share of echo energy outside the target band goes from 0.0 % to 0.1 %. Whether that judge failure is audible is a listening question (pack `listening/`).
+- Radial placement (seed-mean of 3 seeds): the spec's judges pass for every sigma up to 1 mm; first failure at 2 mm on Spectrogram correlation, log-mel [spec_corr] 0.768 (0.764-0.774), while the echo waveform is still 0.991 correlated with the nominal echo and its level changes +0.47 dB; where the residual lands is in the residual split below. Whether that judge failure is audible is a listening question (pack `listening/`).
 - Tangential placement (along the equal-delay curve), sigma 50 mm: pass; waveform correlation 1.000.
 - Post height, free space, ear 1.5 m: shortest height within 1 dB of infinite posts with judges passing: 2 m.
 - Rigid ground, clap and ear at 1.5 m: judges pass for 0 of 6 judged post heights; level change +1.3 to +4.7 dB, worst 10 ms window -2.5 dB.
@@ -590,7 +606,7 @@ Stage judges on the Tier 0 3D echo of the design as drawn: pitch_err_pct 2.78, s
 - Partial wedge: no narrower slice tried passes the judges; fail at +-10, +-5, +-2.5 deg.
 - Temperature (design tuned for c = 343 m/s): 0 C: FAIL on Pitch error along the note, worst frame [pitch_err_pct]; 10 C: pass; 30 C: FAIL on Pitch error along the note, worst frame [pitch_err_pct].
 
-Design geometry for the build: bistatic range 3.12-16.77 m; longest round trip 33.5 m; far edge 16.80 m from the clap point. 1:10 model: far edge 1.68 m from the emitter, keep hard surfaces beyond 2.18 m; time gate 1.52-10.78 ms model time (15.2-107.8 ms full scale: first echo - 3 ms to last echo + 10 ms). Site: no hard reflector within 34 m of the clap point. Board: see the template extent in the build pack line below.
+Design geometry for the build: bistatic range 3.12-16.77 m; longest round trip 33.5 m; far edge 16.80 m from the clap point. 1:10 model: far edge 1.68 m from the emitter, keep hard surfaces beyond 2.18 m; time gate 1.52-10.78 ms model time (15.2-107.8 ms full scale: first echo - 3 ms to last echo + 10 ms). Site: a hard reflector at distance d from the clap point echoes at about 2d/c, so keep hard reflectors beyond c (last echo + 10 ms) / 2 = 18.5 m, so their echoes land after the analysis window. Board: see the template extent in the build pack line below.
 
 Field-test (phase 3a) echo levels, Tier 0 3D, free space, ear 1.5 m:
 
@@ -605,41 +621,41 @@ Echo level against post height, free space (no ground), clap and ear at 1.5 m:
 
 | post height (m) | level (dB) | change (dB) | judges |
 |---|---|---|---|
-| 0.5 | -58.6 | -15.4 | pitch_err_pct 4.84, spec_corr 0.922 |
-| 1 | -55.8 | -12.6 | pitch_err_pct 3.4, spec_corr 0.94 |
-| 1.5 | -48.4 | -5.2 | pitch_err_pct 2.73, spec_corr 0.94 |
-| 2 | -42.3 | +0.9 | pitch_err_pct 2.84, spec_corr 0.938 |
-| 3 | -42.4 | +0.8 | pitch_err_pct 2.73, spec_corr 0.94 |
-| infinite | -43.2 | +0.0 | pitch_err_pct 2.78, spec_corr 0.944 |
+| 0.5 | -58.6 | -15.4 | pitch_err_pct 4.84 [floor 2.53], spec_corr 0.922 [floor 0.976] |
+| 1 | -55.8 | -12.6 | pitch_err_pct 3.4 [floor 2.53], spec_corr 0.94 [floor 0.976] |
+| 1.5 | -48.4 | -5.2 | pitch_err_pct 2.73 [floor 2.53], spec_corr 0.94 [floor 0.976] |
+| 2 | -42.3 | +0.9 | pitch_err_pct 2.84 [floor 2.53], spec_corr 0.938 [floor 0.976] |
+| 3 | -42.4 | +0.8 | pitch_err_pct 2.73 [floor 2.53], spec_corr 0.94 [floor 0.976] |
+| infinite | -43.2 | +0.0 | pitch_err_pct 2.78 [floor 2.53], spec_corr 0.944 [floor 0.976] |
 
 Echo level with a perfectly rigid flat ground (image method; posts stand on the ground, clap and ear at the same height):
 
 | ear height (m) | post height (m) | level (dB) | change (dB) | worst / best 10 ms window (dB) | judges |
 |---|---|---|---|---|---|
-| 1.5 | 0.5 | -41.9 | +1.3 | -2.5 / +2.7 | pitch_err_pct 5.66, spec_corr 0.874 |
-| 1.5 | 1 | -41.6 | +1.6 | -2.5 / +3.1 | pitch_err_pct 5.58, spec_corr 0.891 |
-| 1.5 | 1.5 | -40.7 | +2.4 | -2.0 / +3.0 | pitch_err_pct 5.03, spec_corr 0.903 |
-| 1.5 | 2 | -38.5 | +4.7 | -0.7 / +5.4 | pitch_err_pct 4.99, spec_corr 0.912 |
-| 1.5 | 3 | -38.7 | +4.5 | -2.2 / +5.5 | pitch_err_pct 4.94, spec_corr 0.904 |
-| 1.5 | infinite | -38.7 | +4.4 | -1.8 / +5.8 | pitch_err_pct 4.94, spec_corr 0.922 |
-| 1 | 0.5 | -42.1 | +1.1 | -0.9 / +2.6 | pitch_err_pct 4.14, spec_corr 0.92 |
-| 1 | 1 | -41.0 | +2.2 | -1.5 / +2.3 | pitch_err_pct 4.02, spec_corr 0.926 |
-| 1 | 1.5 | -37.8 | +5.4 | -14.6 / +6.1 | pitch_err_pct 4.64, spec_corr 0.889 |
-| 1 | 2 | -38.8 | +4.4 | -8.0 / +5.1 | pitch_err_pct 4.5, spec_corr 0.903 |
-| 1 | 3 | -38.6 | +4.6 | -8.5 / +5.5 | pitch_err_pct 4.43, spec_corr 0.895 |
-| 1 | infinite | -38.8 | +4.4 | -11.2 / +5.6 | pitch_err_pct 4.44, spec_corr 0.906 |
-| 0.5 | 0.5 | -40.8 | +2.4 | -1.6 / +4.1 | pitch_err_pct 2.76, spec_corr 0.954 |
-| 0.5 | 1 | -40.2 | +3.0 | -4.8 / +5.2 | pitch_err_pct 2.52, spec_corr 0.964 |
-| 0.5 | 1.5 | -39.9 | +3.3 | -4.4 / +6.6 | pitch_err_pct 2.49, spec_corr 0.961 |
-| 0.5 | 2 | -39.8 | +3.3 | -4.9 / +5.8 | pitch_err_pct 2.74, spec_corr 0.958 |
-| 0.5 | 3 | -39.8 | +3.3 | -5.3 / +5.4 | pitch_err_pct 2.62, spec_corr 0.948 |
-| 0.5 | infinite | -40.1 | +3.1 | -5.3 / +5.4 | pitch_err_pct 2.52, spec_corr 0.965 |
-| 0.3 | 0.5 | -38.2 | +5.0 | +2.1 / +5.9 | pitch_err_pct 2.81, spec_corr 0.948 |
-| 0.3 | 1 | -37.2 | +5.9 | +3.8 / +6.9 | pitch_err_pct 2.66, spec_corr 0.95 |
-| 0.3 | 1.5 | -37.3 | +5.9 | +3.9 / +6.0 | pitch_err_pct 2.88, spec_corr 0.947 |
-| 0.3 | 2 | -37.8 | +5.4 | +3.8 / +6.2 | pitch_err_pct 3.01, spec_corr 0.944 |
-| 0.3 | 3 | -37.6 | +5.6 | +3.8 / +6.2 | pitch_err_pct 2.81, spec_corr 0.94 |
-| 0.3 | infinite | -37.8 | +5.4 | +3.8 / +5.9 | pitch_err_pct 2.76, spec_corr 0.948 |
+| 1.5 | 0.5 | -41.9 | +1.3 | -2.5 / +2.7 | pitch_err_pct 5.66 [floor 2.53], spec_corr 0.874 [floor 0.976] |
+| 1.5 | 1 | -41.6 | +1.6 | -2.5 / +3.1 | pitch_err_pct 5.58 [floor 2.53], spec_corr 0.891 [floor 0.976] |
+| 1.5 | 1.5 | -40.7 | +2.4 | -2.0 / +3.0 | pitch_err_pct 5.03 [floor 2.53], spec_corr 0.903 [floor 0.976] |
+| 1.5 | 2 | -38.5 | +4.7 | -0.7 / +5.4 | pitch_err_pct 4.99 [floor 2.53], spec_corr 0.912 [floor 0.976] |
+| 1.5 | 3 | -38.7 | +4.5 | -2.2 / +5.5 | pitch_err_pct 4.94 [floor 2.53], spec_corr 0.904 [floor 0.976] |
+| 1.5 | infinite | -38.7 | +4.4 | -1.8 / +5.8 | pitch_err_pct 4.94 [floor 2.53], spec_corr 0.922 [floor 0.976] |
+| 1 | 0.5 | -42.1 | +1.1 | -0.9 / +2.6 | pitch_err_pct 4.14 [floor 2.53], spec_corr 0.92 [floor 0.976] |
+| 1 | 1 | -41.0 | +2.2 | -1.5 / +2.3 | pitch_err_pct 4.02 [floor 2.53], spec_corr 0.926 [floor 0.976] |
+| 1 | 1.5 | -37.8 | +5.4 | -14.6 / +6.1 | pitch_err_pct 4.64 [floor 2.53], spec_corr 0.889 [floor 0.976] |
+| 1 | 2 | -38.8 | +4.4 | -8.0 / +5.1 | pitch_err_pct 4.5 [floor 2.53], spec_corr 0.903 [floor 0.976] |
+| 1 | 3 | -38.6 | +4.6 | -8.5 / +5.5 | pitch_err_pct 4.43 [floor 2.53], spec_corr 0.895 [floor 0.976] |
+| 1 | infinite | -38.8 | +4.4 | -11.2 / +5.6 | pitch_err_pct 4.44 [floor 2.53], spec_corr 0.906 [floor 0.976] |
+| 0.5 | 0.5 | -40.8 | +2.4 | -1.6 / +4.1 | pitch_err_pct 2.76 [floor 2.53], spec_corr 0.954 [floor 0.976] |
+| 0.5 | 1 | -40.2 | +3.0 | -4.8 / +5.2 | pitch_err_pct 2.52 [floor 2.53], spec_corr 0.964 [floor 0.976] |
+| 0.5 | 1.5 | -39.9 | +3.3 | -4.4 / +6.6 | pitch_err_pct 2.49 [floor 2.53], spec_corr 0.961 [floor 0.976] |
+| 0.5 | 2 | -39.8 | +3.3 | -4.9 / +5.8 | pitch_err_pct 2.74 [floor 2.53], spec_corr 0.958 [floor 0.976] |
+| 0.5 | 3 | -39.8 | +3.3 | -5.3 / +5.4 | pitch_err_pct 2.62 [floor 2.53], spec_corr 0.948 [floor 0.976] |
+| 0.5 | infinite | -40.1 | +3.1 | -5.3 / +5.4 | pitch_err_pct 2.52 [floor 2.53], spec_corr 0.965 [floor 0.976] |
+| 0.3 | 0.5 | -38.2 | +5.0 | +2.1 / +5.9 | pitch_err_pct 2.81 [floor 2.53], spec_corr 0.948 [floor 0.976] |
+| 0.3 | 1 | -37.2 | +5.9 | +3.8 / +6.9 | pitch_err_pct 2.66 [floor 2.53], spec_corr 0.95 [floor 0.976] |
+| 0.3 | 1.5 | -37.3 | +5.9 | +3.9 / +6.0 | pitch_err_pct 2.88 [floor 2.53], spec_corr 0.947 [floor 0.976] |
+| 0.3 | 2 | -37.8 | +5.4 | +3.8 / +6.2 | pitch_err_pct 3.01 [floor 2.53], spec_corr 0.944 [floor 0.976] |
+| 0.3 | 3 | -37.6 | +5.6 | +3.8 / +6.2 | pitch_err_pct 2.81 [floor 2.53], spec_corr 0.94 [floor 0.976] |
+| 0.3 | infinite | -37.8 | +5.4 | +3.8 / +5.9 | pitch_err_pct 2.76 [floor 2.53], spec_corr 0.948 [floor 0.976] |
 
 (in brackets: change against infinite free-space posts; 'worst 10 ms': the largest drop of any 10 ms window of the echo against the same window with infinite free-space posts, which shows comb notches that the peak hides)
 
@@ -647,31 +663,71 @@ Building only part of the wedge (posts with |bearing| up to the half-angle):
 
 | half-angle (deg) | posts | level (dB) | change (dB) | judges |
 |---|---|---|---|---|
-| 20 | 3029 | -43.2 | +0.0 | pitch_err_pct 2.78, spec_corr 0.944 |
-| 10 | 1507 | -46.7 | -3.5 | pitch_err_pct 12.2, spec_corr 0.569 |
-| 5 | 754 | -47.7 | -4.5 | pitch_err_pct 24, spec_corr 0.497 |
-| 2.5 | 373 | -50.4 | -7.3 | pitch_err_pct 26.9, spec_corr 0.448 |
+| 20 | 3029 | -43.2 | +0.0 | pitch_err_pct 2.78 [floor 2.53], spec_corr 0.944 [floor 0.976] |
+| 10 | 1507 | -46.7 | -3.5 | pitch_err_pct 12.2 [floor 2.53], spec_corr 0.569 [floor 0.976] |
+| 5 | 754 | -47.7 | -4.5 | pitch_err_pct 24 [floor 2.53], spec_corr 0.497 [floor 0.976] |
+| 2.5 | 373 | -50.4 | -7.3 | pitch_err_pct 26.9 [floor 2.53], spec_corr 0.448 [floor 0.976] |
 
-Random placement error (Gaussian, every post, 3 seeds per sigma: mean and range), free-space infinite posts. Judge view: the spec's judges. Physical view: waveform correlation with the nominal echo, measured, and the coherence estimate A / sqrt(A^2 + 0.5 (1 - A^2)), A = exp(-sigma_phi^2 / 2), sigma_phi = 4 pi sigma f / c at f = 2611 Hz:
+Random placement error (Gaussian, every post, 3 seeds per sigma: mean and range), free-space infinite posts. Judge view: the spec's judges (with the judge floor). Physical view: measured waveform correlation with the nominal echo (clap-family mean of per-clap correlations), next to the parameter-free coherent-loss factor A = exp(-(4 pi sigma f / c)^2 / 2) at f = 2611 Hz (the fraction of coherent amplitude kept in the target band; it says nothing about where the lost power goes):
 
-| direction | sigma (mm) | level change (dB) | waveform corr, measured | waveform corr, coherence estimate | corr inside the target band | echo energy outside the target band | judges (mean, range) |
-|---|---|---|---|---|---|---|---|
-| nominal | 0 | +0.00 | 1.000 (1.000-1.000) | - | 1.0000 | 0.0 % | as drawn (above) |
-| radial | 1 | +0.11 | 0.998 (0.998-0.998) | 0.998 | 0.9981 | 0.1 % | pitch_err_pct 2.75 (2.67-2.81), spec_corr 0.852 (0.846-0.859) |
-| radial | 2 | +0.47 | 0.991 (0.991-0.992) | 0.991 | 0.9918 | 0.1 % | pitch_err_pct 2.84 (2.83-2.86), spec_corr 0.768 (0.764-0.774) |
-| radial | 3 | +0.43 | 0.981 (0.980-0.983) | 0.979 | 0.9824 | 0.3 % | pitch_err_pct 3.27 (3.22-3.32), spec_corr 0.716 (0.71-0.721) |
-| radial | 5 | +1.10 | 0.943 (0.936-0.947) | 0.941 | 0.9473 | 0.8 % | pitch_err_pct 4.97 (4.51-5.39), spec_corr 0.64 (0.636-0.644) |
-| radial | 10 | +0.82 | 0.767 (0.754-0.779) | 0.756 | 0.7774 | 2.7 % | pitch_err_pct 22.1 (21-22.9), spec_corr 0.541 (0.539-0.542) |
-| radial | 20 | +2.50 | 0.194 (0.144-0.274) | 0.224 | 0.2012 | 5.6 % | pitch_err_pct 46.7 (42-49.3), spec_corr 0.401 (0.394-0.408) |
-| tangential | 50 | +0.07 | 1.000 (1.000-1.000) | - | 0.9996 | 0.0 % | pitch_err_pct 2.77 (2.76-2.78), spec_corr 0.927 (0.925-0.928) |
+| direction | sigma (mm) | level change (dB) | waveform corr, measured | coherent factor A | judges (mean, range) |
+|---|---|---|---|---|---|
+| radial | 1 | +0.11 | 0.998 (0.998-0.998) | 0.995 | pitch_err_pct 2.75 (2.67-2.81) [floor 2.53], spec_corr 0.852 (0.846-0.859) [floor 0.976] |
+| radial | 2 | +0.47 | 0.991 (0.991-0.992) | 0.982 | pitch_err_pct 2.84 (2.83-2.86) [floor 2.53], spec_corr 0.768 (0.764-0.774) [floor 0.976] |
+| radial | 3 | +0.43 | 0.981 (0.980-0.983) | 0.960 | pitch_err_pct 3.27 (3.22-3.32) [floor 2.53], spec_corr 0.716 (0.71-0.721) [floor 0.976] |
+| radial | 5 | +1.10 | 0.943 (0.936-0.947) | 0.892 | pitch_err_pct 4.97 (4.51-5.39) [floor 2.53], spec_corr 0.64 (0.636-0.644) [floor 0.976] |
+| radial | 10 | +0.82 | 0.767 (0.754-0.779) | 0.633 | pitch_err_pct 22.1 (21-22.9) [floor 2.53], spec_corr 0.541 (0.539-0.542) [floor 0.976] |
+| radial | 20 | +2.50 | 0.194 (0.144-0.274) | 0.160 | pitch_err_pct 46.7 (42-49.3) [floor 2.53], spec_corr 0.401 (0.394-0.408) [floor 0.976] |
+| tangential | 50 | +0.07 | 1.000 (1.000-1.000) | 0.000 | pitch_err_pct 2.77 (2.76-2.78) [floor 2.53], spec_corr 0.927 (0.925-0.928) [floor 0.976] |
+
+Residual split, this design: jitter-induced residual r = jittered echo - g x nominal (common gain g removed), energy split into fixed bands below the target band (< 2014 Hz), the target band (2014-3500 Hz) and above it (3500-4000 Hz), as % of the nominal echo energy; clap-family mean of per-clap values, mean over 3 seeds. Check: residual/jittered energy equals 1 - corr^2 per clap.
+
+| sigma (mm) | corr (clap mean) | residual below | in target band | above, to 4 kHz | above, worst clap | max abs(1 - corr^2 - residual/jittered) |
+|---|---|---|---|---|---|---|
+| 1 | 0.998 | 0.01 % | 0.33 % | 0.06 % | 0.21 % | 5.2e-16 |
+| 2 | 0.991 | 0.08 % | 1.44 % | 0.22 % | 0.70 % | 4.6e-16 |
+| 3 | 0.981 | 0.19 % | 2.83 % | 0.52 % | 1.69 % | 4.9e-16 |
+| 5 | 0.943 | 0.41 % | 7.72 % | 1.55 % | 5.20 % | 3.9e-16 |
+| 10 | 0.767 | 1.21 % | 20.97 % | 3.53 % | 11.75 % | 3.9e-16 |
+| 20 | 0.194 | 3.49 % | 34.07 % | 3.46 % | 11.52 % | 4.4e-16 |
+
+Nominal echo, per clap: share of energy in the target band 100 %, 100 %, 100 %, 99 %, 100 %; above it 0 %, 0 %, 0 %, 1 %, 0 %; peak level -43.9, -42.7, -43.4, -39.5, -46.3 dB re direct (claps 0-4).
+
+Bias against modulation of the reflectivity profile (profile.json, active span): mean 2.206, RMS modulation 1.742, amplitude ratio 1.27, energy ratio 1.60.
+
+Measurement noise: the judges on the nominal echo plus in-band white noise (band-limited to the design loss band), SNR = echo energy / noise energy over 18.1-107.8 ms, 3 seeds:
+
+| SNR (dB) | judges (mean, seed range) |
+|---|---|
+| 10 | pitch_err_pct 4.45 (3.36-5.42) [floor 2.53], spec_corr 0.692 (0.692-0.693) [floor 0.976] |
+| 15 | pitch_err_pct 2.99 (2.81-3.24) [floor 2.53], spec_corr 0.772 (0.77-0.774) [floor 0.976] |
+| 20 | pitch_err_pct 2.78 (2.76-2.8) [floor 2.53], spec_corr 0.831 (0.828-0.833) [floor 0.976] |
+| 25 | pitch_err_pct 2.82 (2.8-2.85) [floor 2.53], spec_corr 0.872 (0.87-0.873) [floor 0.976] |
+| 30 | pitch_err_pct 2.8 (2.76-2.85) [floor 2.53], spec_corr 0.901 (0.9-0.902) [floor 0.976] |
+| 40 | pitch_err_pct 2.77 (2.76-2.78) [floor 2.53], spec_corr 0.937 (0.937-0.937) [floor 0.976] |
+
+**SNR gate**: every seed passes from 20 dB up; with a 6 dB margin the measurement must reach **26 dB in-band SNR** over the echo window.
+
+**Gate margins** (every judged gate; m = distance of the judge floor from the threshold): pitch_err_pct: PASS <= 3; INCONCLUSIVE 3 to 3.47; FAIL > 3.47 (floor 2.53); spec_corr: PASS >= 0.8; INCONCLUSIVE 0.624 to 0.8; FAIL < 0.624 (floor 0.976). Inconclusive: repeat with more averaging and decide by listening.
+
+**Phase-2b measurement height**: emitter and mic 50 mm above the model ground plane (= 0.5 m at full scale), the highest clap/ear height whose rigid-ground row with 2 m posts passes the judges; passing heights: 0.5 m. Also measure at 150 mm (1.5 m) as the ground-model check; its predicted verdict is in the ground table.
+
+Phase-3a SNR estimate (single hit of a 100 dB clap; peak echo SPL against a background level, an optimistic comparison; hits to average for the 26 dB gate = 10^((gate - SNR1)/10)):
+
+| case | post height | echo peak dB SPL | background 25 dB: SNR1 / hits | 35 dB | 45 dB |
+|---|---|---|---|---|---|
+| single 20 mm post at 5 m | infinite | 49.4 | 24 dB / 2 | 14 dB / 15 | 4 dB / 144 |
+| single 20 mm post at 5 m | 2 m | 50.5 | 26 dB / 2 | 16 dB / 12 | 6 dB / 112 |
+| 30-post 3 kHz grating from 5 m, staggered | infinite | 56.1 | 31 dB / 1 | 21 dB / 4 | 11 dB / 31 |
+| 30-post 3 kHz grating from 5 m, staggered | 2 m | 57.3 | 32 dB / 1 | 22 dB / 3 | 12 dB / 24 |
 
 The built structure heard at other air temperatures (Tier 0 3D with c(T) = 331.3 sqrt(1 + T/273.15)):
 
 | T (C) | c (m/s) | level (dB) | judges |
 |---|---|---|---|
-| 0 | 331.3 | -43.0 | pitch_err_pct 3.6, spec_corr 0.908 |
-| 10 | 337.3 | -43.1 | pitch_err_pct 2.63, spec_corr 0.934 |
-| 30 | 349.0 | -43.3 | pitch_err_pct 3.71, spec_corr 0.935 |
+| 0 | 331.3 | -43.0 | pitch_err_pct 3.6 [floor 2.53], spec_corr 0.908 [floor 0.976] |
+| 10 | 337.3 | -43.1 | pitch_err_pct 2.63 [floor 2.53], spec_corr 0.934 [floor 0.976] |
+| 30 | 349.0 | -43.3 | pitch_err_pct 3.71 [floor 2.53], spec_corr 0.935 [floor 0.976] |
 
 Range gradient |grad rho| over the posts: 0.9989-1.0000 (a radial error becomes that fraction of range error). A sideways error perpendicular to the line from the clap point (a bearing error) becomes range error at up to 0.047 of its size (median 0.013), largest on the near rows. Range period at 3553 Hz: 4.83 cm.
 
@@ -710,20 +766,36 @@ Build pack: `build/s1_bird-20261125-013334-s1/` (stakeout.csv, plan at 1:75 on A
 The stage-1 pipeline run on the same glide shifted down to 1750 -> 1000 Hz (80 ms): `build/variants/s1_bird/20261125-015144-s1low/` (3029 posts, depth 13.67 m, echo -51.9 dB re direct on Tier 0 3D). Judges with the stage-1 thresholds against the shifted target. Range period c/(2 f_top): 9.8 cm here against 4.8 cm for the stage-1 design.
 
 - Design as drawn on Tier 0 3D, free space: pass. judge floor (the same judges on a physically perfect echo): pitch_err_pct 1.65 (single claps 0.503-3.09; threshold <= 3), spec_corr 0.971 (single claps 0.949-0.992; threshold >= 0.8).
-- Radial placement (seed-mean of 3 seeds): the spec's judges fail already at the smallest sigma tried; first failure at 1 mm on Pitch error along the note, worst frame [pitch_err_pct] 21.4 (17.3-23.5), Spectrogram correlation, log-mel [spec_corr] 0.487 (0.481-0.497), while the echo waveform is still 0.933 correlated with the nominal echo and its level changes +1.31 dB; inside the target band the correlation is 0.9996, and the share of echo energy outside the target band goes from 1.1 % to 3.4 %. Whether that judge failure is audible is a listening question (pack `listening/`).
+- Radial placement (seed-mean of 3 seeds): the spec's judges fail already at the smallest sigma tried; first failure at 1 mm on Pitch error along the note, worst frame [pitch_err_pct] 21.4 (17.3-23.5), Spectrogram correlation, log-mel [spec_corr] 0.487 (0.481-0.497), while the echo waveform is still 0.933 correlated with the nominal echo and its level changes +1.31 dB; where the residual lands is in the residual split below. Whether that judge failure is audible is a listening question (pack `listening/`).
 - Tangential placement (along the equal-delay curve), sigma 50 mm: FAIL on Spectrogram correlation, log-mel [spec_corr]; waveform correlation 0.989.
 
-Random placement error (Gaussian, every post, 3 seeds per sigma: mean and range), free-space infinite posts. Judge view: the spec's judges. Physical view: waveform correlation with the nominal echo, measured, and the coherence estimate A / sqrt(A^2 + 0.5 (1 - A^2)), A = exp(-sigma_phi^2 / 2), sigma_phi = 4 pi sigma f / c at f = 1323 Hz:
+Random placement error (Gaussian, every post, 3 seeds per sigma: mean and range), free-space infinite posts. Judge view: the spec's judges (with the judge floor). Physical view: measured waveform correlation with the nominal echo (clap-family mean of per-clap correlations), next to the parameter-free coherent-loss factor A = exp(-(4 pi sigma f / c)^2 / 2) at f = 1323 Hz (the fraction of coherent amplitude kept in the target band; it says nothing about where the lost power goes):
 
-| direction | sigma (mm) | level change (dB) | waveform corr, measured | waveform corr, coherence estimate | corr inside the target band | echo energy outside the target band | judges (mean, range) |
-|---|---|---|---|---|---|---|---|
-| nominal | 0 | +0.00 | 1.000 (1.000-1.000) | - | 1.0000 | 1.1 % | as drawn (above) |
-| radial | 1 | +1.31 | 0.933 (0.932-0.933) | 0.999 | 0.9996 | 3.4 % | pitch_err_pct 21.4 (17.3-23.5), spec_corr 0.487 (0.481-0.497) |
-| radial | 2 | +4.14 | 0.811 (0.805-0.817) | 0.998 | 0.9982 | 11.5 % | pitch_err_pct 31.2 (29.5-34.3), spec_corr 0.326 (0.318-0.331) |
-| radial | 3 | +5.03 | 0.731 (0.722-0.740) | 0.995 | 0.9943 | 20.5 % | pitch_err_pct 38.6 (37.5-39.9), spec_corr 0.237 (0.227-0.251) |
-| radial | 5 | +7.38 | 0.611 (0.604-0.616) | 0.985 | 0.9877 | 38.8 % | pitch_err_pct 44 (38.7-46.7), spec_corr 0.122 (0.102-0.134) |
-| radial | 10 | +10.10 | 0.437 (0.429-0.441) | 0.940 | 0.9510 | 69.3 % | pitch_err_pct 51.9 (51.9-51.9), spec_corr -0.025 (-0.0367--0.00926) |
-| radial | 20 | +10.33 | 0.241 (0.228-0.250) | 0.750 | 0.7458 | 87.5 % | pitch_err_pct 51.9 (51.9-51.9), spec_corr -0.144 (-0.162--0.129) |
-| tangential | 50 | +0.50 | 0.989 (0.989-0.990) | - | 0.9998 | 1.4 % | pitch_err_pct 2.28 (2.24-2.32), spec_corr 0.711 (0.707-0.718) |
+| direction | sigma (mm) | level change (dB) | waveform corr, measured | coherent factor A | judges (mean, range) |
+|---|---|---|---|---|---|
+| radial | 1 | +1.31 | 0.933 (0.932-0.933) | 0.999 | pitch_err_pct 21.4 (17.3-23.5) [floor 1.65], spec_corr 0.487 (0.481-0.497) [floor 0.971] |
+| radial | 2 | +4.14 | 0.811 (0.805-0.817) | 0.995 | pitch_err_pct 31.2 (29.5-34.3) [floor 1.65], spec_corr 0.326 (0.318-0.331) [floor 0.971] |
+| radial | 3 | +5.03 | 0.731 (0.722-0.740) | 0.989 | pitch_err_pct 38.6 (37.5-39.9) [floor 1.65], spec_corr 0.237 (0.227-0.251) [floor 0.971] |
+| radial | 5 | +7.38 | 0.611 (0.604-0.616) | 0.971 | pitch_err_pct 44 (38.7-46.7) [floor 1.65], spec_corr 0.122 (0.102-0.134) [floor 0.971] |
+| radial | 10 | +10.10 | 0.437 (0.429-0.441) | 0.889 | pitch_err_pct 51.9 (51.9-51.9) [floor 1.65], spec_corr -0.025 (-0.0367--0.00926) [floor 0.971] |
+| radial | 20 | +10.33 | 0.241 (0.228-0.250) | 0.625 | pitch_err_pct 51.9 (51.9-51.9) [floor 1.65], spec_corr -0.144 (-0.162--0.129) [floor 0.971] |
+| tangential | 50 | +0.50 | 0.989 (0.989-0.990) | 0.053 | pitch_err_pct 2.28 (2.24-2.32) [floor 1.65], spec_corr 0.711 (0.707-0.718) [floor 0.971] |
+
+Residual split, low-pitch variant: jitter-induced residual r = jittered echo - g x nominal (common gain g removed), energy split into fixed bands below the target band (< 1000 Hz), the target band (1000-1750 Hz) and above it (1750-4000 Hz), as % of the nominal echo energy; clap-family mean of per-clap values, mean over 3 seeds. Check: residual/jittered energy equals 1 - corr^2 per clap.
+
+| sigma (mm) | corr (clap mean) | residual below | in target band | above, to 4 kHz | above, worst clap | max abs(1 - corr^2 - residual/jittered) |
+|---|---|---|---|---|---|---|
+| 1 | 0.933 | 0.00 % | 0.04 % | 17.72 % | 60.97 % | 9.9e-16 |
+| 2 | 0.811 | 0.00 % | 0.16 % | 85.31 % | 297.12 % | 5.9e-16 |
+| 3 | 0.731 | 0.00 % | 0.43 % | 177.75 % | 625.92 % | 4.5e-16 |
+| 5 | 0.611 | 0.00 % | 1.02 % | 415.60 % | 1361.77 % | 5.1e-16 |
+| 10 | 0.437 | 0.00 % | 3.21 % | 1139.52 % | 3865.57 % | 6.1e-16 |
+| 20 | 0.241 | 0.01 % | 8.76 % | 1531.46 % | 4883.68 % | 3.3e-16 |
+
+Nominal echo, per clap: share of energy in the target band 88 %, 94 %, 97 %, 90 %, 98 %; above it 12 %, 6 %, 3 %, 10 %, 2 %; peak level -51.0, -57.4, -47.7, -59.4, -44.0 dB re direct (claps 0-4).
+
+Bias against modulation of the reflectivity profile (profile.json, active span): mean 2.207, RMS modulation 1.807, amplitude ratio 1.22, energy ratio 1.49.
+
+Bias-to-modulation amplitude ratio: stage-1 design 1.27, low-pitch variant 1.22.
 
 <!-- END GENERATED -->
