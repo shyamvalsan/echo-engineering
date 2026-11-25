@@ -861,6 +861,15 @@ def _gating(met):
 def failure_cause(met, abl):
     """Mechanism-level failure statement with the separating numbers (ablations, Tier 0 vs Tier 1, stretch)."""
     parts = []
+    lc = met.get("loss_chain") or {}
+    if "realized_tier0" in lc:
+        parts.append("MECHANISM: the profile model fits (loss %.2f) but realizing it with a finite number of weak 1 cm "
+                     "posts raises the loss to %.2f on Tier 0%s; the clap spectrum is the largest of the three "
+                     "ablated constraints (numbers below), none of which explains the realized error"
+                     % (lc["profile_model"], lc["realized_tier0"],
+                        "" if "realized_tier1" not in lc else
+                        " and the full-wave field to %.2f (incoherent residue; see design_study.extinction)"
+                        % lc["realized_tier1"]))
     fl = (met.get("judge_floor") or {}).get("mean") or {}
     for m in _gating(met):
         if not m["pass"]:
@@ -954,9 +963,27 @@ def attach_studies(runs_root=None):
         met["count_sweep"] = load_study("count_sweep", "ah")
         if not (met.get("design_study") or {}).get("extinction"):
             met.setdefault("design_study", {})["extinction"] = extinction_from_folder(d)
+        met["loss_chain"] = loss_chain(d, name, met)
         met["failure_cause"] = failure_cause(met, met["ablations"]) if not met.get("passed") else None
         export.write_json(d / "metrics.json", met, indent=1)
         print("attached studies to", d)
+
+
+def loss_chain(d, name, met):
+    """Spectrogram loss at each step of the design chain (judge-free): profile model (the run's solve) -> realized
+    posts on Tier 0 -> the same posts on Tier 1."""
+    h = json.loads((Path(d) / "history.json").read_text())
+    out = {"profile_model": float(min(h["phases"][0]["loss"]))}
+    fz = STUDY_DIR / f"echoes_{name}.npz"
+    if fz.exists():
+        z = np.load(fz)
+        if str(z["run_id"]) == Path(d).name:
+            band = tuple(met.get("band_hz") or BAND)
+            t = target_of(name)
+            out["realized_tier0"] = window_loss(z["tier0"], t.audio, band, R0_PROFILE, C0, 128)
+            if z["tier1"].size:
+                out["realized_tier1"] = window_loss(z["tier1"], t.audio, band, R0_PROFILE, C0, 128)
+    return out
 
 
 def extinction_from_folder(d):

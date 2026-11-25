@@ -1,0 +1,14 @@
+[4a ah] half-angle 11.5 deg, f_max 4000.0, fill 0.0029 (~1500 posts), plan {'half_angle_deg': 11.5, 'f_max': 4000.0, 'dx_m': 0.008571428571428572, 'dt_s': 7.8125e-06, 'grid': [3666, 1567], 'n_steps': 25920, 'cell_steps': 148900602240.0, 'est_wall_s_idle_8_threads': 703.8937560436364}
+step    0 loss 4.8076 (stft 2.7241 mel 2.0835) 4.9s
+step   25 loss 3.8189 (stft 2.3218 mel 1.4970) 6.7s
+step   50 loss 3.3737 (stft 2.0874 mel 1.2863) 7.7s
+step   75 loss 3.1477 (stft 1.9361 mel 1.2115) 8.2s
+step  100 loss 2.9656 (stft 1.7947 mel 1.1709) 9.8s
+step  125 loss 2.8105 (stft 1.6788 mel 1.1317) 11.2s
+step  150 loss 2.7450 (stft 1.6491 mel 1.0959) 12.6s
+step  175 loss 2.7952 (stft 1.6794 mel 1.1159) 13.4s
+step  200 loss 2.8091 (stft 1.6906 mel 1.1186) 14.8s
+step  225 loss 2.9338 (stft 1.8483 mel 1.0854) 17.1s
+step  250 loss 3.1434 (stft 2.0173 mel 1.1262) 20.5s
+step  275 loss 2.9854 (stft 1.8787 mel 1.1067) 21.9s
+step  300 loss 2.8490 (stft 1.7671 mel 1.0819) 22.8s
