@@ -48,8 +48,22 @@ def pack_name(run: dict) -> str:
 
 # ------------------------------------------------------------------------------------------------ stake-out
 
-CSV_FIELDS = ["id", "seq", "scene_index", "x_m", "y_m", "radius_m", "diameter_mm", "dist_S_m", "bearing_deg",
-              "rho_m", "delay_ms", "along_m", "across_m", "ctrl", "dist_ctrl_m"]
+CSV_FIELDS = ["id", "seq", "scene_index", "ring", "ring_rho_m", "x_m", "y_m", "radius_m", "diameter_mm", "dist_S_m",
+              "bearing_deg", "rho_m", "delay_ms", "along_m", "across_m", "ctrl", "dist_ctrl_m"]
+RING_TOL_M = 0.003  # posts whose bistatic ranges chain within 3 mm form one ring (ring spacing >= c/(2 f_max) = 4.3 cm)
+
+
+def rings_from_rho(rho, tol=RING_TOL_M):
+    """Ring number per post (1 = nearest): sorted ranges split wherever consecutive ranges differ by more than tol."""
+    rho = np.asarray(rho, float)
+    o = np.argsort(rho)
+    ring = np.empty(len(rho), int)
+    k = 1
+    for j, i in enumerate(o):
+        if j and rho[i] - rho[o[j - 1]] > tol:
+            k += 1
+        ring[i] = k
+    return ring
 
 
 def control_points(scene: Scene) -> dict:
@@ -60,12 +74,13 @@ def control_points(scene: Scene) -> dict:
     return {"S": (0.0, 0.0), "B+": (xm, w), "B-": (xm, -w)}
 
 
-def stakeout_rows(scene: Scene, band_m: float = 0.5) -> list[dict]:
+def stakeout_rows(scene: Scene, band_m: float = 0.5, by_ring: bool = False) -> list[dict]:
     """One dict per post, sorted in build order.
 
-    Build order: by bistatic-range band of `band_m`, farthest band first (the tape from S to the next post never
-    crosses posts already set), sweeping across the band in alternating direction (boustrophedon) so the crew walks
-    the shortest path. Each row carries
+    Build order: ring by ring (posts on one equal-delay ellipse, `rings_from_rho`), farthest ring first (the tape from S
+    to the next post never crosses posts already set), sweeping across each ring by bearing in alternating direction
+    (boustrophedon) so the crew walks the shortest path. A design without ring structure falls back to bistatic-range
+    bands of `band_m` (by_ring False, the default; build_pack sets it for phase-locked designs). Each row carries ring (1 = nearest) and ring_rho_m (the ring's mean bistatic range), and
       - polar set-out from the clap point: dist_S_m (tape, the critical number: it sets the range) and bearing_deg
         (angle from the +x baseline, counter-clockwise, positive towards the listener side; tangential, not critical);
       - baseline offsets: along_m (chainage along the +x baseline from S) and across_m (perpendicular, + left);
@@ -78,7 +93,12 @@ def stakeout_rows(scene: Scene, band_m: float = 0.5) -> list[dict]:
     v = p[:, :2] - s
     dist = np.hypot(v[:, 0], v[:, 1])
     bearing = np.degrees(np.arctan2(v[:, 1], v[:, 0]))
-    band = np.floor((rho - rho.min()) / band_m).astype(int)
+    ring = rings_from_rho(rho)
+    ring_rho = np.array([rho[ring == k].mean() for k in range(1, ring.max() + 1)])
+    if by_ring:  # ring-structured (phase-locked) design: order by ring
+        band = ring - 1  # larger = farther; built first
+    else:
+        band = np.floor((rho - rho.min()) / band_m).astype(int)
     nb = band.max()
     # far bands first; within band sweep bearing, direction alternating
     key_dir = np.where((nb - band) % 2 == 0, bearing, -bearing)
@@ -97,7 +117,8 @@ def stakeout_rows(scene: Scene, band_m: float = 0.5) -> list[dict]:
             if best is None or cosang < best[0]:
                 best = (cosang, name, dw)
         rows.append({
-            "id": f"P{seq:05d}", "seq": seq, "scene_index": int(i),
+            "id": f"P{seq:05d}", "seq": seq, "scene_index": int(i), "ring": int(ring[i]),
+            "ring_rho_m": round(float(ring_rho[ring[i] - 1]), 4),
             "x_m": round(x, 4), "y_m": round(y, 4), "radius_m": round(r, 4), "diameter_mm": round(2000 * r, 1),
             "dist_S_m": round(float(dist[i]), 4), "bearing_deg": round(float(bearing[i]), 4),
             "rho_m": round(float(rho[i]), 4), "delay_ms": round(float(2000 * rho[i] / scene.c), 4),
@@ -702,21 +723,45 @@ def bias_to_signal(profile: dict) -> dict:
             "ratio_energy": (m / sd) ** 2 if sd > 0 else None}
 
 
-def cache_key(params: dict, sources=()) -> str:
-    """Hash of params, this module's source and any extra source strings (invalidates caches on code change)."""
+# Modules the cached physics depends on (forward model, judges, clap family, geometry, solver-free targets).
+CACHE_MODULES = ("echo/tier0.py", "echo/metrics.py", "echo/clap.py", "echo/scene.py", "echo/targets.py",
+                 "echo/inverse.py")
+RUN_INPUTS = ("scene.json", "profile.json", "target.wav", "manifest.json")
+
+
+def file_hash(path) -> str | None:
+    import hashlib
+
+    p = Path(path)
+    return hashlib.sha256(p.read_bytes()).hexdigest()[:16] if p.exists() else None
+
+
+def run_inputs_hash(run_dir) -> dict:
+    """Content hashes of a run folder's inputs to the build physics (posts, profile, target, design config)."""
+    return {n: file_hash(Path(run_dir) / n) for n in RUN_INPUTS}
+
+
+def cache_key(params: dict, sources=(), modules=CACHE_MODULES) -> str:
+    """Hash of params (callers put run_inputs_hash and the target in them), this module's source, the source files of
+    the modules the computation depends on, and any extra source strings (invalidates caches on any change)."""
     import hashlib
 
     h = hashlib.sha256(json.dumps(params, sort_keys=True, default=str).encode())
     h.update(Path(__file__).read_bytes())
+    for m in modules:
+        p = ROOT / m
+        if p.exists():
+            h.update(p.read_bytes())
     for src in sources:
         h.update(str(src).encode())
     return h.hexdigest()[:16]
 
 
-def cached_json(path, params: dict, compute, sources=()):
-    """Return the JSON at path if its stored key matches cache_key(params, sources); else compute(), store, return."""
+def cached_json(path, params: dict, compute, sources=(), modules=CACHE_MODULES):
+    """Return the JSON at path if its stored key matches cache_key(params, sources, modules); else compute(), store,
+    return."""
     path = Path(path)
-    key = cache_key(params, sources)
+    key = cache_key(params, sources, modules)
     if path.exists():
         d = json.loads(path.read_text())
         if d.get("cache_key") == key:
@@ -1085,7 +1130,8 @@ def build_pack(run_dir, out_root=None, post_height=2.0, embed=0.6, panel=(600.0,
     out = Path(out_root or ROOT / "build") / pack_name(run)
     out.mkdir(parents=True, exist_ok=True)
     scene = run["scene"]
-    rows = stakeout_rows(scene)
+    real = str(run["manifest"].get("design", {}).get("config", {}).get("realization", ""))
+    rows = stakeout_rows(scene, by_ring=real.startswith("phase_locked"))
     write_stakeout_csv(rows, out / "stakeout.csv", scene)
     plan = write_plan(run, rows, out, paper)
     tmpl = write_template(run, out, *panel)

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -17,7 +18,24 @@ from echo.buildkit import ROOT, build_pack
 
 BEGIN = "<!-- BEGIN GENERATED: stages/build_pack.py --refresh-doc. Do not edit by hand. -->"
 END = "<!-- END GENERATED -->"
+SUMMARY_BEGIN = "<!-- BEGIN GENERATED SUMMARY: stages/build_pack.py --refresh-doc. Do not edit by hand. -->"
+SUMMARY_END = "<!-- END GENERATED SUMMARY -->"
 DOC_STATUSES = ("final", "tier0_only")
+
+
+PHYSICS_STAGES = ("s1_bird",)  # spec stages whose latest final run gets a build pack (plus every build_* stage)
+
+
+def build_candidates(rows):
+    """The runs that get a build pack with physics: the newest run of each PHYSICS_STAGES stage and of each build_*
+    stage (rows are newest first, as runs/index.json)."""
+    seen, out = set(), []
+    for row, rd in rows:
+        st = row["stage"]
+        if (st in PHYSICS_STAGES or st.startswith("build_")) and st not in seen:
+            seen.add(st)
+            out.append((row, rd))
+    return out
 
 
 def index_runs(runs_root=None):
@@ -49,20 +67,51 @@ def _jstats(js, ids, floor=None):
                      if js.get(k)) or "not judged"
 
 
-def gate_margins(floor, thr) -> list[str]:
-    """Explicit pass / inconclusive / fail bands per judged gate, from the threshold and the judge floor.
+THERMOMETER_C = 0.5  # stated accuracy of the phase-2/3 thermometer (parts list: +-0.5 C)
 
-    m = |threshold - floor| (how far a perfect echo sits from the threshold). PASS: on the pass side of the threshold.
-    INCONCLUSIVE (repeat, average more, listen): on the fail side by less than m. FAIL: on the fail side by more than m."""
-    out = []
+
+def pitch_shift_pct_for_dT(dT=THERMOMETER_C, T=20.0):
+    """Pitch error (percentage points) left by a c(T) correction made with a temperature off by dT: c ~ sqrt(T)."""
+    return 100 * (math.sqrt((273.15 + T + dT) / (273.15 + T)) - 1)
+
+
+def measurement_margins(ex, thr, gate) -> dict:
+    """Symmetric margins for PHYSICAL-MEASUREMENT gates only (simulation verdicts use the spec thresholds, no margin).
+
+    m = noise repeatability of the judge at the SNR gate (half the seed range of the SNR-table row at the highest
+    tabulated SNR not above the gate) + for pitch judges the pitch error left by a c(T) correction with a temperature
+    off by the thermometer accuracy. PASS: beats the threshold by more than m; FAIL: misses it by more than m;
+    otherwise REPEAT (more averaging, re-measure temperature). Returns {id: {...}}; empty without an SNR gate."""
+    if not ex or not gate or not ex.get("snr_table"):
+        return {}
+    rows = [r for r in ex["snr_table"] if r["snr_db"] <= gate["gate_db"]] or ex["snr_table"][:1]
+    row = max(rows, key=lambda r: r["snr_db"])
+    out = {}
     for k, (t, cmp) in thr.items():
-        if not floor or k not in floor or cmp not in ("<=", ">="):
+        st = (row.get("judges") or {}).get(k)
+        if not st or cmp not in ("<=", ">="):
             continue
-        m = abs(t - floor[k])
-        if cmp == "<=":
-            out.append(f"{k}: PASS <= {t:g}; INCONCLUSIVE {t:g} to {t + m:.3g}; FAIL > {t + m:.3g} (floor {floor[k]:.3g})")
+        m_noise = (st["max"] - st["min"]) / 2
+        m_temp = pitch_shift_pct_for_dT() if k.startswith("pitch_err") else 0.0
+        m = m_noise + m_temp
+        out[k] = {"threshold": t, "comparator": cmp, "snr_row_db": row["snr_db"], "m_noise": m_noise,
+                  "m_temp": m_temp, "m": m, "n_seeds": st.get("n")}
+    return out
+
+
+def margin_lines(mm) -> list[str]:
+    out = []
+    for k, d in mm.items():
+        t, m = d["threshold"], d["m"]
+        lo, hi = (t - m, t + m)
+        if d["comparator"] == "<=":
+            band = f"PASS < {lo:.3g}; REPEAT {lo:.3g} to {hi:.3g}; FAIL > {hi:.3g}"
         else:
-            out.append(f"{k}: PASS >= {t:g}; INCONCLUSIVE {t - m:.3g} to {t:g}; FAIL < {t - m:.3g} (floor {floor[k]:.3g})")
+            band = f"PASS > {hi:.3g}; REPEAT {lo:.3g} to {hi:.3g}; FAIL < {lo:.3g}"
+        out.append(f"{k} (threshold {d['comparator']} {t:g}): m = {m:.3g} = noise repeatability {d['m_noise']:.3g} "
+                   f"(half the seed range at {d['snr_row_db']:g} dB SNR, {d['n_seeds']} seeds)"
+                   + (f" + c(T) error {d['m_temp']:.3g} (thermometer +-{THERMOMETER_C:g} C)" if d["m_temp"] else "")
+                   + f" -> {band}")
     return out
 
 
@@ -164,7 +213,9 @@ def readout(ph, met, thr, labels=None) -> list[str]:
         out.append(f"Loudness: echo peak {spl:.1f} dB SPL for a 100 dB clap; margin over the spec's 35 dB line "
                    f"{spl - 35:+.1f} dB; over a 30 / 40 / 50 dB(A) background {spl - 30:+.0f} / {spl - 40:+.0f} / "
                    f"{spl - 50:+.0f} dB (peak against background level: an optimistic comparison).")
-    out.append(f"Design as drawn on Tier 0 3D, free space: {vtxt(ph.get('judges_inf'))}. " + _floor_txt(ph, thr) + ".")
+    fl = ph.get("judges_floor")
+    out.append(f"Design as drawn on Tier 0 3D, free space: {vtxt(ph.get('judges_inf'))} "
+               f"({_j(ph.get('judges_inf'), list(thr), fl)}). " + _floor_txt(ph, thr) + ".")
     rows = ph.get("jitter", [])
     budget, ff, unj = radial_budget(rows, thr)
     seeds = rows[0]["seeds"] if rows else []
@@ -179,7 +230,7 @@ def readout(ph, met, thr, labels=None) -> list[str]:
             wc = ff["waveform_corr"]
             t += (f"; first failure at {ff['sigma_mm']:g} mm on " + ", ".join(
                 f"{labels.get(k, k)} [{k}] {ff['judges'][k]['mean']:.3g} ({ff['judges'][k]['min']:.3g}-"
-                f"{ff['judges'][k]['max']:.3g})" for k in bad)
+                f"{ff['judges'][k]['max']:.3g}){_fl(fl, k)}" for k in bad)
                 + f", while the echo waveform is still {wc['mean']:.3f} correlated with the nominal echo and its level "
                 f"changes {ff['level_delta_db']['mean']:+.2f} dB")
             t += "; where the residual lands is in the residual split below"
@@ -190,7 +241,8 @@ def readout(ph, met, thr, labels=None) -> list[str]:
         out.append(t + ". Whether that judge failure is audible is a listening question (pack `listening/`).")
     for j in [r for r in rows if r["kind"] == "tangential"]:
         out.append(f"Tangential placement (along the equal-delay curve), sigma {j['sigma_mm']:g} mm: "
-                   f"{vtxt(_means(j.get('judges')))}; waveform correlation {j['waveform_corr']['mean']:.3f}.")
+                   f"{vtxt(_means(j.get('judges')))} ({_jstats(j.get('judges'), list(thr), fl)}); waveform "
+                   f"correlation {j['waveform_corr']['mean']:.3f}.")
     hf = ph.get("height_free", [])
     okh = [h["post_height_m"] for h in hf if h["post_height_m"] is not None
            and _passes(h.get("judges"), thr) and h["delta_db"] > -1.0]
@@ -224,7 +276,7 @@ def readout(ph, met, thr, labels=None) -> list[str]:
                    + (f"; fail at +-{', +-'.join(f'{a:g}' for a in bad)} deg" if bad else "") + ".")
     tj = ph.get("temperature_judged", [])
     if tj:
-        parts = [f"{t['T_c']:g} C: {vtxt(t.get('judges'))}" for t in tj]
+        parts = [f"{t['T_c']:g} C: {vtxt(t.get('judges'))} ({_j(t.get('judges'), list(thr), fl)})" for t in tj]
         out.append("Temperature (design tuned for c = 343 m/s): " + "; ".join(parts) + ".")
     return out
 
@@ -247,34 +299,211 @@ def robustness_text(met):
     return "; ".join(parts)
 
 
-def generated_block(packs, lowpitch=None) -> str:
-    """packs: list of (index_row, run_dir, pack_dir); lowpitch: lowpitch_tolerance() result or None."""
-    L = [BEGIN, "", "#### Runs found in `runs/index.json` (status final or tier0_only)", "",
-         "| stage | run | verified | posts | depth (m) | fill | echo dB re direct | echo dB SPL peak | gating metrics "
-         "| robustness (delta per case) | source |", "|---|---|---|---|---|---|---|---|---|---|---|"]
-    for row, rd, pd in packs:
+def _thr(met):
+    """{id: (threshold, cmp)} from a metrics.json; falls back to metrics['pilot']['reference_thresholds']."""
+    thr = {m["id"]: (m["threshold"], m["comparator"]) for m in met.get("metrics", []) if m.get("threshold") is not None}
+    if not thr and (met.get("pilot") or {}).get("reference_thresholds"):
+        thr = {k: tuple(v) for k, v in met["pilot"]["reference_thresholds"].items()}
+    return thr
+
+
+def _floor_mean(met):
+    return ((met.get("judge_floor") or {}).get("mean")) or {}
+
+
+def _stage_label(row, met):
+    sub = met.get("substage") or met.get("target_name")
+    return f"{row['stage']}" + (f" ({sub})" if sub and row["stage"] == "s4_speech" else "")
+
+
+def gating_text(met):
+    """'pitch_err_pct 3.36 (<= 3, fail) [floor 2.53]; ...' for the gating metrics (spec thresholds only)."""
+    fl = _floor_mean(met)
+    out = []
+    for m in met.get("metrics", []):
+        if not m.get("gating"):
+            continue
+        v = m.get("value")
+        vt = "none (judge found no value)" if v is None else f"{v:.3g}"
+        f = fl.get(m["id"])
+        ft = "" if not isinstance(f, (int, float)) or isinstance(f, bool) else f" [floor {f:.3g}]"
+        out.append(f"{m['id']} {vt} ({m['comparator']} {m['threshold']:g}, {'pass' if m.get('pass') else 'fail'}){ft}")
+    if not out and met.get("pilot"):
+        for k, d in met["pilot"]["reference_values"].items():
+            f = fl.get(k)
+            ft = "" if not isinstance(f, (int, float)) else f" [floor {f:.3g}]"
+            out.append(f"{k} {d['value']:.3g} (reference only: {d['comparator']} {d['threshold']:g}){ft}")
+    return "; ".join(out) or "-"
+
+
+def run_table(index_rows, runs_root=None) -> list[str]:
+    """One row per final / tier0_only run: verdict against the spec thresholds only, judge floor beside each value."""
+    L = ["| stage | run | full-wave verdict (spec thresholds) | gating values [judge floor] | echo dB SPL, 100 dB clap "
+         "(margin over 35 dB) | depth (m) | posts | fill | tier gap (dB) | robustness | source |",
+         "|---|---|---|---|---|---|---|---|---|---|---|"]
+    for row, rd in index_rows:
         met = json.loads((rd / "metrics.json").read_text())
         hl = met.get("headline", {})
-        ver = bool(met.get("verified"))
-        tag = "**yes, Tier 1**" if ver else "no (unverified, Tier 0)"
-        ms = [m for m in met.get("metrics", []) if m.get("threshold") is not None and (m.get("gating") or not ver)]
-        mtxt = "; ".join(f"{m['id']} {m['value']:.3g} ({m['tier']}, thr {m['comparator']} {m['threshold']}, "
-                         f"{'pass' if m['pass'] else 'fail'})" for m in ms)
-        L.append(f"| {row['stage']} | {row['run_id']} | {tag} | {hl.get('post_count')} | {_f(hl.get('depth_m'), '{:.2f}')} "
-                 f"| {_f(100 * hl['fill_fraction'] if hl.get('fill_fraction') is not None else None, '{:.2f} %')} "
-                 f"| {_f(hl.get('echo_level_db_re_direct'))} | {_f(hl.get('echo_spl_db'))} | {mtxt} | "
-                 f"{robustness_text(met)} | `{_rel(rd / 'metrics.json')}` |")
+        if not met.get("verified"):
+            verdict = "not run on the full-wave solver (Tier 0 only)"
+        elif met.get("pilot") and not met["pilot"].get("target_is_stage1_whistle"):
+            verdict = "no pass mark (pilot; reference thresholds only)"
+        else:
+            verdict = "**PASSED**" if met.get("passed") else "FAILED"
+        spl = hl.get("echo_spl_db")
+        L.append(f"| {_stage_label(row, met)} | {row['run_id']} | {verdict} | {gating_text(met)} | "
+                 f"{_f(spl)} ({_f(None if spl is None else spl - 35.0, '{:+.1f}')}) | {_f(hl.get('depth_m'))} | "
+                 f"{hl.get('post_count')} | {_f(100 * hl['fill_fraction'] if hl.get('fill_fraction') is not None else None, '{:.3f} %')} "
+                 f"| {_f(hl.get('tier_gap_db'))} | {met.get('robust_summary') or '-'} | `{_rel(rd / 'metrics.json')}` |")
+    return L
+
+
+def _study(path):
+    p = ROOT / path
+    return (json.loads(p.read_text()), path) if p.exists() else (None, path)
+
+
+def summary_block(index_rows, s1=None, pilot=None) -> str:
+    """The one-screen evidence summary at the top of BUILD.md: every number generated, each with its source.
+
+    index_rows: [(row, run_dir)]; s1 / pilot: (row, run_dir, pack_dir) or None."""
+    L = [SUMMARY_BEGIN, "", "**Every run that reached the end of its stage** (status final; newest first; verdicts are the "
+         "spec's pass marks on the full-wave solver, nothing else):", ""]
+    L += run_table(index_rows)
+    mets = [(row, rd, json.loads((rd / "metrics.json").read_text())) for row, rd in index_rows]
+    tonal = [x for x in mets if x[0]["stage"] in ("s1_bird", "s2_motif", "s3_melody") and x[2].get("verified")]
+    L += ["", "**Key numbers** (generated; each with its source file):", ""]
+    L.append(f"- Tonal targets (bird, motif, melody): {len(tonal)} full-wave runs, "
+             f"{sum(bool(m.get('passed')) for _, _, m in tonal)} passed.")
+    s1runs = [x for x in tonal if x[0]["stage"] == "s1_bird"]
+    if s1runs:
+        row, rd, m = s1runs[0]
+        L.append(f"- Nearest miss, the stage-1 whistle (latest run {row['run_id']}): {gating_text(m)}; "
+                 f"listener moved 1 m sideways: " + "; ".join(
+                     f"{r['case']} {'pass' if r.get('pass') else 'fail'}" for r in m.get("robustness", [])
+                     if r["case"].startswith("listener")) + f". Source `{_rel(rd / 'metrics.json')}`.")
+    for row, rd, m in mets:
+        if row["stage"] == "s4_speech" and m.get("passed"):
+            rob = {r["case"]: r for r in m.get("robustness", [])}
+            est = next((x["value"] for x in m["metrics"] if x["id"] == "estoi" and x["tier"] == "tier1"), None)
+            fe = _floor_mean(m).get("estoi")
+            L.append(f"- Speech {m.get('substage', '')} \"{m.get('target_name', '')}\" passed its recognizer test "
+                     f"({gating_text(m)}), but its intelligibility score ESTOI is {_f(est, '{:.3f}')} against "
+                     f"{_f(fe, '{:.3f}')} for a perfect echo, and for a listener 1 m sideways the word is "
+                     f"recognized for {_f((rob.get('listener_side_1m') or {}).get('metrics', {}).get('hello_hit'), '{:.0%}')} "
+                     f"of the claps (1 m back: {_f((rob.get('listener_back_1m') or {}).get('metrics', {}).get('hello_hit'), '{:.0%}')}). "
+                     f"Source `{_rel(rd / 'metrics.json')}`.")
+    latest = {}
+    for row, rd, m in mets:  # newest first: keep the latest run per stage / sub-stage
+        if m.get("verified"):
+            latest.setdefault(row["run_id"].split("-", 2)[-1], (row, rd, m))  # run tag, e.g. s1, s3_60ms, s4_4b_ma
+    lv = sorted(((m["headline"].get("depth_m") or 0, _stage_label(row, m) + (
+        f" \"{m['target_name']}\"" if m.get("target_name") else "") + f" [{row['run_id'].split('-', 2)[-1]}]", m["headline"].get("echo_spl_db"),
+        m["headline"].get("echo_level_db_re_direct"), rd) for row, rd, m in latest.values()))
+    L.append("- Echo level of the latest full-wave run per target (3D estimate corrected by the full-wave tier gap; 100 dB "
+             "clap at 1 m; 35 dB = the spec's 'likely lost on site' line), by structure depth: " + "; ".join(
+                 f"{lab} {d:.0f} m deep: {spl:.1f} dB SPL ({lvl:.1f} dB re the direct clap, {spl - 35:+.1f} dB over "
+                 f"the line)" for d, lab, spl, lvl, _ in lv) + ". Sources: each run's `metrics.json` `headline`.")
+    ss, sp = _study("runs/s1_bird/_studies/design_study_tier0.json")
+    if ss and ss.get("sweet_spot"):
+        L += ["", f"Listening spot (stage-1 design study, Tier 0, {ss['sweet_spot'][0]['n_posts']} posts; waveform "
+              f"correlation of the echo heard at a moved listener against the design listener, delay change removed; "
+              f"source `{sp}` key `sweet_spot`):", "",
+              "| fan half-angle | 10 cm sideways | 25 cm sideways | 50 cm sideways | 1 m sideways | 50 cm back | 1 m back "
+              "| sideways extent with correlation >= 0.95 |", "|---|---|---|---|---|---|---|---|"]
+        for ha in sorted({r["half_angle_deg"] for r in ss["sweet_spot"]}, reverse=True):
+            rr = {tuple(r["offset_m"]): r["wave_corr_vs_nominal"] for r in ss["sweet_spot"] if r["half_angle_deg"] == ha}
+            side = [y for (x, y), v in sorted(rr.items(), key=lambda kv: kv[0][1]) if x == 0.0 and y > 0]
+            ext = 0.0
+            for y in side:
+                if rr[(0.0, y)] >= 0.95:
+                    ext = y
+                else:
+                    break
+            g = lambda o: _f(rr.get(o), "{:.2f}")  # noqa: E731
+            L.append(f"| +-{ha:g} deg | {g((0.0, 0.1))} | {g((0.0, 0.25))} | {g((0.0, 0.5))} | {g((0.0, 1.0))} | "
+                     f"{g((-0.5, 0.0))} | {g((-1.0, 0.0))} | " + (f"< 10 cm" if ext == 0 else f"{100 * ext:.0f} cm")
+                     + " |")
+        L.append("")
+    if s1:
+        row, rd, pd = s1
+        ph = json.loads((pd / "pack.json").read_text()).get("physics") or {}
+        rad = {j["sigma_mm"]: j for j in ph.get("jitter", []) if j["kind"] == "radial"}
+        fl = ph.get("judges_floor") or {}
+        bits = []
+        for sgm in (1.0, 2.0, 5.0):
+            j = rad.get(sgm)
+            if j and j.get("judges") and j["judges"].get("spec_corr"):
+                bits.append(f"{sgm:g} mm: spectrogram correlation {j['judges']['spec_corr']['mean']:.3f} "
+                            f"(threshold >= 0.8, floor {_f(fl.get('spec_corr'), '{:.3f}')}), waveform correlation "
+                            f"{j['waveform_corr']['mean']:.3f}")
+        if bits:
+            L.append(f"- Placement error (random, radial, Tier 0, latest stage-1 design {row['run_id']}): " + "; ".join(bits)
+                     + f". Hear it: `{_rel(pd / 'listening')}/`. Source `{_rel(pd / 'pack.json')}` key `physics.jitter`.")
+        tt = ph.get("temperature") or []
+        if tt:
+            L.append("- Temperature: the whole echo's pitch scales with the speed of sound: " + ", ".join(
+                f"{t['T_c']} C {t['pitch_shift_pct']:+.1f} %" for t in tt) + f" against the 343 m/s design. Source "
+                f"`{_rel(pd / 'pack.json')}` key `physics.temperature`.")
+    td, tp = _study("runs/s1_bird/_studies/tier_diff.json")
+    if td:
+        rows = {}
+        for r in td["rows"]:
+            t1 = r["tier1_vs_tier0"]
+            rows[r["run"]] = (r.get("n_posts"), r.get("radius", 0.01), t1["stretch_eps"], t1["residue_db_stretched_fir33"],
+                              r.get("equivalent_radial_jitter_m"),
+                              {round(1000 * x["sigma_m"], 1): x["residue_db_stretched_fir33"]
+                               for x in r.get("tier0_jitter_residue") or []})
+        thin = rows.get("20261125-095837-s1")
+        thick = next((v for k, v in rows.items() if v[1] and v[1] >= 0.04), None)
+        if thin and thick:
+            L.append(f"- Thin posts, low coverage: {thin[0]} posts of 1 cm at 0.35 % ground coverage leave an "
+                     f"incoherent full-wave residue of {thin[3]:.1f} dB against the fast model (stretch {100 * thin[2]:+.2f} %); "
+                     f"{thick[0]} posts of {100 * thick[1]:g} cm (about 2.3 % coverage) leave {thick[3]:.1f} dB, i.e. the "
+                     f"full-wave echo no longer resembles the designed one. Source `{tp}`.")
+        if thin and thin[4]:
+            L.append(f"- Unresolved: that {thin[3]:.1f} dB residue matches {1000 * thin[4]:.1f} mm of random radial "
+                     f"placement error on the fast model. Whether it is real forward scattering in the post field or the "
+                     f"full-wave solver's rasterization of 1 cm posts (validated against exact theory for single-post "
+                     f"backscatter only; see `runs/validation/metrics.json` `caveats`) is not settled. For the phase-2c "
+                     f"residue test, the same fast-model fit gives a residue of "
+                     + ", ".join(f"{v:.1f} dB at {k:g} mm" for k, v in sorted(thin[5].items()) if k <= 2.0)
+                     + f" of random radial error (a CNC-drilled 1:10 board places pins to a fraction of a millimetre at "
+                     f"full scale). Source `{tp}`.")
+    ext, ep = _study("runs/s2_motif/_studies/v1_extinction.json")
+    if ext:
+        L.append(f"- Dense field extinguishes the echo (stage 2 first design, run {ext['run']}): full-wave minus fast-model "
+                 f"level per note " + ", ".join(f"{r['note_hz']:.0f} Hz {r['measured_tier1_minus_tier0_db_clap0']:+.1f} dB"
+                                               for r in ext["rows"]) + f". Source `{ep}`.")
+    if pilot:
+        row, rd, pd = pilot
+        m = json.loads((rd / "metrics.json").read_text())
+        pl = m.get("pilot") or {}
+        L.append(f"- Build pilot (run {row['run_id']}): {gating_text(m)}; {pl.get('post_count')} posts, minimum clear gap "
+                 f"{_f(100 * pl['min_gap_m'] if pl.get('min_gap_m') is not None else None, '{:.1f}')} cm, coverage "
+                 f"{_f(100 * pl['fill_fraction'] if pl.get('fill_fraction') is not None else None, '{:.3f}')} %; "
+                 f"echo {_f(m['headline'].get('echo_spl_db'))} dB SPL. Details: section Pilot design. Source "
+                 f"`{_rel(rd / 'metrics.json')}`.")
+    L += ["", SUMMARY_END]
+    return "\n".join(L)
+
+
+def generated_block(packs, lowpitch=None, s1_pack=None) -> str:
+    """packs: list of (index_row, run_dir, pack_dir) with physics; lowpitch: lowpitch_tolerance() result or None;
+    s1_pack: the stage-1 pack the low-pitch variant is compared with (default: the first s1_bird pack)."""
+    L = [BEGIN, "", "Build physics are computed for the build candidates only (the latest stage-1 design and the build "
+         "pilot); every other run is summarized in the table at the top of this file.", ""]
     for row, rd, pd in packs:
         pk = json.loads((pd / "pack.json").read_text())
         ph = pk.get("physics")
         met = json.loads((rd / "metrics.json").read_text())
-        ids = [m["id"] for m in met.get("metrics", []) if m.get("threshold") is not None]
-        ids = list(dict.fromkeys(ids))
-        thr = {m["id"]: (m["threshold"], m["comparator"]) for m in met.get("metrics", [])
-               if m.get("threshold") is not None}
+        thr = _thr(met)
+        ids = list(thr)
         if not ph:
             continue
         fl = ph.get("judges_floor")
+        if met.get("pilot"):
+            L += pilot_lines(row, rd, pd, met)
         ver = "Tier 0, unverified" if not ph["verified"] else "Tier 0 3D (design verified on Tier 1; these tables are Tier 0)"
         L += ["", f"#### Build physics for {row['stage']} / {row['run_id']} ({ver})", "",
               f"Source: `{_rel(pd / 'pack.json')}` key `physics`, computed by `echo.buildkit.physics_tables` from "
@@ -376,12 +605,12 @@ def generated_block(packs, lowpitch=None) -> str:
                       for k, o in m["options"].items()) for m in b["model"]) + f". 1:10 hole field extent "
               f"{(tm['extent_mm'][1] - min(0, tm['extent_mm'][0])) / 1000:.2f} m x "
               f"{(tm['extent_mm'][3] - tm['extent_mm'][2]) / 1000:.2f} m (from the emitter mark)."]
-    if lowpitch and packs:
-        row, rd, pd = packs[0]
+    s1_pack = s1_pack or next((p for p in packs if p[0]["stage"] == "s1_bird"), None)
+    if lowpitch and s1_pack:
+        row, rd, pd = s1_pack
         met = json.loads((rd / "metrics.json").read_text())
         ph = json.loads((pd / "pack.json").read_text()).get("physics")
-        thr = {m["id"]: (m["threshold"], m["comparator"]) for m in met.get("metrics", [])
-               if m.get("threshold") is not None}
+        thr = _thr(met)
         exf = pd / "extras.json"
         if ph is not None and exf.exists():
             ph["_extras"] = json.loads(exf.read_text())
@@ -392,6 +621,67 @@ def generated_block(packs, lowpitch=None) -> str:
     return "\n".join(L)
 
 
+def pilot_lines(row, rd, pd, met) -> list[str]:
+    """The build pilot's own facts (generated): candidate study, selection, full-wave result, geometry, sweet spot."""
+    pl = met["pilot"]
+    hl = met.get("headline", {})
+    L = ["", f"#### Pilot design: {row['stage']} / {row['run_id']}", "",
+         f"Verdict wording: {pl['verdict']}. Judges: the {pl['judge_stage']} judges. Source `{_rel(rd / 'metrics.json')}` "
+         f"keys `metrics`, `headline`, `robustness`, `pilot`.", ""]
+    st, sp = _study("runs/build_pilot/_studies/design_study_tier0.json")
+    if st:
+        L += [f"Candidate study (Tier 0, fan +-{st['half_angle_deg']:g} deg, cap {st['post_cap']} posts, coverage <= "
+              f"{100 * st['fill_max']:.2f} %; {st['jitter']}; source `{sp}`). Selection rule, written before the results: "
+              f"{st['selection']}", "",
+              "| candidate | posts | coverage | min clear gap (cm) | depth (m) | Tier 0 loss | loss at 2 mm jitter | 3D level "
+              "(dB re direct) | waveform corr at 1 / 2 / 5 mm | sideways extent, corr >= 0.95 | info: judges |",
+              "|---|---|---|---|---|---|---|---|---|---|---|"]
+        for c in st["candidates"]:
+            for r in c["rows"]:
+                j = {x["sigma_mm"]: x for x in r["jitter"]}
+                info = r.get("judges_tier0_info_only") or {}
+                L.append(f"| {r['candidate']} | {r['n_posts']} | {100 * r['fill']:.3f} % | {100 * r['min_gap_m']:.1f} | "
+                         f"{r['depth_m']:.1f} | {r['loss_tier0']:.2f} | {j[2.0]['loss']:.2f} | {r['echo_level_db_3d']:.1f} | "
+                         f"{j[1.0]['wave_corr']:.3f} / {j[2.0]['wave_corr']:.3f} / {j[5.0]['wave_corr']:.3f} | "
+                         + ("< 5 cm" if not r["sweet_spot_side_m"] else f"{100 * r['sweet_spot_side_m']:.0f} cm") + " | "
+                         + ", ".join(f"{k} {v:.3g}" for k, v in info.items()) + " |")
+        ch = st["chosen"]
+        L += ["", f"Chosen: **{ch['candidate']}** at {ch['n_posts']} posts (coverage {100 * ch['fill']:.3f} %)."]
+    L += ["", f"Full-wave result: {gating_text(met)}; echo {_f(hl.get('echo_spl_db'))} dB SPL "
+          f"({_f(hl.get('echo_level_db_re_direct'))} dB re direct; with {hl.get('finite_height_m')} m posts "
+          f"{_f(hl.get('echo_level_db_re_direct_finite_height'))} dB); tier gap {_f(hl.get('tier_gap_db'))} dB; depth "
+          f"{_f(hl.get('depth_m'), '{:.2f}')} m; {pl['post_count']} posts; coverage {100 * pl['fill_fraction']:.3f} %; "
+          f"minimum clear gap between post surfaces {100 * pl['min_gap_m']:.1f} cm; robustness summary "
+          f"{met.get('robust_summary') or '-'}."]
+    rob = met.get("robustness") or []
+    if rob:
+        L += ["", "Robustness cases (full-wave; listener cases are extra sensors of the same solve, the jitter case is a "
+              "second solve):", "", "| case | " + " | ".join(_thr(met)) + " | meets the reference thresholds |",
+              "|---|" + "---|" * len(_thr(met)) + "---|"]
+        for r in rob:
+            vals = r.get("metrics") or {}
+            L.append(f"| {r.get('label') or r['case']} | " + " | ".join(_f(vals.get(k), "{:.3g}") for k in _thr(met))
+                     + f" | {'yes' if r.get('pass') else 'no'} |")
+    sm = pl.get("sweet_spot_map")
+    if sm:
+        L += ["", f"Listening-spot map ({sm['mode']}: {sm['what']}); rows: metres back from the design listener, columns: "
+              "metres sideways:", "", "| back \\ side | " + " | ".join(f"{y:+g}" for y in sm["y_side_m"]) + " |",
+              "|---|" + "---|" * len(sm["y_side_m"])]
+        for x, rr in zip(sm["x_back_m"], sm["wave_corr"]):
+            L.append(f"| {x:g} | " + " | ".join(_f(v, "{:.2f}") for v in rr) + " |")
+    if (pd / "bom.json").exists():
+        b = json.loads((pd / "bom.json").read_text())
+        f0 = b["full_scale"][0]
+        opt = f0["options"][0]
+        L += ["", f"Bill of materials (`{_rel(pd / 'bom.md')}`): {f0['count']} posts of {f0['diameter_mm']} mm "
+              f"({f0['count_with_spare']} with {100 * b['spare_fraction']:.0f} % spare), {b['post_height_m']:g} m above "
+              f"ground + {b['embed_m']:g} m embedded = {f0['post_length_m']:g} m each, {f0['total_length_with_spare_m']:.0f} m "
+              f"of stock: first choice {opt['item']}, {opt['stock_lengths']} stock lengths of {opt['stock_length_m']:g} m "
+              f"(tip deflection {opt['wind_tip_deflection_mm_at_10ms']:.1f} mm at 10 m/s). Stake-out: "
+              f"`{_rel(pd / 'stakeout.csv')}` (ring by ring, far ring first)."]
+    return L
+
+
 def jitter_lines(rows, ids, f_center, floor=None):
     import math
 
@@ -400,16 +690,19 @@ def jitter_lines(rows, ids, f_center, floor=None):
          "infinite posts. Judge view: the spec's judges (with the judge floor). Physical view: measured waveform "
          "correlation with the nominal echo (clap-family mean of per-clap correlations), next to the parameter-free "
          f"coherent-loss factor A = exp(-(4 pi sigma f / c)^2 / 2) at f = {f_center or float('nan'):.0f} Hz (the "
-         "fraction of coherent amplitude kept in the target band; it says nothing about where the lost power goes):", "",
+         "fraction of coherent amplitude kept in the target band for RANGE errors; it says nothing about where the lost "
+         "power goes, and it is not defined for tangential moves, printed '-'):", "",
          "| direction | sigma (mm) | level change (dB) | waveform corr, measured | coherent factor A | judges (mean, range) |",
          "|---|---|---|---|---|---|"]
     for j in rows:
         if j["kind"] == "nominal":
             continue
         wc = j["waveform_corr"]
-        A = math.exp(-((4 * math.pi * j["sigma_mm"] / 1000 * (f_center or 0) / 343.0) ** 2) / 2)
+        # A applies to range errors only; a tangential move changes range to second order, so no A there
+        A = (f"{math.exp(-((4 * math.pi * j['sigma_mm'] / 1000 * (f_center or 0) / 343.0) ** 2) / 2):.3f}"
+             if j["kind"] == "radial" else "-")
         L.append(f"| {j['kind']} | {j['sigma_mm']:g} | {j['level_delta_db']['mean']:+.2f} | {wc['mean']:.3f} "
-                 f"({wc['min']:.3f}-{wc['max']:.3f}) | {A:.3f} | {_jstats(j.get('judges'), ids, floor)} |")
+                 f"({wc['min']:.3f}-{wc['max']:.3f}) | {A} | {_jstats(j.get('judges'), ids, floor)} |")
     return L
 
 
@@ -431,21 +724,22 @@ def measurement_lines(ph, ex, thr, fl, ids, b_height=2.0):
                   f"margin the measurement must reach **{gate['gate_db']:g} dB in-band SNR** over the echo window."]
         else:
             L += ["", "**SNR gate**: no SNR in the table passes on every seed; measure at the highest SNR achievable."]
-    gm = gate_margins(fl, thr)
-    if gm:
-        L += ["", "**Gate margins** (every judged gate; m = distance of the judge floor from the threshold): " + "; ".join(gm)
-              + ". Inconclusive: repeat with more averaging and decide by listening."]
+    mm = measurement_margins(ex, thr, gate)
+    if mm:
+        L += ["", "**Measurement margins** (physical-measurement gates only -- phases 2c and 3b; simulation verdicts use the "
+              "spec thresholds with no margin): " + "; ".join(margin_lines(mm)) + ". REPEAT: average more, re-log "
+              "temperature, measure again; a second REPEAT is reported as such, not rounded to a pass."]
     ok = [g for g in ph.get("height_rigid_ground", []) if g["post_height_m"] == b_height
           and _passes(g.get("judges"), thr)]
     if ok:
         z = max(g["ear_height_m"] for g in ok)
-        L += ["", f"**Phase-2b measurement height**: emitter and mic {1000 * z / 10:.0f} mm above the model ground plane "
+        L += ["", f"**Phase-2c measurement height**: emitter and mic {1000 * z / 10:.0f} mm above the model ground plane "
               f"(= {z:g} m at full scale), the highest clap/ear height whose rigid-ground row with {b_height:g} m posts "
               f"passes the judges; passing heights: " + ", ".join(
                   f"{g['ear_height_m']:g} m" for g in sorted(ok, key=lambda g: g["ear_height_m"]))
               + ". Also measure at 150 mm (1.5 m) as the ground-model check; its predicted verdict is in the ground table."]
     elif ph.get("height_rigid_ground"):
-        L += ["", f"**Phase-2b measurement height**: no rigid-ground row with {b_height:g} m posts passes the judges "
+        L += ["", f"**Phase-2c measurement height**: no rigid-ground row with {b_height:g} m posts passes the judges "
               "(or none is judged); measure at every tabulated height and compare with the table."]
     if ph.get("rig_levels") and gate:
         import math
@@ -471,20 +765,26 @@ def residual_lines(ex, title):
     import numpy as np
 
     lo, hi = ex["f_band_hz"]
+    top = ex["f_top_hz"]
     L = ["", f"{title}: jitter-induced residual r = jittered echo - g x nominal (common gain g removed), energy split "
-         f"into fixed bands below the target band (< {lo:.0f} Hz), the target band ({lo:.0f}-{hi:.0f} Hz) and above it "
-         f"({hi:.0f}-{ex['f_top_hz']:.0f} Hz), as % of the nominal echo energy; clap-family mean of per-clap values, "
-         f"mean over {len(ex['seeds'])} seeds. Check: residual/jittered energy equals 1 - corr^2 per clap.", "",
-         "| sigma (mm) | corr (clap mean) | residual below | in target band | above, to 4 kHz | above, worst clap "
-         "| max abs(1 - corr^2 - residual/jittered) |", "|---|---|---|---|---|---|---|"]
+         f"into four bands that partition 0-8 kHz: below the target band (< {lo:.0f} Hz), the target band "
+         f"({lo:.0f}-{hi:.0f} Hz, the same band as this section's 'Target band' line), above it to {top:.0f} Hz, and "
+         f"above {top:.0f} Hz; as % of the nominal echo energy; clap-family mean of per-clap values, mean over "
+         f"{len(ex['seeds'])} seeds. The four columns sum to the total column. Check: residual/jittered energy equals "
+         f"1 - corr^2 per clap.", "",
+         f"| sigma (mm) | corr (clap mean) | below | in target band | above, to {top / 1000:g} kHz | above "
+         f"{top / 1000:g} kHz | total | above to {top / 1000:g} kHz, worst clap | max abs(1 - corr^2 - residual/jittered) |",
+         "|---|---|---|---|---|---|---|---|---|"]
     for row in ex["residual"]:
         cl = [c for seed in row["per_seed_per_clap"] for c in seed]
         rb = np.array([c["res_bands"] for c in cl])
         nc = len(row["per_seed_per_clap"][0])
         worst = max(np.mean([seed[k]["res_bands"][2] for seed in row["per_seed_per_clap"]]) for k in range(nc))
         chk = max(abs(c["one_minus_corr2"] - c["res_over_e"]) for c in cl)
+        tot = np.mean([c["res_total"] for c in cl])
         L.append(f"| {row['sigma_mm']:g} | {np.mean([c['corr'] for c in cl]):.3f} | {100 * rb[:, 0].mean():.2f} % | "
-                 f"{100 * rb[:, 1].mean():.2f} % | {100 * rb[:, 2].mean():.2f} % | {100 * worst:.2f} % | {chk:.1e} |")
+                 f"{100 * rb[:, 1].mean():.2f} % | {100 * rb[:, 2].mean():.2f} % | {100 * rb[:, 3].mean():.2f} % | "
+                 f"{100 * tot:.2f} % | {100 * worst:.2f} % | {chk:.1e} |")
     nom = ex["nominal_per_clap"]
     L += ["", "Nominal echo, per clap: share of energy in the target band " + ", ".join(
         f"{100 * c['nominal_bands'][1]:.0f} %" for c in nom) + "; above it " + ", ".join(
@@ -498,12 +798,17 @@ def residual_lines(ex, title):
     return L
 
 
-def refresh_doc(doc: Path, block: str):
+def refresh_doc(doc: Path, block: str, summary: str | None = None):
+    """Replace the generated block (and the generated summary block, when given) between their markers."""
     text = doc.read_text()
-    i, j = text.find(BEGIN), text.find(END)
-    if i < 0 or j < 0 or j < i:
-        raise SystemExit(f"{doc}: generated-block markers not found")
-    doc.write_text(text[:i] + block + text[j + len(END):])
+    for b, e, blk in ((BEGIN, END, block), (SUMMARY_BEGIN, SUMMARY_END, summary)):
+        if blk is None:
+            continue
+        i, j = text.find(b), text.find(e)
+        if i < 0 or j < 0 or j < i:
+            raise SystemExit(f"{doc}: generated-block markers not found ({b[:40]}...)")
+        text = text[:i] + blk + text[j + len(e):]
+    doc.write_text(text)
 
 
 LOWPITCH = {"f_start": 1750.0, "f_end": 1000.0, "duration_s": 0.08}
@@ -549,7 +854,10 @@ def lowpitch_tolerance(variant_dir, seeds=(0, 1, 2), sigmas=(1.0, 2.0, 3.0, 5.0,
 
     from echo.buildkit import cached_json
 
-    params = {"seeds": list(seeds), "sigmas": list(sigmas), "target": LOWPITCH, "dir": _rel(variant_dir)}
+    from echo.buildkit import run_inputs_hash
+
+    params = {"seeds": list(seeds), "sigmas": list(sigmas), "target": LOWPITCH, "dir": _rel(variant_dir),
+              "inputs": run_inputs_hash(variant_dir)}
     return cached_json(Path(variant_dir) / "tolerance.json", params,
                        lambda: _lowpitch_compute(variant_dir, seeds, sigmas),
                        sources=(inspect.getsource(_lowpitch_compute),))
@@ -593,7 +901,13 @@ def ensure_extras(run_dir, out_json, f_band=None, target=None):
         d["snr_seeds_n"] = 3
         return d
 
-    return cached_json(out_json, {"run": _rel(run_dir), "f_band": f_band}, compute,
+    from echo.buildkit import run_inputs_hash
+
+    tkey = None if target is None else {"name": target.name, "f_track_ends": None if target.f_track is None else
+                                        [float(target.f_track[1][0]), float(target.f_track[1][-1])],
+                                        "duration_s": target.duration_s}
+    return cached_json(out_json, {"run": _rel(run_dir), "f_band": None if f_band is None else list(f_band),
+                                  "inputs": run_inputs_hash(run_dir), "target": tkey}, compute,
                        sources=(inspect.getsource(ensure_extras),))
 
 
@@ -617,15 +931,55 @@ def lowpitch_lines(res, main_ph, thr, ids, labels):
         if mex and mex.get("bias_to_signal") and res["extras"].get("bias_to_signal"):
             L += ["", f"Bias-to-modulation amplitude ratio: stage-1 design {mex['bias_to_signal']['ratio_amp']:.2f}, "
                   f"low-pitch variant {res['extras']['bias_to_signal']['ratio_amp']:.2f}."]
+            L += reading_rule_lines(mex, res["extras"])
     return L
+
+
+def _res_summary(ex, sigma):
+    """Clap-family means of the residual bands at one sigma, and the per-clap waveform correlation (seed mean)."""
+    import numpy as np
+
+    row = next((r for r in ex["residual"] if r["sigma_mm"] == sigma), None)
+    if row is None:
+        return None
+    per = row["per_seed_per_clap"]
+    rb = np.array([[c["res_bands"] for c in seed] for seed in per])  # [seed, clap, band]
+    return {"bands": rb.mean(axis=(0, 1)).tolist(), "corr_per_clap": np.mean([[c["corr"] for c in seed] for seed in per],
+                                                                             axis=0).tolist()}
+
+
+def reading_rule_lines(main_ex, var_ex, sigma=1.0, close_rel=0.10):
+    """The block's outcome against the reading rule of BUILD.md ("Does a lower target pitch buy tolerance?")."""
+    a, b = _res_summary(main_ex, sigma), _res_summary(var_ex, sigma)
+    if not a or not b:
+        return []
+    r1, r2 = main_ex["bias_to_signal"]["ratio_amp"], var_ex["bias_to_signal"]["ratio_amp"]
+    close = abs(r1 - r2) / r1 <= close_rel
+    ratio_in = a["bands"][1] / b["bands"][1] if b["bands"][1] > 0 else float("inf")
+    var_above = b["bands"][2] > 10 * b["bands"][1]
+    main_in = a["bands"][1] > a["bands"][2]
+    pc = ", ".join(f"{c:.3f}" for c in b["corr_per_clap"])
+    pc1 = ", ".join(f"{c:.3f}" for c in a["corr_per_clap"])
+    return ["", f"**Reading-rule outcome at {sigma:g} mm** (generated): bias-to-modulation ratios {r1:.2f} vs {r2:.2f} "
+            f"({'close' if close else 'not close'}: differ by {100 * abs(r1 - r2) / r1:.0f} % against a {100 * close_rel:.0f} % "
+            f"rule), so (i) {'can act only through the clap spectrum' if close else 'is not excluded by the bias ratio'}. "
+            f"The variant's residual lies {'almost entirely above' if var_above else 'not mainly above'} its target band "
+            f"({100 * b['bands'][2]:.2f} % above against {100 * b['bands'][1]:.3f} % in band) while the stage-1 residual "
+            f"{'stays mainly inside' if main_in else 'does not stay mainly inside'} its band ({100 * a['bands'][1]:.2f} % in "
+            f"band, {100 * a['bands'][2]:.2f} % above): this {'favours' if (var_above and main_in) else 'does not favour'} "
+            f"(ii). In-band, the variant's residual is {ratio_in:.0f}x smaller than stage 1's. Sensitivity depends "
+            f"strongly on which clap is used: waveform correlation per clap (claps 0-4) at {sigma:g} mm, variant {pc}; "
+            f"stage-1 design {pc1}."]
 
 
 def with_variant_extras(vd):
     if vd is None:
         return None
     low = lowpitch_tolerance(vd)
-    low["extras"] = ensure_extras(vd, vd / "extras.json", f_band=(LOWPITCH["f_end"], LOWPITCH["f_start"]),
-                                  target=lowpitch_target())
+    from echo.buildkit import load_run, target_band
+
+    # one band definition everywhere: the target spectrum within -20 dB of its peak (buildkit.target_band)
+    low["extras"] = ensure_extras(vd, vd / "extras.json", f_band=target_band(load_run(vd)), target=lowpitch_target())
     return low
 
 
@@ -655,34 +1009,32 @@ def main(argv=None):
               physics=not a.no_physics)
     if a.lowpitch:
         print(f"wrote {make_lowpitch_variant(threads=a.threads)}")
-    if a.doc_only:
+    if a.doc_only or a.all or a.refresh_doc:
         from echo.buildkit import load_run, pack_name
 
-        packs = [(row, rd, Path(a.out) / pack_name(load_run(rd))) for row, rd in index_runs()]
-        for row, rd, pd in packs:
-            if (pd / "pack.json").exists():
-                ensure_extras(rd, pd / "extras.json")
-        vd = latest_variant()
-        low = with_variant_extras(vd)
-        refresh_doc(Path(a.doc), generated_block([p for p in packs if (p[2] / "pack.json").exists()], low))
-        print(f"refreshed {a.doc} (from existing packs)")
-        return 0
-    if a.all or a.refresh_doc:
+        rows = index_runs()
+        cands = build_candidates(rows)
         packs = []
-        for row, rd in index_runs():
-            pd = build_pack(rd, **kw)
-            print(f"wrote {pd}")
+        for row, rd in (rows if a.all else cands):
+            pd = Path(a.out) / pack_name(load_run(rd))
+            if not a.doc_only or not (pd / "pack.json").exists():
+                pd = build_pack(rd, **kw)
+                print(f"wrote {pd}")
             packs.append((row, rd, pd))
-        if a.refresh_doc:
-            for row, rd, pd in packs:
-                ensure_extras(rd, pd / "extras.json")
-            vd = latest_variant()
-            low = with_variant_extras(vd)
-            refresh_doc(Path(a.doc), generated_block(packs, low))
+        if a.doc_only or a.refresh_doc:
+            phys = [p for p in packs if (p[2] / "pack.json").exists()
+                    and json.loads((p[2] / "pack.json").read_text()).get("physics")]
+            for row, rd, pd in phys:
+                ph = json.loads((pd / "pack.json").read_text())["physics"]
+                ensure_extras(rd, pd / "extras.json", f_band=tuple(ph["target_band_hz"]))
+            low = with_variant_extras(latest_variant())
+            s1 = next((p for p in phys if p[0]["stage"] == "s1_bird"), None)
+            pilot = next((p for p in phys if p[0]["stage"].startswith("build_")), None)
+            refresh_doc(Path(a.doc), generated_block(phys, low, s1), summary_block(rows, s1, pilot))
             print(f"refreshed {a.doc}")
     for rd in a.run_dirs:
         print(f"wrote {build_pack(rd, **kw)}")
-    if not (a.run_dirs or a.all or a.refresh_doc or a.lowpitch):
+    if not (a.run_dirs or a.all or a.refresh_doc or a.lowpitch or a.doc_only):
         ap.print_help()
         return 2
     return 0

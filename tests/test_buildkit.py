@@ -170,9 +170,13 @@ def test_refresh_doc_replaces_only_block(tmp_path):
     from stages import build_pack as bp
 
     doc = tmp_path / "B.md"
-    doc.write_text(f"intro\n{bp.BEGIN}\nold\n{bp.END}\noutro\n")
+    doc.write_text(f"intro\n{bp.SUMMARY_BEGIN}\nold s\n{bp.SUMMARY_END}\nmid\n{bp.BEGIN}\nold\n{bp.END}\noutro\n")
     bp.refresh_doc(doc, f"{bp.BEGIN}\nnew\n{bp.END}")
-    assert doc.read_text() == f"intro\n{bp.BEGIN}\nnew\n{bp.END}\noutro\n"
+    assert doc.read_text() == (f"intro\n{bp.SUMMARY_BEGIN}\nold s\n{bp.SUMMARY_END}\nmid\n{bp.BEGIN}\nnew\n{bp.END}"
+                               f"\noutro\n")
+    bp.refresh_doc(doc, f"{bp.BEGIN}\nnew2\n{bp.END}", f"{bp.SUMMARY_BEGIN}\nnew s\n{bp.SUMMARY_END}")
+    assert doc.read_text() == (f"intro\n{bp.SUMMARY_BEGIN}\nnew s\n{bp.SUMMARY_END}\nmid\n{bp.BEGIN}\nnew2\n"
+                               f"{bp.END}\noutro\n")
 
 
 def test_build_pack_writes_all_files(tmp_path):
@@ -241,16 +245,54 @@ def test_cached_json_invalidates_on_params_and_sources(tmp_path):
     assert len(calls) == 3
 
 
+def test_cache_key_covers_run_inputs_and_modules(tmp_path, monkeypatch):
+    sc = _scene(10)
+    d = _run_dir(tmp_path, sc)
+    k0 = bk.cache_key({"inputs": bk.run_inputs_hash(d), "target": {"f": 1750}})
+    assert bk.cache_key({"inputs": bk.run_inputs_hash(d), "target": {"f": 1750}}) == k0
+    assert bk.cache_key({"inputs": bk.run_inputs_hash(d), "target": {"f": 1000}}) != k0  # variant target
+    sc2 = _scene(10, seed=2)
+    (d / "scene.json").write_text(json.dumps(sc2.to_dict()))  # moved posts -> new run-input hash
+    assert bk.cache_key({"inputs": bk.run_inputs_hash(d), "target": {"f": 1750}}) != k0
+    # a dependent module's source is part of the key
+    mod = tmp_path / "echo"
+    mod.mkdir()
+    (mod / "tier0.py").write_text("a = 1\n")
+    monkeypatch.setattr(bk, "ROOT", tmp_path)
+    ka = bk.cache_key({"x": 1}, modules=("echo/tier0.py",))
+    (mod / "tier0.py").write_text("a = 2\n")
+    assert bk.cache_key({"x": 1}, modules=("echo/tier0.py",)) != ka
+
+
 def test_snr_gate_and_margins():
-    from stages.build_pack import gate_margins, snr_gate
+    from stages.build_pack import measurement_margins, pitch_shift_pct_for_dT, snr_gate
 
     thr = {"spec_corr": (0.8, ">=")}
     tab = [{"snr_db": s, "judges": {"spec_corr": {"mean": v, "min": v - 0.01, "max": v + 0.01}}}
            for s, v in ((10, 0.5), (20, 0.85), (25, 0.79), (30, 0.9), (40, 0.95))]
     g = snr_gate({"snr_table": tab}, thr, margin_db=6.0)
     assert g == {"snr_pass_db": 30, "margin_db": 6.0, "gate_db": 36.0}  # the 20 dB pass is not a stable onset
-    m = gate_margins({"spec_corr": 0.976, "pitch_err_pct": 2.53}, {"spec_corr": (0.8, ">="), "pitch_err_pct": (3.0, "<=")})
-    assert "INCONCLUSIVE 0.624 to 0.8" in m[0] and "INCONCLUSIVE 3 to 3.47" in m[1]
+    # margins come from measurement uncertainty only (never from the judge floor): half the seed range at the highest
+    # tabulated SNR not above the gate, plus for pitch the c(T) error of a +-0.5 C thermometer
+    # c ~ sqrt(T): 100 (sqrt(293.65 / 293.15) - 1) = 0.0853 % at 20 C
+    assert pitch_shift_pct_for_dT(0.5, 20.0) == pytest.approx(0.0853, abs=2e-4)
+    tab2 = [{"snr_db": 30, "judges": {"spec_corr": {"mean": 0.9, "min": 0.88, "max": 0.92, "n": 3},
+                                      "pitch_err_pct": {"mean": 2.9, "min": 2.8, "max": 3.0, "n": 3}}},
+            {"snr_db": 40, "judges": {"spec_corr": {"mean": 0.95, "min": 0.95, "max": 0.95, "n": 3},
+                                      "pitch_err_pct": {"mean": 2.8, "min": 2.8, "max": 2.8, "n": 3}}}]
+    mm = measurement_margins({"snr_table": tab2}, {"spec_corr": (0.8, ">="), "pitch_err_pct": (3.0, "<=")},
+                             {"gate_db": 36.0})
+    assert mm["spec_corr"]["m"] == pytest.approx(0.02) and mm["spec_corr"]["snr_row_db"] == 30
+    assert mm["pitch_err_pct"]["m"] == pytest.approx(0.1 + 0.0853, abs=2e-4)
+    lines = "; ".join(bp_margin_lines(mm))
+    assert "REPEAT 0.78 to 0.82" in lines and "INCONCLUSIVE" not in lines
+    assert measurement_margins({"snr_table": tab2}, {"spec_corr": (0.8, ">=")}, None) == {}  # no gate: no margin
+
+
+def bp_margin_lines(mm):
+    from stages.build_pack import margin_lines
+
+    return margin_lines(mm)
 
 
 def test_grating_scene_staggered_and_spaced():
@@ -330,3 +372,93 @@ def test_generated_block_no_judges(tmp_path):
     blk = bp.generated_block([({"stage": "s1_bird", "run_id": "rid"}, rd, pd)])
     assert blk.startswith(bp.BEGIN) and blk.endswith(bp.END)
     assert "not judged" in blk and "FAIL" not in blk
+
+
+def _met(stage, passed, verified=True, value=0.5, floor=0.9, sub=None, extra=None):
+    m = {"stage": stage, "passed": passed, "verified": verified,
+         "headline": {"echo_spl_db": 50.0, "echo_level_db_re_direct": -60.5, "depth_m": 10.0, "post_count": 100,
+                      "fill_fraction": 0.003, "tier_gap_db": -1.0},
+         "metrics": [{"id": "spec_corr", "label": "corr", "value": value, "threshold": 0.8, "comparator": ">=",
+                      "pass": value >= 0.8, "tier": "tier1" if verified else "tier0", "gating": verified}],
+         "judge_floor": {"mean": {"spec_corr": floor}}, "robustness": [], "robust_summary": "fails everywhere"}
+    if sub:
+        m.update({"substage": sub, "target_name": sub})
+    m.update(extra or {})
+    return m
+
+
+def test_summary_block_multiple_runs_substages_and_floor(tmp_path):
+    from stages import build_pack as bp
+
+    rows = []
+    for stage, rid, met in (("s4_speech", "20261125-140000-s4_4b_ma", _met("s4_speech", False, sub="4b")),
+                            ("s1_bird", "20261125-120000-s1", _met("s1_bird", False, value=0.73)),
+                            ("s1_bird", "20261125-100000-s1", _met("s1_bird", False, value=0.64)),
+                            ("s1_bird", "20261125-090000-s1", _met("s1_bird", False, verified=False))):
+        d = tmp_path / stage / rid
+        d.mkdir(parents=True)
+        (d / "metrics.json").write_text(json.dumps(met))
+        rows.append(({"stage": stage, "run_id": rid}, d))
+    blk = bp.summary_block(rows)
+    assert blk.startswith(bp.SUMMARY_BEGIN) and blk.endswith(bp.SUMMARY_END)
+    # every final run is listed, newest first, with the judge floor beside the judged value
+    assert blk.index("120000-s1") < blk.index("100000-s1") < blk.index("090000-s1")
+    assert "spec_corr 0.73 (>= 0.8, fail) [floor 0.9]" in blk
+    assert "s4_speech (4b)" in blk and "not run on the full-wave solver" in blk
+    assert "Tonal targets (bird, motif, melody): 2 full-wave runs, 0 passed." in blk
+    assert "latest run 20261125-120000-s1" in blk  # the near miss is the newest stage-1 run
+    # simulation verdicts use the spec thresholds only: no margin bands anywhere
+    assert "INCONCLUSIVE" not in blk and "REPEAT" not in blk
+
+
+def test_run_table_pilot_reference_thresholds(tmp_path):
+    from stages import build_pack as bp
+
+    pilot = {"target_is_stage1_whistle": False, "reference_thresholds": {"spec_corr": [0.8, ">="]},
+             "reference_values": {"spec_corr": {"threshold": 0.8, "comparator": ">=", "value": 0.75, "meets": False}}}
+    met = _met("build_pilot", False, extra={"pilot": pilot})
+    met["metrics"][0].update({"threshold": None, "comparator": None, "pass": None, "gating": False})
+    d = tmp_path / "build_pilot" / "rid"
+    d.mkdir(parents=True)
+    (d / "metrics.json").write_text(json.dumps(met))
+    t = "\n".join(bp.run_table([({"stage": "build_pilot", "run_id": "rid"}, d)]))
+    assert "no pass mark (pilot; reference thresholds only)" in t and "reference only: >= 0.8" in t
+    assert bp._thr(met) == {"spec_corr": (0.8, ">=")}
+
+
+def test_jitter_lines_no_coherent_factor_for_tangential():
+    from stages.build_pack import jitter_lines
+
+    rows = [_row("radial", 2.0, None), _row("tangential", 50.0, None)]
+    L = [x for x in jitter_lines(rows, [], 2600.0) if x.startswith("| radial") or x.startswith("| tangential")]
+    assert L[0].split("|")[5].strip() == "0.982"  # hand value: exp(-(4 pi 0.002 2600 / 343)^2 / 2)
+    assert L[1].split("|")[5].strip() == "-"
+
+
+def test_residual_lines_columns_sum_to_total():
+    from stages.build_pack import residual_lines
+
+    rng = np.random.default_rng(3)
+    ref = rng.normal(size=(2, 2001))
+    per = [bk.residual_split(ref, ref + 0.3 * rng.normal(size=ref.shape), 1900.0, 3500.0) for _ in range(2)]
+    ex = {"f_band_hz": [1900.0, 3500.0], "f_top_hz": 4000.0, "seeds": [0, 1],
+          "residual": [{"sigma_mm": 1.0, "per_seed_per_clap": per}], "nominal_per_clap": bk.residual_split(ref, ref,
+                                                                                                         1900, 3500)}
+    row = next(x for x in residual_lines(ex, "t") if x.startswith("| 1 |"))
+    cells = [float(c.strip().rstrip(" %")) for c in row.split("|")[3:8]]
+    assert sum(cells[:4]) == pytest.approx(cells[4], abs=0.03)  # rounding of four 2-decimal cells
+    assert "above 4 kHz" in "\n".join(residual_lines(ex, "t"))
+
+
+def test_stakeout_ring_order():
+    # three rings on equal-delay ellipses, three posts each: built ring by ring, far ring first
+    pts = []
+    for rho in (3.2, 3.3, 3.4):
+        for a in (-5.0, 0.0, 5.0):
+            pts.append(ellipse_point(rho, math.radians(a)))
+    sc = Scene(posts=np.column_stack([np.array(pts), np.full(9, 0.01)]))
+    rows = bk.stakeout_rows(sc, by_ring=True)
+    assert [r["ring"] for r in rows] == [3, 3, 3, 2, 2, 2, 1, 1, 1]
+    assert rows[0]["ring_rho_m"] == pytest.approx(3.4, abs=1e-3)
+    b = [r["bearing_deg"] for r in rows]
+    assert b[0:3] == sorted(b[0:3]) and b[3:6] == sorted(b[3:6], reverse=True)  # boustrophedon within rings
