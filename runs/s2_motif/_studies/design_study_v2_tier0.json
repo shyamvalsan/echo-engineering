@@ -1,0 +1,588 @@
+{
+ "what": "Tier 0 design study v2 (1 cm posts, 20 deg): optical-depth budget, K, levels",
+ "selection": "lowest mean Tier 0 loss under 2/5 mm radial jitter (full band 898-4000 Hz) among fills whose predicted two-way extinction at C7 at the far end is <= 6 dB; judges information only",
+ "sigma": [
+  {
+   "f_hz": 1047.0,
+   "sigma_mm": 0.5131091653783163,
+   "ka": 0.19179285762731854
+  },
+  {
+   "f_hz": 1319.0,
+   "sigma_mm": 1.0098860584732405,
+   "ka": 0.24161870029649782
+  },
+  {
+   "f_hz": 1568.0,
+   "sigma_mm": 1.662518291705251,
+   "ka": 0.28723132832820963
+  },
+  {
+   "f_hz": 2093.0,
+   "sigma_mm": 3.7044011079622514,
+   "ka": 0.3834025320095299
+  },
+  {
+   "f_hz": 2500.0,
+   "sigma_mm": 5.856018274045606,
+   "ka": 0.4579581127681914
+  }
+ ],
+ "profile_solve_loss": 2.246109962463379,
+ "rows": [
+  {
+   "fill_target": 0.001,
+   "posts_per_period": 1,
+   "n_posts": 1269,
+   "fill_realized": 0.001024621360446049,
+   "dropped": 0,
+   "loss_tier0_full_band": 6.173984527587891,
+   "loss_tier0_capped_band": 3.6428656578063965,
+   "jitter": [
+    {
+     "sigma_m": 0.002,
+     "loss_mean": 6.51259167989095
+    },
+    {
+     "sigma_m": 0.005,
+     "loss_mean": 6.905692100524902
+    }
+   ],
+   "jitter_loss_mean": 6.709141890207926,
+   "echo_level_db_3d": -50.1499348008663,
+   "note_level_db_3d": [
+    -50.1499348008663,
+    -57.745255955585,
+    -62.02459889542401,
+    -73.75171782741522
+   ],
+   "note_spl_db": [
+    60.310065199133696,
+    52.71474404441499,
+    48.43540110457598,
+    36.708282172584774
+   ],
+   "harmonic_to_fundamental_db": [
+    20.957077276992603,
+    15.945855226143406,
+    4.792235640755295,
+    -26.048324333711903
+   ],
+   "extinction_budget": {
+    "two_way_loss_db_at_end_C7": 3.387648472636448,
+    "two_way_loss_db_per_note_local_f": [
+     0.06721499838231067,
+     0.39649632604632845,
+     1.0518541456915298,
+     3.0585253619055237
+    ]
+   },
+   "info_only_note_judge_capped_band": {
+    "notes_in_order": 0.4,
+    "note_cents_max": 727.6690221650797,
+    "n_notes_detected": [
+     5,
+     4,
+     4,
+     5,
+     4
+    ]
+   },
+   "label": "1cm 20deg fill=0.10% K=1",
+   "loss": 6.709141890207926
+  },
+  {
+   "fill_target": 0.001,
+   "posts_per_period": 2,
+   "n_posts": 1269,
+   "fill_realized": 0.0010261832199196244,
+   "dropped": 0,
+   "loss_tier0_full_band": 5.844967842102051,
+   "loss_tier0_capped_band": 3.163424491882324,
+   "jitter": [
+    {
+     "sigma_m": 0.002,
+     "loss_mean": 6.646811803181966
+    },
+    {
+     "sigma_m": 0.005,
+     "loss_mean": 7.152005831400554
+    }
+   ],
+   "jitter_loss_mean": 6.89940881729126,
+   "echo_level_db_3d": -51.427715104126925,
+   "note_level_db_3d": [
+    -51.427715104126925,
+    -68.2304900195796,
+    -72.06164041816905,
+    -76.81199996660179
+   ],
+   "note_spl_db": [
+    59.03228489587307,
+    42.22950998042039,
+    38.398359581830945,
+    33.648000033398205
+   ],
+   "harmonic_to_fundamental_db": [
+    -0.21490339741890782,
+    -3.2490444438790433,
+    -12.994165363628408,
+    -50.69592628190635
+   ],
+   "extinction_budget": {
+    "two_way_loss_db_at_end_C7": 3.387648472636448,
+    "two_way_loss_db_per_note_local_f": [
+     0.06721499838231067,
+     0.39649632604632845,
+     1.0518541456915298,
+     3.0585253619055237
+    ]
+   },
+   "info_only_note_judge_capped_band": {
+    "notes_in_order": 0.2,
+    "note_cents_max": 960.9999024445636,
+    "n_notes_detected": [
+     5,
+     3,
+     4,
+     4,
+     5
+    ]
+   },
+   "label": "1cm 20deg fill=0.10% K=2",
+   "loss": 6.89940881729126
+  },
+  {
+   "fill_target": 0.001,
+   "posts_per_period": 3,
+   "n_posts": 1269,
+   "fill_realized": 0.0010307633796068818,
+   "dropped": 0,
+   "loss_tier0_full_band": 6.275299549102783,
+   "loss_tier0_capped_band": 4.0316643714904785,
+   "jitter": [
+    {
+     "sigma_m": 0.002,
+     "loss_mean": 7.210521380106608
+    },
+    {
+     "sigma_m": 0.005,
+     "loss_mean": 7.582398573557536
+    }
+   ],
+   "jitter_loss_mean": 7.396459976832072,
+   "echo_level_db_3d": -54.56574800809538,
+   "note_level_db_3d": [
+    -54.56574800809538,
+    -68.79149720153283,
+    -72.89852307567863,
+    -76.44369350184746
+   ],
+   "note_spl_db": [
+    55.89425199190461,
+    41.66850279846716,
+    37.56147692432137,
+    34.01630649815253
+   ],
+   "harmonic_to_fundamental_db": [
+    20.94854062443247,
+    2.199414869796705,
+    -13.68020982743316,
+    -25.408028792785778
+   ],
+   "extinction_budget": {
+    "two_way_loss_db_at_end_C7": 3.387648472636448,
+    "two_way_loss_db_per_note_local_f": [
+     0.06721499838231067,
+     0.39649632604632845,
+     1.0518541456915298,
+     3.0585253619055237
+    ]
+   },
+   "info_only_note_judge_capped_band": {
+    "notes_in_order": 0.4,
+    "note_cents_max": 723.8344135271034,
+    "n_notes_detected": [
+     3,
+     4,
+     4,
+     4,
+     5
+    ]
+   },
+   "label": "1cm 20deg fill=0.10% K=3",
+   "loss": 7.396459976832072
+  },
+  {
+   "fill_target": 0.002,
+   "posts_per_period": 1,
+   "n_posts": 2538,
+   "fill_realized": 0.002048725147629197,
+   "dropped": 0,
+   "loss_tier0_full_band": 6.026590347290039,
+   "loss_tier0_capped_band": 3.557072639465332,
+   "jitter": [
+    {
+     "sigma_m": 0.002,
+     "loss_mean": 6.294510364532471
+    },
+    {
+     "sigma_m": 0.005,
+     "loss_mean": 6.653763771057129
+    }
+   ],
+   "jitter_loss_mean": 6.4741370677948,
+   "echo_level_db_3d": -44.67524718773478,
+   "note_level_db_3d": [
+    -44.93603794390654,
+    -49.74981886533038,
+    -54.85925772642099,
+    -67.35235537421562
+   ],
+   "note_spl_db": [
+    65.52396205609345,
+    60.71018113466961,
+    55.600742273579,
+    43.107644625784374
+   ],
+   "harmonic_to_fundamental_db": [
+    24.280658556891474,
+    17.220707579825365,
+    5.378204051000925,
+    -24.9474459300624
+   ],
+   "extinction_budget": {
+    "two_way_loss_db_at_end_C7": 6.775296945272896,
+    "two_way_loss_db_per_note_local_f": [
+     0.13442999676462133,
+     0.7929926520926569,
+     2.1037082913830596,
+     6.117050723811047
+    ]
+   },
+   "info_only_note_judge_capped_band": {
+    "notes_in_order": 1.0,
+    "note_cents_max": 10.632873966619446,
+    "n_notes_detected": [
+     4,
+     4,
+     4,
+     4,
+     4
+    ]
+   },
+   "label": "1cm 20deg fill=0.20% K=1",
+   "loss": 6.4741370677948
+  },
+  {
+   "fill_target": 0.002,
+   "posts_per_period": 2,
+   "n_posts": 2538,
+   "fill_realized": 0.0020429820857293893,
+   "dropped": 0,
+   "loss_tier0_full_band": 5.797613143920898,
+   "loss_tier0_capped_band": 3.0675816535949707,
+   "jitter": [
+    {
+     "sigma_m": 0.002,
+     "loss_mean": 6.436397552490234
+    },
+    {
+     "sigma_m": 0.005,
+     "loss_mean": 6.954720973968506
+    }
+   ],
+   "jitter_loss_mean": 6.69555926322937,
+   "echo_level_db_3d": -49.87409213699017,
+   "note_level_db_3d": [
+    -49.87409213699017,
+    -61.56942942110036,
+    -66.9908774362049,
+    -72.06052052307794
+   ],
+   "note_spl_db": [
+    60.58590786300982,
+    48.890570578899634,
+    43.469122563795096,
+    38.39947947692205
+   ],
+   "harmonic_to_fundamental_db": [
+    4.231777255790798,
+    -1.1924162655104826,
+    -12.423437940426574,
+    -43.236107036236966
+   ],
+   "extinction_budget": {
+    "two_way_loss_db_at_end_C7": 6.775296945272896,
+    "two_way_loss_db_per_note_local_f": [
+     0.13442999676462133,
+     0.7929926520926569,
+     2.1037082913830596,
+     6.117050723811047
+    ]
+   },
+   "info_only_note_judge_capped_band": {
+    "notes_in_order": 0.0,
+    "note_cents_max": 1200.0,
+    "n_notes_detected": [
+     5,
+     5,
+     5,
+     5,
+     5
+    ]
+   },
+   "label": "1cm 20deg fill=0.20% K=2",
+   "loss": 6.69555926322937
+  },
+  {
+   "fill_target": 0.002,
+   "posts_per_period": 3,
+   "n_posts": 2538,
+   "fill_realized": 0.0020324776465739823,
+   "dropped": 0,
+   "loss_tier0_full_band": 5.814794540405273,
+   "loss_tier0_capped_band": 3.280910015106201,
+   "jitter": [
+    {
+     "sigma_m": 0.002,
+     "loss_mean": 6.538667996724446
+    },
+    {
+     "sigma_m": 0.005,
+     "loss_mean": 7.05711571375529
+    }
+   ],
+   "jitter_loss_mean": 6.797891855239868,
+   "echo_level_db_3d": -53.24269009007016,
+   "note_level_db_3d": [
+    -53.24269009007016,
+    -63.46358213519168,
+    -67.23937746228935,
+    -73.78736477285304
+   ],
+   "note_spl_db": [
+    57.21730990992983,
+    46.996417864808315,
+    43.22062253771064,
+    36.672635227146955
+   ],
+   "harmonic_to_fundamental_db": [
+    4.055687139315082,
+    1.8511299004412705,
+    -10.844941924823532,
+    -38.64688183412759
+   ],
+   "extinction_budget": {
+    "two_way_loss_db_at_end_C7": 6.775296945272896,
+    "two_way_loss_db_per_note_local_f": [
+     0.13442999676462133,
+     0.7929926520926569,
+     2.1037082913830596,
+     6.117050723811047
+    ]
+   },
+   "info_only_note_judge_capped_band": {
+    "notes_in_order": 0.2,
+    "note_cents_max": 960.9999024445636,
+    "n_notes_detected": [
+     4,
+     4,
+     4,
+     4,
+     5
+    ]
+   },
+   "label": "1cm 20deg fill=0.20% K=3",
+   "loss": 6.797891855239868
+  },
+  {
+   "fill_target": 0.004,
+   "posts_per_period": 1,
+   "n_posts": 5077,
+   "fill_realized": 0.004072337475392275,
+   "dropped": 0,
+   "loss_tier0_full_band": 5.9251861572265625,
+   "loss_tier0_capped_band": 3.5565786361694336,
+   "jitter": [
+    {
+     "sigma_m": 0.002,
+     "loss_mean": 6.164392789204915
+    },
+    {
+     "sigma_m": 0.005,
+     "loss_mean": 6.470133304595947
+    }
+   ],
+   "jitter_loss_mean": 6.317263046900431,
+   "echo_level_db_3d": -37.78384797794827,
+   "note_level_db_3d": [
+    -37.99149874150086,
+    -42.85701296775054,
+    -48.52396804594797,
+    -61.410075100801166
+   ],
+   "note_spl_db": [
+    72.46850125849913,
+    67.60298703224944,
+    61.93603195405203,
+    49.04992489919883
+   ],
+   "harmonic_to_fundamental_db": [
+    24.88396005612885,
+    17.422435445774184,
+    5.785744875560603,
+    -23.48718175042046
+   ],
+   "extinction_budget": {
+    "two_way_loss_db_at_end_C7": 13.550593890545793,
+    "two_way_loss_db_per_note_local_f": [
+     0.26885999352924267,
+     1.5859853041853138,
+     4.207416582766119,
+     12.234101447622095
+    ]
+   },
+   "info_only_note_judge_capped_band": {
+    "notes_in_order": 0.8,
+    "note_cents_max": 244.83421841623084,
+    "n_notes_detected": [
+     4,
+     4,
+     4,
+     4,
+     5
+    ]
+   },
+   "label": "1cm 20deg fill=0.40% K=1",
+   "loss": 6.317263046900431
+  },
+  {
+   "fill_target": 0.004,
+   "posts_per_period": 2,
+   "n_posts": 5077,
+   "fill_realized": 0.004072751883118409,
+   "dropped": 0,
+   "loss_tier0_full_band": 5.612287998199463,
+   "loss_tier0_capped_band": 2.8616156578063965,
+   "jitter": [
+    {
+     "sigma_m": 0.002,
+     "loss_mean": 6.1326494216918945
+    },
+    {
+     "sigma_m": 0.005,
+     "loss_mean": 6.620621522267659
+    }
+   ],
+   "jitter_loss_mean": 6.376635471979776,
+   "echo_level_db_3d": -45.66747850390476,
+   "note_level_db_3d": [
+    -45.66747850390476,
+    -54.188909521717505,
+    -61.02548564248033,
+    -65.2693655322101
+   ],
+   "note_spl_db": [
+    64.79252149609523,
+    56.27109047828249,
+    49.43451435751967,
+    45.19063446778989
+   ],
+   "harmonic_to_fundamental_db": [
+    7.096587645630428,
+    -0.05235793146333331,
+    -11.879649589566824,
+    -42.252483987476914
+   ],
+   "extinction_budget": {
+    "two_way_loss_db_at_end_C7": 13.550593890545793,
+    "two_way_loss_db_per_note_local_f": [
+     0.26885999352924267,
+     1.5859853041853138,
+     4.207416582766119,
+     12.234101447622095
+    ]
+   },
+   "info_only_note_judge_capped_band": {
+    "notes_in_order": 0.6,
+    "note_cents_max": 488.66892460964334,
+    "n_notes_detected": [
+     4,
+     4,
+     5,
+     4,
+     4
+    ]
+   },
+   "label": "1cm 20deg fill=0.40% K=2",
+   "loss": 6.376635471979776
+  },
+  {
+   "fill_target": 0.004,
+   "posts_per_period": 3,
+   "n_posts": 5077,
+   "fill_realized": 0.004085559620187462,
+   "dropped": 0,
+   "loss_tier0_full_band": 5.595955848693848,
+   "loss_tier0_capped_band": 3.0502548217773438,
+   "jitter": [
+    {
+     "sigma_m": 0.002,
+     "loss_mean": 6.222419897715251
+    },
+    {
+     "sigma_m": 0.005,
+     "loss_mean": 6.769822438557942
+    }
+   ],
+   "jitter_loss_mean": 6.496121168136597,
+   "echo_level_db_3d": -51.23124662857998,
+   "note_level_db_3d": [
+    -51.23124662857998,
+    -57.402875763303044,
+    -61.08613512407669,
+    -66.61364780108376
+   ],
+   "note_spl_db": [
+    59.22875337142001,
+    53.05712423669695,
+    49.3738648759233,
+    43.846352198916236
+   ],
+   "harmonic_to_fundamental_db": [
+    10.87225833343345,
+    3.848376053270282,
+    -8.146800532643546,
+    -38.82652830304915
+   ],
+   "extinction_budget": {
+    "two_way_loss_db_at_end_C7": 13.550593890545793,
+    "two_way_loss_db_per_note_local_f": [
+     0.26885999352924267,
+     1.5859853041853138,
+     4.207416582766119,
+     12.234101447622095
+    ]
+   },
+   "info_only_note_judge_capped_band": {
+    "notes_in_order": 0.8,
+    "note_cents_max": 253.50343569218344,
+    "n_notes_detected": [
+     4,
+     4,
+     4,
+     4,
+     4
+    ]
+   },
+   "label": "1cm 20deg fill=0.40% K=3",
+   "loss": 6.496121168136597
+  }
+ ],
+ "pick": {
+  "fill": 0.001,
+  "posts_per_period": 1
+ },
+ "wall_s": 658.5640885829926
+}
