@@ -33,63 +33,159 @@ def _f(v, fmt="{:.1f}", none="-"):
 def _j(j, ids):
     """Judge values for the metric ids that have thresholds, e.g. 'pitch_err_pct 2.56, spec_corr 0.959'."""
     if not j:
-        return "-"
-    return ", ".join(f"{k} {j[k]:.3g}" for k in ids if k in j) or "-"
+        return "not judged"
+    return ", ".join(f"{k} {j[k]:.3g}" for k in ids if k in j) or "not judged"
 
 
-def _passes(j, thr):
-    """True if every thresholded judge in j passes; None if no judge values."""
-    if not j:
-        return None
-    ok = True
+def _jstats(js, ids):
+    """Multi-seed judge stats {id: {mean,min,max}} -> 'spec_corr 0.77 (0.76-0.78)'."""
+    if not js:
+        return "not judged"
+    return ", ".join(f"{k} {js[k]['mean']:.3g} ({js[k]['min']:.3g}-{js[k]['max']:.3g})" for k in ids
+                     if js.get(k)) or "not judged"
+
+
+def _means(js):
+    return {k: v["mean"] for k, v in js.items() if v} if js else None
+
+
+def _verdict(j, thr):
+    """('pass' | 'fail' | 'not judged', [failing ids]) for a {id: value} dict against {id: (threshold, cmp)}."""
+    if not j or not any(k in j for k in thr):
+        return "not judged", []
+    bad = []
     for k, (t, cmp) in thr.items():
         if k not in j:
             continue
         v = j[k]
-        ok &= (v <= t) if cmp == "<=" else (v >= t) if cmp == ">=" else (v == t)
-    return bool(ok)
+        ok = (v <= t) if cmp == "<=" else (v >= t) if cmp == ">=" else (v == t)
+        if not ok:
+            bad.append(k)
+    return ("fail" if bad else "pass"), bad
 
 
-def readout(ph, met, thr) -> list[str]:
-    """Plain-language bullets evaluated from the tables (so the prose never carries a hand-typed sim number)."""
+def _passes(j, thr):
+    """True / False, or None when not judged (never read None as a fail)."""
+    v, _ = _verdict(j, thr)
+    return None if v == "not judged" else v == "pass"
+
+
+def _floor_txt(ph, thr):
+    f = ph.get("judges_floor")
+    if not f:
+        return "judge floor not available"
+    return "judge floor (the same judges on a physically perfect echo): " + ", ".join(
+        f"{k} {f[k]:.3g} (single claps {f.get(k + '__clap_min', f[k]):.3g}-{f.get(k + '__clap_max', f[k]):.3g}; "
+        f"threshold {thr[k][1]} {thr[k][0]:g})" for k in thr if k in f)
+
+
+def radial_budget(rows, thr):
+    """(largest sigma with every sigma up to it passing, first failing row, list of not-judged sigmas).
+
+    Pass/fail uses the seed-mean judge values. A pass above a failure does not extend the budget."""
+    rad = sorted((r for r in rows if r["kind"] == "radial"), key=lambda r: r["sigma_mm"])
+    budget, first_fail, unjudged = None, None, []
+    for r in rad:
+        v, _ = _verdict(_means(r.get("judges")), thr)
+        if v == "not judged":
+            unjudged.append(r["sigma_mm"])
+            if first_fail is None:
+                break
+            continue
+        if v == "fail":
+            first_fail = first_fail or r
+            break
+        budget = r["sigma_mm"]
+    return budget, first_fail, unjudged
+
+
+def readout(ph, met, thr, labels=None) -> list[str]:
+    """Plain-language bullets evaluated from the tables (so the prose never carries a hand-typed sim number).
+
+    "not judged" is printed (with the reason) wherever judge values are missing; it is never read as a fail."""
+    labels = labels or {}
     hl = met.get("headline", {})
     out = []
+    why = ph.get("judge_status", "ok")
+    nj = f"not judged ({why})" if why != "ok" else "not judged (judge error on this echo)"
+
+    def vtxt(j):
+        v, bad = _verdict(j, thr)
+        if v == "not judged":
+            return nj
+        return "pass" if v == "pass" else "FAIL on " + ", ".join(f"{labels.get(k, k)} [{k}]" for k in bad)
+
     spl = hl.get("echo_spl_db")
     if spl is not None:
         out.append(f"Loudness: echo peak {spl:.1f} dB SPL for a 100 dB clap; margin over the spec's 35 dB line "
                    f"{spl - 35:+.1f} dB; over a 30 / 40 / 50 dB(A) background {spl - 30:+.0f} / {spl - 40:+.0f} / "
                    f"{spl - 50:+.0f} dB (peak against background level: an optimistic comparison).")
-    base = _passes(ph.get("judges_inf"), thr)
-    out.append(f"Design as drawn on Tier 0 3D, free space: judges {'pass' if base else 'FAIL'}.")
-    rad = [j for j in ph["jitter"] if j["kind"] == "radial"]
-    okr = [j["sigma_mm"] for j in rad if _passes(j.get("judges"), thr)]
-    out.append("Radial placement: " + (f"judges still pass at sigma = {max(okr):g} mm" if okr else
-               f"judges FAIL already at the smallest sigma tried ({min(j['sigma_mm'] for j in rad):g} mm)")
-               + "; failing sigmas: " + (", ".join(f"{j['sigma_mm']:g} mm" for j in rad
-                                                  if _passes(j.get("judges"), thr) is False) or "none") + ".")
-    tg = [j for j in ph["jitter"] if j["kind"] == "tangential"]
-    for j in tg:
-        out.append(f"Tangential placement (along the equal-delay curve), sigma {j['sigma_mm']:g} mm: judges "
-                   f"{'pass' if _passes(j.get('judges'), thr) else 'FAIL'}.")
-    okh = [h["post_height_m"] for h in ph["height_free"] if h["post_height_m"] is not None
+    out.append(f"Design as drawn on Tier 0 3D, free space: {vtxt(ph.get('judges_inf'))}. " + _floor_txt(ph, thr) + ".")
+    rows = ph.get("jitter", [])
+    budget, ff, unj = radial_budget(rows, thr)
+    seeds = rows[0]["seeds"] if rows else []
+    if ff is None and budget is None:
+        out.append(f"Radial placement: {nj}.")
+    else:
+        t = "Radial placement (seed-mean of " + str(len(seeds)) + " seeds): "
+        t += (f"the spec's judges pass for every sigma up to {budget:g} mm" if budget is not None else
+              "the spec's judges fail already at the smallest sigma tried")
+        if ff is not None:
+            _, bad = _verdict(_means(ff["judges"]), thr)
+            wc = ff["waveform_corr"]
+            t += (f"; first failure at {ff['sigma_mm']:g} mm on " + ", ".join(
+                f"{labels.get(k, k)} [{k}] {ff['judges'][k]['mean']:.3g} ({ff['judges'][k]['min']:.3g}-"
+                f"{ff['judges'][k]['max']:.3g})" for k in bad)
+                + f", while the echo waveform is still {wc['mean']:.3f} correlated with the nominal echo and its level "
+                f"changes {ff['level_delta_db']['mean']:+.2f} dB")
+            nom = next((r for r in rows if r["kind"] == "nominal"), None)
+            if ff.get("corr_in_band") and nom and nom.get("energy_out_of_band"):
+                t += (f"; inside the target band the correlation is {ff['corr_in_band']['mean']:.4f}, and the share of "
+                      f"echo energy outside the target band goes from {100 * nom['energy_out_of_band']['mean']:.1f} % "
+                      f"to {100 * ff['energy_out_of_band']['mean']:.1f} %")
+        else:
+            t += "; no failure among the sigmas tried"
+        if unj:
+            t += f"; not judged at {', '.join(f'{x:g}' for x in unj)} mm ({why})"
+        out.append(t + ". Whether that judge failure is audible is a listening question (pack `listening/`).")
+    for j in [r for r in rows if r["kind"] == "tangential"]:
+        out.append(f"Tangential placement (along the equal-delay curve), sigma {j['sigma_mm']:g} mm: "
+                   f"{vtxt(_means(j.get('judges')))}; waveform correlation {j['waveform_corr']['mean']:.3f}.")
+    hf = ph.get("height_free", [])
+    okh = [h["post_height_m"] for h in hf if h["post_height_m"] is not None
            and _passes(h.get("judges"), thr) and h["delta_db"] > -1.0]
-    out.append("Post height, free space, ear 1.5 m: " + (f"shortest height within 1 dB of infinite posts with judges "
-               f"passing: {min(okh):g} m." if okh else "no finite height tried keeps the judges passing within 1 dB."))
-    for ze in sorted({g["ear_height_m"] for g in ph["height_rigid_ground"]}, reverse=True):
-        rows = [g for g in ph["height_rigid_ground"] if g["ear_height_m"] == ze]
-        ok = [g for g in rows if _passes(g.get("judges"), thr)]
-        out.append(f"Rigid ground, clap and ear at {ze:g} m: judges pass for {len(ok)} of {len(rows)} post heights"
-                   + (f" (shortest {min((g['post_height_m'] or 1e9) for g in ok):g} m)" if ok else "")
-                   + f"; level change {min(g['delta_db'] for g in rows):+.1f} to {max(g['delta_db'] for g in rows):+.1f} dB, "
-                   f"worst 10 ms window {min(g['worst_10ms_delta_db'] for g in rows):+.1f} dB.")
-    oks = [x["half_angle_deg"] for x in ph["slices"] if _passes(x.get("judges"), thr) and x["half_angle_deg"]
-           < max(y["half_angle_deg"] for y in ph["slices"])]
-    out.append("Partial wedge: " + (f"judges still pass down to +-{min(oks):g} deg." if oks else
-                                    "every narrower slice tried FAILS the judges (the arcs are not separable)."))
+    if all(_passes(h.get("judges"), thr) is None for h in hf):
+        out.append(f"Post height, free space, ear 1.5 m: {nj}.")
+    else:
+        out.append("Post height, free space, ear 1.5 m: " + (
+            f"shortest height within 1 dB of infinite posts with judges passing: {min(okh):g} m." if okh else
+            "no finite height tried both passes the judges and stays within 1 dB of infinite posts."))
+    for ze in sorted({g["ear_height_m"] for g in ph.get("height_rigid_ground", [])}, reverse=True):
+        rs = [g for g in ph["height_rigid_ground"] if g["ear_height_m"] == ze]
+        lv = (f"level change {min(g['delta_db'] for g in rs):+.1f} to {max(g['delta_db'] for g in rs):+.1f} dB, "
+              f"worst 10 ms window {min(g['worst_10ms_delta_db'] for g in rs):+.1f} dB")
+        judged = [g for g in rs if _passes(g.get("judges"), thr) is not None]
+        if not judged:
+            out.append(f"Rigid ground, clap and ear at {ze:g} m: {nj}; {lv}.")
+            continue
+        ok = [g for g in judged if _passes(g.get("judges"), thr)]
+        out.append(f"Rigid ground, clap and ear at {ze:g} m: judges pass for {len(ok)} of {len(judged)} judged post "
+                   f"heights" + (f" (shortest {min((g['post_height_m'] or 1e9) for g in ok):g} m)" if ok else "")
+                   + f"; {lv}.")
+    sl = [x for x in ph.get("slices", []) if x["half_angle_deg"] < max(y["half_angle_deg"] for y in ph["slices"])]
+    vs = [(x["half_angle_deg"], _passes(x.get("judges"), thr)) for x in sl]
+    if sl and all(v is None for _, v in vs):
+        out.append(f"Partial wedge: {nj}.")
+    elif sl:
+        ok = [a for a, v in vs if v]
+        bad = [a for a, v in vs if v is False]
+        out.append("Partial wedge: " + (f"judges pass at +-{', +-'.join(f'{a:g}' for a in ok)} deg" if ok else
+                                        "no narrower slice tried passes the judges")
+                   + (f"; fail at +-{', +-'.join(f'{a:g}' for a in bad)} deg" if bad else "") + ".")
     tj = ph.get("temperature_judged", [])
-    bad = [t["T_c"] for t in tj if _passes(t.get("judges"), thr) is False]
-    out.append("Temperature: judges " + ("pass at every temperature tried." if not bad else
-               f"FAIL at {', '.join(f'{t:g} C' for t in bad)} (design tuned for c = 343 m/s, 20 C)."))
+    if tj:
+        parts = [f"{t['T_c']:g} C: {vtxt(t.get('judges'))}" for t in tj]
+        out.append("Temperature (design tuned for c = 343 m/s): " + "; ".join(parts) + ".")
     return out
 
 
@@ -111,8 +207,8 @@ def robustness_text(met):
     return "; ".join(parts)
 
 
-def generated_block(packs) -> str:
-    """packs: list of (index_row, run_dir, pack_dir). Markdown between the markers."""
+def generated_block(packs, lowpitch=None) -> str:
+    """packs: list of (index_row, run_dir, pack_dir); lowpitch: lowpitch_tolerance() result or None."""
     L = [BEGIN, "", "#### Runs found in `runs/index.json` (status final or tier0_only)", "",
          "| stage | run | verified | posts | depth (m) | fill | echo dB re direct | echo dB SPL peak | gating metrics "
          "| robustness (delta per case) | source |", "|---|---|---|---|---|---|---|---|---|---|---|"]
@@ -145,9 +241,30 @@ def generated_block(packs) -> str:
               f"clap at the listener (add 110.5 for dB SPL with a 100 dB clap at 1 m). Infinite free-space posts: "
               f"{ph['level_inf_db']:.1f} dB. Target band {ph['target_band_hz'][0]:.0f}-{ph['target_band_hz'][1]:.0f} Hz, "
               f"echo from {ph['timing']['t_first_echo_ms']:.1f} to {ph['timing']['t_last_echo_ms']:.1f} ms.", "",
-              f"Stage judges on the Tier 0 3D echo of the design as drawn: {_j(ph.get('judges_inf'), ids)}.", "",
+              f"Stage judges on the Tier 0 3D echo of the design as drawn: {_j(ph.get('judges_inf'), ids)}. "
+              f"{_floor_txt(ph, thr)}. Every judged row below should be read against this floor, not against a "
+              f"perfect score." + ("" if ph.get("judge_status", "ok") == "ok" else
+                                   f" Judges unavailable: {ph.get('judge_status')}."), "",
               "**Readout** (evaluated by code from the tables below against the stage thresholds in metrics.json):", ""]
-        L += [f"- {b}" for b in readout(ph, met, thr)]
+        labels = {m["id"]: m.get("label", m["id"]) for m in met.get("metrics", [])}
+        L += [f"- {b}" for b in readout(ph, met, thr, labels)]
+        gm = ph.get("geometry")
+        if gm:
+            L += ["", "Design geometry for the build: bistatic range "
+                  f"{gm['rho_min_m']:.2f}-{gm['rho_max_m']:.2f} m; longest round trip {gm['round_trip_max_m']:.1f} m; "
+                  f"far edge {gm['far_edge_from_S_m']:.2f} m from the clap point. 1:10 model: far edge "
+                  f"{gm['model_far_edge_m']:.2f} m from the emitter, keep hard surfaces beyond "
+                  f"{gm['model_clearance_m']:.2f} m; time gate {gm['gate_model_ms'][0]:.2f}-{gm['gate_model_ms'][1]:.2f} ms "
+                  f"model time ({gm['gate_full_ms'][0]:.1f}-{gm['gate_full_ms'][1]:.1f} ms full scale: first echo - 3 ms "
+                  f"to last echo + 10 ms). Site: no hard reflector within {gm['site_clearance_m']:.0f} m of the clap "
+                  f"point. Board: see the template extent in the build pack line below."]
+        if ph.get("rig_levels"):
+            L += ["", "Field-test (phase 3a) echo levels, Tier 0 3D, free space, ear 1.5 m:", "",
+                  "| case | post height | dB re direct | dB SPL peak (100 dB clap) |", "|---|---|---|---|"]
+            for r in ph["rig_levels"]:
+                h = r["post_height_m"]
+                L.append(f"| {r['case']} | {'infinite' if h is None else f'{h:g} m'} | {r['level_db']:.1f} | "
+                         f"{110.46 + r['level_db']:.1f} |")
         L += ["",
               "Echo level against post height, free space (no ground), clap and ear at 1.5 m:", "",
               "| post height (m) | level (dB) | change (dB) | judges |", "|---|---|---|---|"]
@@ -170,12 +287,7 @@ def generated_block(packs) -> str:
         for s in ph["slices"]:
             L.append(f"| {s['half_angle_deg']:g} | {s['posts']} | {_f(s['level_db'])} | {_f(s['delta_db'], '{:+.1f}')} | "
                      f"{_j(s.get('judges'), ids)} |")
-        L += ["", "Random placement error (Gaussian, every post, seed 0), free-space infinite posts:", "",
-              "| direction | sigma (mm) | level change (dB) | waveform correlation with the nominal echo | judges |",
-              "|---|---|---|---|---|"]
-        for j in ph["jitter"]:
-            L.append(f"| {j['kind']} | {j['sigma_mm']:g} | {j['level_delta_db']:+.2f} | {j['waveform_corr']:.3f} | "
-                     f"{_j(j.get('judges'), ids)} |")
+        L += jitter_lines(ph["jitter"], ids, ph.get("jitter_f_center_hz"))
         L += ["", "The built structure heard at other air temperatures (Tier 0 3D with c(T) = 331.3 sqrt(1 + T/273.15)):",
               "", "| T (C) | c (m/s) | level (dB) | judges |", "|---|---|---|---|"]
         for t in ph.get("temperature_judged", []):
@@ -211,10 +323,44 @@ def generated_block(packs) -> str:
               f"bom.md). BOM at {b['post_height_m']} m posts: " + "; ".join(
                   f"{f['count']} posts of {f['diameter_mm']} mm, {f['total_length_m']:.0f} m of stock"
                   for f in b["full_scale"]) + "; model: " + "; ".join(
-                  f"{m['count']} pins of {m['diameter_mm']:g} mm x {m['pin_length_mm']:.0f} mm "
-                  f"({m['total_length_m']:.0f} m of rod)" for m in b["model"]) + "."]
+                  f"{m['count']} pins of {m['diameter_mm']:g} mm, " + " or ".join(
+                      f"{o['pin_length_mm']:.0f} mm long ({k}, {o['total_length_m']:.0f} m of rod)"
+                      for k, o in m["options"].items()) for m in b["model"]) + f". 1:10 hole field extent "
+              f"{(tm['extent_mm'][1] - min(0, tm['extent_mm'][0])) / 1000:.2f} m x "
+              f"{(tm['extent_mm'][3] - tm['extent_mm'][2]) / 1000:.2f} m (from the emitter mark)."]
+    if lowpitch and packs:
+        row, rd, pd = packs[0]
+        met = json.loads((rd / "metrics.json").read_text())
+        ph = json.loads((pd / "pack.json").read_text()).get("physics")
+        thr = {m["id"]: (m["threshold"], m["comparator"]) for m in met.get("metrics", [])
+               if m.get("threshold") is not None}
+        if ph and row["stage"] == "s1_bird":
+            labels = {m["id"]: m.get("label", m["id"]) for m in met.get("metrics", [])}
+            L += lowpitch_lines(lowpitch, ph, thr, list(dict.fromkeys(thr)), labels)
     L += ["", END]
     return "\n".join(L)
+
+
+def jitter_lines(rows, ids, f_center):
+    seeds = rows[0]["seeds"] if rows else []
+    L = ["", f"Random placement error (Gaussian, every post, {len(seeds)} seeds per sigma: mean and range), free-space "
+         "infinite posts. Judge view: the spec's judges. Physical view: waveform correlation with the nominal echo, "
+         "measured, and the coherence estimate A / sqrt(A^2 + 0.5 (1 - A^2)), A = exp(-sigma_phi^2 / 2), "
+         f"sigma_phi = 4 pi sigma f / c at f = {f_center or float('nan'):.0f} Hz:", "",
+         "| direction | sigma (mm) | level change (dB) | waveform corr, measured | waveform corr, coherence estimate | "
+         "corr inside the target band | echo energy outside the target band | judges (mean, range) |",
+         "|---|---|---|---|---|---|---|---|"]
+    for j in rows:
+        wc = j["waveform_corr"]
+        ce = j.get("corr_coherence_estimate")
+        ib, ob = j.get("corr_in_band"), j.get("energy_out_of_band")
+        ibt = "-" if not ib else f"{ib['mean']:.4f}"
+        obt = "-" if not ob else f"{100 * ob['mean']:.1f} %"
+        L.append(f"| {j['kind']} | {j['sigma_mm']:g} | {j['level_delta_db']['mean']:+.2f} | {wc['mean']:.3f} "
+                 f"({wc['min']:.3f}-{wc['max']:.3f}) | {'-' if ce is None else f'{ce:.3f}'} | "
+                 f"{ibt} | {obt} | "
+                 + ("as drawn (above)" if j["kind"] == "nominal" else _jstats(j.get("judges"), ids)) + " |")
+    return L
 
 
 def refresh_doc(doc: Path, block: str):
@@ -223,6 +369,81 @@ def refresh_doc(doc: Path, block: str):
     if i < 0 or j < 0 or j < i:
         raise SystemExit(f"{doc}: generated-block markers not found")
     doc.write_text(text[:i] + block + text[j + len(END):])
+
+
+LOWPITCH = {"f_start": 1750.0, "f_end": 1000.0, "duration_s": 0.08}
+VARIANTS = ROOT / "build" / "variants"
+
+
+def lowpitch_target():
+    from echo.targets import bird_note
+
+    return bird_note(**LOWPITCH)
+
+
+def make_lowpitch_variant(out_root=VARIANTS, threads=1):
+    """Stage-1 pipeline (Tier 0 only) on the bird glide shifted down an octave-ish (1.75 -> 1.0 kHz, 80 ms).
+
+    Written under build/variants/, never runs/. Returns the run folder. Same config as stage 1 otherwise.
+    """
+    from dataclasses import replace
+
+    from stages.common import run_stage
+    from stages.s1_bird import CONFIG
+
+    cfg = replace(CONFIG, title="Bird note shifted down, 1.75 to 1.0 kHz whistle, 80 ms (build variant)",
+                  tag="s1low", make_target=lowpitch_target, threads=threads,
+                  notes="Build-tolerance variant for BUILD.md (stages/build_pack.py --lowpitch); not a spec stage.")
+    run_dir, _, _ = run_stage(cfg, command="uv run python -m stages.build_pack --lowpitch", verbose=False,
+                              runs_root=out_root)
+    return Path(run_dir)
+
+
+def latest_variant(root=VARIANTS):
+    ds = sorted((root / "s1_bird").glob("*/manifest.json")) if (root / "s1_bird").exists() else []
+    return ds[-1].parent if ds else None
+
+
+def lowpitch_tolerance(variant_dir, seeds=(0, 1, 2), sigmas=(1.0, 2.0, 3.0, 5.0, 10.0, 20.0)) -> dict:
+    """Multi-seed placement tolerance of the low-pitch variant (same method as physics_tables), cached as JSON."""
+    import math
+
+    from echo.buildkit import Judge, _design_inputs, _echo3d, _level_db, jitter_table, load_run
+
+    out_json = Path(variant_dir) / "tolerance.json"
+    if out_json.exists():
+        return json.loads(out_json.read_text())
+    run = load_run(variant_dir)
+    claps, band, n_out = _design_inputs(run)
+    sc = run["scene"]
+    judge = Judge(run, band, target=lowpitch_target())
+    ref = _echo3d(sc.posts, sc, claps, band, n_out)
+    fc = math.sqrt(LOWPITCH["f_start"] * LOWPITCH["f_end"])
+    res = {"run_dir": _rel(variant_dir), "target": LOWPITCH, "posts": int(len(sc.posts)), "depth_m": sc.depth_m,
+           "level_inf_db": _level_db(ref), "judges_inf": judge(ref), "judge_status": judge.status,
+           "judges_floor": judge(judge.ideal_echo(claps, n_out)) if judge.status == "ok" else None,
+           "range_period_m": sc.c / (2 * LOWPITCH["f_start"]), "jitter_f_center_hz": fc,
+           "jitter": jitter_table(sc.posts, sc, claps, band, n_out, judge, ref, fc, sigmas, (50.0,), seeds,
+                                  tband=(LOWPITCH["f_end"], LOWPITCH["f_start"]))}
+    out_json.write_text(json.dumps(res, indent=1))
+    return res
+
+
+def lowpitch_lines(res, main_ph, thr, ids, labels):
+    L = ["", f"#### Lower-pitch variant: placement tolerance (Tier 0, unverified, build variant, not a spec stage)", "",
+         f"The stage-1 pipeline run on the same glide shifted down to {res['target']['f_start']:.0f} -> "
+         f"{res['target']['f_end']:.0f} Hz ({1000 * res['target']['duration_s']:.0f} ms): `{res['run_dir']}/` "
+         f"({res['posts']} posts, depth {res['depth_m']:.2f} m, echo {res['level_inf_db']:.1f} dB re direct on Tier 0 "
+         f"3D). Judges with the stage-1 thresholds against the shifted target. Range period c/(2 f_top): "
+         f"{100 * res['range_period_m']:.1f} cm here against {100 * main_ph['range_period_m']['period_m']:.1f} cm for "
+         f"the stage-1 design.", ""]
+    ph = {"jitter": res["jitter"], "judges_inf": res["judges_inf"], "judges_floor": res["judges_floor"],
+          "judge_status": res["judge_status"]}
+    met = {"headline": {}}
+    rb = [b for b in readout(ph, met, thr, labels) if b.startswith(("Design as drawn", "Radial", "Tangential"))]
+    L += [f"- {b}" for b in rb]
+    L += jitter_lines(res["jitter"], ids, res["jitter_f_center_hz"])
+    return L
 
 
 def main(argv=None):
@@ -236,11 +457,30 @@ def main(argv=None):
     ap.add_argument("--embed", type=float, default=0.6)
     ap.add_argument("--panel", default="600x400", help="panel stock size in mm, WxH")
     ap.add_argument("--paper", default="A3", choices=["A3", "A2", "A1", "A0"])
+    ap.add_argument("--lowpitch", action="store_true",
+                    help="(re)build the low-pitch tolerance variant under build/variants/ (Tier 0, ~1-2 min)")
+    ap.add_argument("--threads", type=int, default=1, help="torch threads (default 1)")
+    ap.add_argument("--doc-only", action="store_true",
+                    help="rewrite BUILD.md's block from the existing build packs without recomputing them")
     ap.add_argument("--no-physics", action="store_true", help="skip the Tier 0 physics tables (faster)")
     a = ap.parse_args(argv)
+    import torch
+
+    torch.set_num_threads(a.threads)
     pw, ph = (float(v) for v in a.panel.lower().split("x"))
     kw = dict(out_root=a.out, post_height=a.post_height, embed=a.embed, panel=(pw, ph), paper=a.paper,
               physics=not a.no_physics)
+    if a.lowpitch:
+        print(f"wrote {make_lowpitch_variant(threads=a.threads)}")
+    if a.doc_only:
+        from echo.buildkit import load_run, pack_name
+
+        packs = [(row, rd, Path(a.out) / pack_name(load_run(rd))) for row, rd in index_runs()]
+        vd = latest_variant()
+        low = lowpitch_tolerance(vd) if vd is not None and (vd / "tolerance.json").exists() else None
+        refresh_doc(Path(a.doc), generated_block([p for p in packs if (p[2] / "pack.json").exists()], low))
+        print(f"refreshed {a.doc} (from existing packs)")
+        return 0
     if a.all or a.refresh_doc:
         packs = []
         for row, rd in index_runs():
@@ -248,11 +488,13 @@ def main(argv=None):
             print(f"wrote {pd}")
             packs.append((row, rd, pd))
         if a.refresh_doc:
-            refresh_doc(Path(a.doc), generated_block(packs))
+            vd = latest_variant()
+            low = lowpitch_tolerance(vd) if vd is not None else None
+            refresh_doc(Path(a.doc), generated_block(packs, low))
             print(f"refreshed {a.doc}")
     for rd in a.run_dirs:
         print(f"wrote {build_pack(rd, **kw)}")
-    if not (a.run_dirs or a.all or a.refresh_doc):
+    if not (a.run_dirs or a.all or a.refresh_doc or a.lowpitch):
         ap.print_help()
         return 2
     return 0

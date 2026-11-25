@@ -458,7 +458,8 @@ def write_template(run: dict, out_dir, panel_w=600.0, panel_h=400.0, scale=SCALE
 
 # Nearest common stock to each catalog diameter (full scale). Sizes are standard European sections; check locally.
 FULL_STOCK = {
-    20: [("B500 rebar, nominal dia 20 mm (driven direct, cap the top)", 20.0, 0.0, 210e9, 12.0),
+    20: [("S235 smooth round bar, dia 20 mm (driven direct, cap the top)", 20.0, 0.0, 210e9, 6.0),
+         ("B500 rebar, nominal 20 mm (ribs make it ~22-23 mm: prefer smooth bar)", 22.5, 0.0, 210e9, 12.0),
          ("steel tube DN15, 21.3 x 2.0 mm, galvanized", 21.3, 2.0, 210e9, 6.0),
          ("PVC-U conduit 20 mm (too flexible unless guyed - see deflection)", 20.0, 1.5, 3e9, 3.0)],
     40: [("steel tube DN32, 42.4 x 2.6 mm, galvanized", 42.4, 2.6, 210e9, 6.0),
@@ -490,16 +491,20 @@ def wind_deflection_mm(od_mm, wall_mm, E, height_m, v=10.0, cd=1.2, rho_air=1.2)
 
 
 def bom(scene: Scene, post_height=2.0, embed=0.6, spare=0.05, scale=SCALE, model_embed_mm=15.0,
-        model_stock_mm=1000.0) -> dict:
+        model_stock_mm=1000.0, model_stack_mm=56.0) -> dict:
     """Count and total length per stock diameter, full scale and 1:scale model.
 
-    Full scale: post length = post_height (above ground) + embed (driven or sleeved). Model: pin length =
-    post_height/scale + model_embed_mm (into the baseboard). `spare` adds a fraction for breakage (rounded up).
+    Full scale: post length = post_height (above ground) + embed (driven or sleeved). Model, two baseboards:
+      option A (laser): the top face of the upper guide plate is the ground; the pin passes both plates and rests on
+        the base, so pin = post_height/scale + model_stack_mm (default 3 + 50 + 3 mm: plate, gap, plate);
+      option B (CNC-drilled board): pin = post_height/scale + model_embed_mm (hole depth).
+    `spare` adds a fraction for breakage (rounded up).
     """
     r = np.round(np.asarray(scene.posts, float)[:, 2] * 2000).astype(int)  # catalog diameter in mm
     full, model = [], []
     L = post_height + embed
     lm = post_height * 1000 / scale + model_embed_mm
+    la = post_height * 1000 / scale + model_stack_mm
     for dmm in sorted(set(r.tolist())):
         n = int((r == dmm).sum())
         n_sp = int(math.ceil(n * (1 + spare)))
@@ -513,13 +518,16 @@ def bom(scene: Scene, post_height=2.0, embed=0.6, spare=0.05, scale=SCALE, model
                      "total_length_m": round(n * L, 1), "total_length_with_spare_m": round(n_sp * L, 1),
                      "options": opts})
         md = dmm / scale
-        per = max(1, int(model_stock_mm // lm))
-        model.append({"diameter_mm": round(md, 2), "count": n, "count_with_spare": n_sp, "pin_length_mm": round(lm, 1),
-                      "total_length_m": round(n * lm / 1000, 1), "stock_length_mm": model_stock_mm,
-                      "pieces_per_stock": per, "stock_lengths": int(math.ceil(n_sp / per)),
-                      "item": MODEL_STOCK.get(int(round(md)), f"dia {md:g} mm rod")})
+        opts = {}
+        for key, ln in (("A_laser_plates", la), ("B_cnc_board", lm)):
+            per = max(1, int(model_stock_mm // ln))
+            opts[key] = {"pin_length_mm": round(ln, 1), "total_length_m": round(n * ln / 1000, 1),
+                         "pieces_per_stock": per, "stock_lengths": int(math.ceil(n_sp / per))}
+        model.append({"diameter_mm": round(md, 2), "count": n, "count_with_spare": n_sp, "stock_length_mm": model_stock_mm,
+                      "options": opts, "item": MODEL_STOCK.get(int(round(md)), f"dia {md:g} mm rod")})
     return {"post_height_m": post_height, "embed_m": embed, "spare_fraction": spare, "scale": scale,
             "model_post_height_mm": round(post_height * 1000 / scale, 1), "model_embed_mm": model_embed_mm,
+            "model_stack_mm": model_stack_mm,
             "full_scale": full, "model": model}
 
 
@@ -537,16 +545,20 @@ def bom_markdown(b: dict, run: dict) -> str:
             L.append(head + f"| {o.get('item', '-')} | {o.get('radius_error_mm', '-')} | "
                      f"{o.get('stock_lengths', '-')} x {o.get('stock_length_m', '-')} m | "
                      f"{o.get('wind_tip_deflection_mm_at_10ms', '-')} |")
-    L += ["", "Wind deflection: steady 10 m/s, Cd 1.2, cantilever from a rigid foundation, static. The radial "
-          "placement budget is about 5 mm (BUILD.md), so a post that deflects more than a few mm in the site's working "
-          "wind needs a stiffer section or a top tie.", "",
-          f"## 1:{b['scale']} model (pins {b['model_post_height_mm']} mm above the board + {b['model_embed_mm']} mm "
-          "in the board)", "", "| dia (mm) | pins | +spare | pin length (mm) | total (m) | stock | stock lengths |",
-          "|---|---|---|---|---|---|---|"]
+    L += ["", "Wind deflection: steady 10 m/s, Cd 1.2, cantilever from a rigid foundation, static. Compare it with "
+          "the radial placement budget in BUILD.md's generated block (Readout, 'Radial placement'); a post that "
+          "deflects a sizeable fraction of that budget in the site's working wind needs a stiffer section or a top tie.",
+          "", f"## 1:{b['scale']} model (pins stand {b['model_post_height_mm']} mm above the ground plane)", "",
+          f"Option A (laser): the ground plane is the top face of the upper guide plate; pins pass a "
+          f"{b['model_stack_mm']:g} mm plate stack and rest on the base. Option B (CNC): ground = board top, holes "
+          f"{b['model_embed_mm']:g} mm deep.", "",
+          "| dia (mm) | pins | +spare | option | pin length (mm) | total (m) | stock | stock lengths |",
+          "|---|---|---|---|---|---|---|---|"]
     for m in b["model"]:
-        L.append(f"| {m['diameter_mm']} | {m['count']} | {m['count_with_spare']} | {m['pin_length_mm']} | "
-                 f"{m['total_length_m']} | {m['item']} | {m['stock_lengths']} x {m['stock_length_mm']:.0f} mm "
-                 f"({m['pieces_per_stock']} pins each) |")
+        for k, (key, o) in enumerate(m["options"].items()):
+            head = f"| {m['diameter_mm']} | {m['count']} | {m['count_with_spare']} " if k == 0 else "| | | "
+            L.append(head + f"| {key} | {o['pin_length_mm']} | {o['total_length_m']} | {m['item']} | "
+                     f"{o['stock_lengths']} x {m['stock_length_mm']:.0f} mm ({o['pieces_per_stock']} pins each) |")
     return "\n".join(L) + "\n"
 
 
@@ -574,30 +586,187 @@ def _echo3d(posts, scene, claps, band, n_out, post_height=None, ear_height=1.5):
                      post_height=post_height, ear_height=ear_height).numpy()
 
 
-def make_judge(run: dict, band):
-    """Callable echo[K, n] -> {metric id: clap-family mean} using the stage's own judges (echo.metrics.stage_values).
+class Judge:
+    """echo[K, n] -> {metric id: clap-family mean}, with the stage's own judges (echo.metrics.stage_values).
 
-    Judges only score here (never optimized). Returns None if the stage's target cannot be rebuilt.
+    Judges only score here (never optimized). `status` is "ok" or the reason judging is unavailable (then every call
+    returns None); `errors` collects judge exceptions on individual echoes (those calls return None, never a fail).
     """
-    import importlib
 
-    from echo.metrics import stage_values
+    def __init__(self, run: dict, band, target=None):
+        import importlib
 
-    try:
-        target = importlib.import_module(f"stages.{run['stage']}").CONFIG.make_target()
-    except (ImportError, AttributeError):
-        return None
-    t0 = float(run["manifest"].get("design", {}).get("t_echo0_s", 0.0))
+        self.band, self.errors, self.target = band, [], target
+        self.stage = run["stage"]
+        self.t0 = float(run["manifest"].get("design", {}).get("t_echo0_s", 0.0))
+        self.status = "ok"
+        if self.target is None:
+            try:
+                self.target = importlib.import_module(f"stages.{self.stage}").CONFIG.make_target()
+            except (ImportError, AttributeError) as exc:
+                self.status = f"no target: stages.{self.stage}.CONFIG.make_target unavailable ({type(exc).__name__})"
+        from echo.metrics import STAGE_METRICS
 
-    def judge(e):
+        if self.status == "ok" and self.stage not in STAGE_METRICS:
+            self.status = f"no judges registered for stage {self.stage}"
+
+    def __call__(self, e):
+        if self.status != "ok":
+            return None
+        from echo.metrics import stage_values
+
         try:
-            v = stage_values(run["stage"], e, target, t0, band=band)
-        except Exception:  # noqa: BLE001 - a judge failure on a degraded echo is reported as missing
+            v = stage_values(self.stage, e, self.target, self.t0, band=self.band)
+        except Exception as exc:  # noqa: BLE001 - reported as "not judged", never as a fail
+            self.errors.append(f"{type(exc).__name__}: {exc}"[:200])
             return None
         keys = [k for k in v[0] if all(isinstance(d.get(k), (int, float)) for d in v)]
-        return {k: float(np.mean([d[k] for d in v])) for k in keys}
+        out = {k: float(np.mean([d[k] for d in v])) for k in keys}
+        for k in keys:
+            out[f"{k}__clap_min"] = float(np.min([d[k] for d in v]))
+            out[f"{k}__clap_max"] = float(np.max([d[k] for d in v]))
+        return out
 
-    return judge
+    def ideal_echo(self, claps, n_out):
+        """The physically perfect echo: each clap convolved with the target at the design delay, band-limited."""
+        from echo.clap import band_limit
+
+        out = np.zeros((len(claps), n_out))
+        i0 = int(round(self.t0 * FS))
+        for k, cl in enumerate(np.atleast_2d(claps)):
+            y = np.convolve(cl, self.target.audio)[: max(0, n_out - i0)]
+            out[k, i0:i0 + len(y)] = y
+        return np.atleast_2d(band_limit(out, self.band[0], self.band[1]))
+
+
+def make_judge(run: dict, band, target=None) -> Judge:
+    return Judge(run, band, target)
+
+
+def coherence_corr(sigma_m, f_hz, c=C0, g=0.5):
+    """Physical-view estimate of the waveform correlation after random range errors of sigma (m).
+
+    Each post's echo phase is 4 pi rho f / c, so a range error sigma gives a phase error sigma_phi = 4 pi sigma f / c.
+    The coherent echo keeps A = exp(-sigma_phi^2 / 2) of its amplitude; the lost power reappears as incoherent
+    scatter, a fraction g of it in the echo window (g ~ 0.5 fitted to the stage-1 seeds, an estimate). Correlation
+    with the nominal echo = A / sqrt(A^2 + g (1 - A^2)).
+    """
+    sp = 4 * math.pi * sigma_m * f_hz / c
+    a = math.exp(-sp**2 / 2)
+    return a / math.sqrt(a**2 + g * (1 - a**2))
+
+
+def _stats(vals):
+    v = [x for x in vals if x is not None]
+    if not v:
+        return None
+    return {"mean": float(np.mean(v)), "min": float(np.min(v)), "max": float(np.max(v)), "n": len(v)}
+
+
+def jitter_table(posts, scene, claps, band, n_out, judge, ref, f_center, sigmas_mm=(1.0, 2.0, 3.0, 5.0, 10.0, 20.0),
+                 tangential_mm=(50.0,), seeds=(0, 1, 2), wav_dir=None, wav_sigmas=(0.0, 1.0, 2.0, 5.0, 10.0),
+                 tband=None):
+    """Random placement error, several seeds per sigma: judge view (mean and range over seeds) and physical view
+    (waveform correlation with the nominal echo, measured and the coherence estimate; with tband = (f_lo, f_hi) also
+    the correlation inside the target band, widened 10 %, and the share of echo energy outside it). Optional listening WAVs
+    (seed 0) into wav_dir: echo_<s>mm.wav (common gain, echo alone) and as_heard_<s>mm.wav (clap + echo at level)."""
+    v = posts[:, :2] - scene.source
+    uS = v / np.hypot(v[:, 0], v[:, 1])[:, None]
+    r2v = posts[:, :2] - scene.listener
+    g = 0.5 * (uS + r2v / np.hypot(r2v[:, 0], r2v[:, 1])[:, None])
+    u = g / np.linalg.norm(g, axis=1, keepdims=True)  # "radial": along grad rho
+    t = np.stack([-u[:, 1], u[:, 0]], axis=1)  # "tangential": along the equal-delay ellipse
+    refn = ref / np.linalg.norm(ref, axis=-1, keepdims=True)
+    L0 = _level_db(ref)
+    if tband is not None:
+        from echo.clap import band_limit
+
+        fb = (0.9 * tband[0], 1.1 * tband[1])
+        rb = band_limit(ref, *fb)
+        rbn = rb / np.linalg.norm(rb, axis=-1, keepdims=True)
+    rows, wavs = [], {}
+    cases = [("radial", s) for s in sigmas_mm] + [("tangential", s) for s in tangential_mm]
+    for kind, s in cases:
+        per = []
+        for sd in seeds:
+            rng = np.random.default_rng(1000 * sd + int(round(10 * s)))
+            p = posts.copy()
+            p[:, :2] += (u if kind == "radial" else t) * rng.normal(0, s / 1000, size=(len(p), 1))
+            e = _echo3d(p, scene, claps, band, n_out)
+            corr = float(np.mean(np.sum(refn * e, axis=-1) / np.linalg.norm(e, axis=-1)))
+            q = {"seed": sd, "level_delta_db": _level_db(e) - L0, "waveform_corr": corr, "judges": judge(e)}
+            if tband is not None:
+                eb = band_limit(e, *fb)
+                q["corr_in_band"] = float(np.mean(np.sum(rbn * eb, axis=-1) / np.linalg.norm(eb, axis=-1)))
+                q["energy_out_of_band"] = float(1 - np.sum(eb**2) / np.sum(e**2))
+            per.append(q)
+            if kind == "radial" and sd == seeds[0] and s in wav_sigmas:
+                wavs[s] = e
+        keys = sorted({k for q in per if q["judges"] for k in q["judges"] if "__" not in k})
+        rows.append({"kind": kind, "sigma_mm": s, "seeds": list(seeds), "per_seed": per,
+                     "level_delta_db": _stats([q["level_delta_db"] for q in per]),
+                     "waveform_corr": _stats([q["waveform_corr"] for q in per]),
+                     "corr_in_band": _stats([q.get("corr_in_band") for q in per]),
+                     "energy_out_of_band": _stats([q.get("energy_out_of_band") for q in per]),
+                     "corr_coherence_estimate": coherence_corr(s / 1000, f_center, scene.c) if kind == "radial" else None,
+                     "judges": {k: _stats([q["judges"].get(k) if q["judges"] else None for q in per]) for k in keys}
+                     or None})
+    if tband is not None:
+        rows.insert(0, {"kind": "nominal", "sigma_mm": 0.0, "seeds": list(seeds), "per_seed": [],
+                        "level_delta_db": _stats([0.0]), "waveform_corr": _stats([1.0]), "corr_in_band": _stats([1.0]),
+                        "energy_out_of_band": _stats([float(1 - np.sum(rb**2) / np.sum(ref**2))]),
+                        "corr_coherence_estimate": None, "judges": None})
+    if wav_dir is not None and 0.0 in wav_sigmas:
+        wavs[0.0] = ref
+    if wav_dir is not None and wavs:
+        _write_listening(Path(wav_dir), wavs, claps, L0)
+    return rows
+
+
+def _write_listening(d: Path, wavs: dict, claps, level0_db):
+    import soundfile as sf
+
+    from echo.scene import T_DIRECT
+
+    d.mkdir(parents=True, exist_ok=True)
+    g = 0.89 / max(float(np.max(np.abs(e[0]))) for e in wavs.values())  # one gain for every echo-alone file
+    for s, e in sorted(wavs.items()):
+        tag = f"{s:g}mm"
+        sf.write(d / f"echo_jitter_{tag}.wav", (g * e[0]).astype(np.float32), FS, subtype="FLOAT")
+        n = len(e[0])
+        x = np.zeros(n)
+        i = int(round(T_DIRECT * FS))
+        cl = np.asarray(claps[0], float)
+        x[i:i + len(cl)] += cl[: max(0, n - i)]
+        x += e[0]  # echoes are already in units of the direct clap at the listener
+        x *= 0.89 / np.max(np.abs(x))
+        sf.write(d / f"as_heard_jitter_{tag}.wav", x.astype(np.float32), FS, subtype="FLOAT")
+    (d / "README.md").write_text(
+        "# Free desk listening test\n\nTier 0 3D echoes of the design with random radial placement error (seed 0).\n"
+        "`echo_jitter_<s>.wav`: the echo alone, all files at one common gain (compare the noise between them).\n"
+        "`as_heard_jitter_<s>.wav`: clap variant 0 then the echo at its predicted level re the direct clap "
+        f"(nominal {level0_db:.1f} dB), peak -1 dBFS. 32-bit float, {FS} Hz. Unverified (Tier 0).\n")
+
+
+def grating_scene(f_hz=3000.0, n=30, rho0=5.0, radius=0.01, bearings_deg=(-10, -6, -2, 2, 6, 10), c=C0):
+    """Phase-3a test grating: n posts at bistatic range rho0 + i c/(2 f), bearings cycling so no post shadows the next."""
+    rho = rho0 + np.arange(n) * c / (2 * f_hz)
+    ang = np.radians(np.resize(np.asarray(bearings_deg, float), n))
+    xy = ellipse_point(rho, ang)
+    return Scene(posts=np.column_stack([xy, np.full(n, radius)]), c=c)
+
+
+def rig_levels(claps, band, n_out_s=0.15):
+    """Echo levels of the phase-3a field tests (Tier 0 3D): one 20 mm post at 5 m, and the 30-post grating."""
+    n_out = int(n_out_s * FS)
+    one = Scene(posts=np.array([[5.0, 0.0, 0.01]]))
+    gr = grating_scene()
+    out = []
+    for name, sc in (("single 20 mm post at 5 m", one), ("30-post 3 kHz grating from 5 m, staggered", gr)):
+        for h, ze in ((None, 1.5), (2.0, 1.5)):
+            e = _echo3d(sc.posts, sc, claps, band, n_out, h, ze)
+            out.append({"case": name, "post_height_m": h, "ear_height_m": ze, "level_db": _level_db(e)})
+    return out
 
 
 def _level_db(e):
@@ -619,7 +788,8 @@ def ground_cross_posts(posts, scene: Scene, ear_height):
 
     With S and L at height z, the image source is at -z: the cross path is sqrt(L^2 + (2z)^2) instead of L = r1 + r2.
     Moving the post along its ray from S onto the equal-delay ellipse rho + d/2 (d = the extra length) gives exactly
-    that delay; the spreading change (d/L, under 1 %) is ignored.
+    that delay. The spreading change of the cross term (about d/L: up to ~11 % on the nearest rows at z = 1.5 m, under
+    1 % at z <= 0.5 m) is ignored, so the cross term is slightly too strong on near rows for high ears.
     """
     p = np.asarray(posts, float).copy()
     v = p[:, :2] - scene.source
@@ -666,8 +836,8 @@ def target_band(run: dict, rel_db=-20.0):
 
 
 def physics_tables(run: dict, heights=(0.5, 1.0, 1.5, 2.0, 3.0, None), ground_ears=(1.5, 1.0, 0.5, 0.3),
-                   slices=(20.0, 10.0, 5.0, 2.5), radial_sigmas_mm=(1.0, 2.0, 5.0, 10.0, 20.0),
-                   tangential_sigma_mm=50.0, seed=0) -> dict:
+                   slices=(20.0, 10.0, 5.0, 2.5), radial_sigmas_mm=(1.0, 2.0, 3.0, 5.0, 10.0, 20.0),
+                   tangential_sigma_mm=50.0, seeds=(0, 1, 2), listening_dir=None) -> dict:
     """Every build-physics number BUILD.md quotes for a run, from Tier 0 3D (free-field reference, unverified)."""
     scene = run["scene"]
     posts = scene.posts
@@ -677,10 +847,12 @@ def physics_tables(run: dict, heights=(0.5, 1.0, 1.5, 2.0, 3.0, None), ground_ea
     t0, t1 = 2 * rho.min() / c, 2 * rho.max() / c
     ref = _echo3d(posts, scene, claps, band, n_out)
     L_inf = _level_db(ref)
-    judge = make_judge(run, band) or (lambda e: None)
+    judge = make_judge(run, band)
     out = {"tier": "tier0", "verified": bool(run["metrics"].get("verified", False)), "band_hz": list(band),
-           "level_inf_db": L_inf, "judges_inf": judge(ref),
-           "judges_note": "stage judges (echo.metrics.stage_values) on the Tier 0 3D echo, clap-family mean"}
+           "level_inf_db": L_inf, "judges_inf": judge(ref), "judge_status": judge.status,
+           "judges_floor": judge(judge.ideal_echo(claps, n_out)) if judge.status == "ok" else None,
+           "judges_note": "stage judges (echo.metrics.stage_values) on the Tier 0 3D echo, clap-family mean; floor = "
+                          "the same judges on the physically perfect echo (clap * target at the design delay)"}
     # height, free space, ear 1.5 m
     hs = []
     for h in heights:
@@ -709,27 +881,11 @@ def physics_tables(run: dict, heights=(0.5, 1.0, 1.5, 2.0, 3.0, None), ground_ea
         sl.append({"half_angle_deg": a, "posts": int(m.sum()), "level_db": L,
                    "delta_db": None if L is None else L - L_inf, "judges": None if e is None else judge(e)})
     out["slices"] = sl
-    # placement jitter: radial (along the range gradient) and tangential (along the equal-delay curve)
-    # "radial" = along grad rho (the range direction); "tangential" = along the equal-delay ellipse (perpendicular)
-    rng = np.random.default_rng(seed)
-    v = posts[:, :2] - scene.source
-    uS = v / np.hypot(v[:, 0], v[:, 1])[:, None]
-    r2v = posts[:, :2] - scene.listener
-    g = 0.5 * (uS + r2v / np.hypot(r2v[:, 0], r2v[:, 1])[:, None])
-    u = g / np.linalg.norm(g, axis=1, keepdims=True)
-    t = np.stack([-u[:, 1], u[:, 0]], axis=1)
-    refn = ref / np.linalg.norm(ref, axis=-1, keepdims=True)
-    jit = []
-    cases = [("radial", s) for s in radial_sigmas_mm] + [("tangential", tangential_sigma_mm)]
-    for kind, s in cases:
-        dirn = u if kind == "radial" else t
-        p = posts.copy()
-        p[:, :2] += dirn * rng.normal(0, s / 1000, size=(len(p), 1))
-        e = _echo3d(p, scene, claps, band, n_out)
-        corr = float(np.mean(np.sum(refn * e, axis=-1) / np.linalg.norm(e, axis=-1)))
-        jit.append({"kind": kind, "sigma_mm": s, "level_delta_db": _level_db(e) - L_inf, "waveform_corr": corr,
-                    "judges": judge(e)})
-    out["jitter"] = jit
+    # placement jitter, several seeds; the physical view uses the target's band centre (geometric mean)
+    tb = target_band(run) or band
+    out["jitter"] = jitter_table(posts, scene, claps, band, n_out, judge, ref, math.sqrt(tb[0] * tb[1]),
+                                 radial_sigmas_mm, (tangential_sigma_mm,), seeds, wav_dir=listening_dir, tband=tb)
+    out["jitter_f_center_hz"] = math.sqrt(tb[0] * tb[1])
     # temperature: the built structure heard at another speed of sound (delays and wavenumbers follow c)
     tc = []
     for T in (0.0, 10.0, 30.0):
@@ -740,12 +896,15 @@ def physics_tables(run: dict, heights=(0.5, 1.0, 1.5, 2.0, 3.0, None), ground_ea
         tc.append({"T_c": T, "c": cT, "level_db": _level_db(e), "judges": judge(e)})
     out["temperature_judged"] = tc
     # range-gradient magnitude: how much of a displacement becomes range error
+    v = posts[:, :2] - scene.source
+    uS = v / np.hypot(v[:, 0], v[:, 1])[:, None]
+    r2v = posts[:, :2] - scene.listener
+    g = 0.5 * (uS + r2v / np.hypot(r2v[:, 0], r2v[:, 1])[:, None])
     # a bearing error from S moves a post perpendicular to uS; the range picks up |g x uS| = sin of the angle between
     sin_b = np.abs(g[:, 0] * uS[:, 1] - g[:, 1] * uS[:, 0])
     out["range_gradient"] = {"min": float(np.linalg.norm(g, axis=1).min()), "max": float(np.linalg.norm(g, axis=1).max()),
                              "bearing_to_range_max": float(sin_b.max()), "bearing_to_range_median": float(np.median(sin_b))}
     # target band, Fresnel zones, range period
-    tb = target_band(run) or band
     out["target_band_hz"] = list(tb)
     fz = []
     for f in (tb[0], tb[1]):
@@ -779,6 +938,16 @@ def physics_tables(run: dict, heights=(0.5, 1.0, 1.5, 2.0, 3.0, None), ground_ea
                            "pitch_shift_pct": 100 * (331.3 * math.sqrt(1 + T / 273.15) / c - 1)}
                           for T in (0, 10, 20, 30)]
     out["timing"] = {"t_first_echo_ms": 1000 * t0, "t_last_echo_ms": 1000 * t1}
+    r_far = float(np.max(np.hypot(*(posts[:, :2] - scene.source).T) + posts[:, 2]))
+    out["geometry"] = {
+        "rho_min_m": float(rho.min()), "rho_max_m": float(rho.max()), "round_trip_max_m": float(2 * rho.max()),
+        "far_edge_from_S_m": r_far, "model_far_edge_m": r_far / SCALE,
+        "model_clearance_m": r_far / SCALE + 0.5,
+        "gate_full_ms": [1000 * t0 - 3.0, 1000 * t1 + 10.0],
+        "gate_model_ms": [(1000 * t0 - 3.0) / SCALE, (1000 * t1 + 10.0) / SCALE],
+        "site_clearance_m": r_far + 17.0}
+    out["rig_levels"] = rig_levels(claps, band)
+    out["judge_errors"] = judge.errors[:5]
     return out
 
 
@@ -805,7 +974,7 @@ def build_pack(run_dir, out_root=None, post_height=2.0, embed=0.6, panel=(600.0,
                "posts": int(len(scene.posts)), "depth_m": scene.depth_m, "fill_fraction": fill_fraction(scene),
                "plan": plan, "template": tmpl, "template_full": deck, "control_points": control_points(scene)}
     if physics:
-        summary["physics"] = physics_tables(run)
+        summary["physics"] = physics_tables(run, listening_dir=out / "listening")
     (out / "pack.json").write_text(json.dumps(summary, indent=1))
     (out / "README.md").write_text(_pack_readme(run, summary, b))
     return out

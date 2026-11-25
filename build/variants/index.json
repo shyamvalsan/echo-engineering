@@ -1,0 +1,14 @@
+{
+ "runs": [
+  {
+   "stage": "s1_bird",
+   "run_id": "20261125-015144-s1low",
+   "path": "s1_bird/20261125-015144-s1low",
+   "title": "Bird note shifted down, 1.75 to 1.0 kHz whistle, 80 ms (build variant)",
+   "created": "2026-11-25T01:51:44+02:00",
+   "status": "tier0_only",
+   "passed": false,
+   "verified": false
+  }
+ ]
+}

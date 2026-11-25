@@ -125,11 +125,13 @@ def test_bom_totals():
         for o in f["options"]:
             assert o["pieces_per_stock"] == int(o["stock_length_m"] // 2.6)
             assert o["stock_lengths"] * o["pieces_per_stock"] >= f["count_with_spare"]
-    for m in b["model"]:  # 1:10: 2 m posts -> 200 mm pins + 15 mm embed, diameters / 10
-        assert m["pin_length_mm"] == pytest.approx(215.0)
+    for m in b["model"]:  # 1:10: 2 m posts -> 200 mm above the ground plane, diameters / 10
         assert m["diameter_mm"] in (2.0, 4.0)
-        assert m["total_length_m"] == pytest.approx(m["count"] * 0.215, abs=0.06)
-        assert m["pieces_per_stock"] == 4
+        a, c = m["options"]["A_laser_plates"], m["options"]["B_cnc_board"]
+        assert a["pin_length_mm"] == pytest.approx(256.0)  # 200 + 3 + 50 + 3 mm plate stack, resting on the base
+        assert c["pin_length_mm"] == pytest.approx(215.0)  # 200 + 15 mm hole depth
+        assert c["total_length_m"] == pytest.approx(m["count"] * 0.215, abs=0.06)
+        assert c["pieces_per_stock"] == 4 and a["pieces_per_stock"] == 3
 
 
 def test_wind_deflection_hand_calc():
@@ -186,3 +188,95 @@ def test_build_pack_writes_all_files(tmp_path):
     assert pk["posts"] == 40 and pk["plan"]["scale"] in bk.SCALES
     svg = (out / "plan.svg").read_text()
     assert 'width="1190.' in svg  # A3 landscape: 420 mm = 1190.55 pt, so the drawing scale survives printing
+
+
+def test_bom_markdown_has_no_hand_tolerance():
+    sc = _scene(10)
+    md = bk.bom_markdown(bk.bom(sc), {"stage": "s", "run_id": "r"})
+    assert "budget is about" not in md and "generated block" in md
+
+
+def test_coherence_estimate_hand_calc():
+    # sigma 2 mm at 2.6 kHz: sigma_phi = 4 pi 0.002 2600 / 343 = 0.1905; A = exp(-0.01815) = 0.9820;
+    # corr = 0.9820 / sqrt(0.9643 + 0.5 * 0.0357) = 0.9910
+    assert bk.coherence_corr(0.002, 2600.0) == pytest.approx(0.9910, abs=2e-4)
+    assert bk.coherence_corr(0.0, 2600.0) == pytest.approx(1.0)
+
+
+def test_grating_scene_staggered_and_spaced():
+    g = bk.grating_scene(3000.0, 30, 5.0)
+    rho = bistatic_range(g.posts[:, :2])
+    np.testing.assert_allclose(np.diff(rho), 343.0 / 6000.0, atol=1e-9)
+    ang = np.degrees(np.arctan2(g.posts[:, 1], g.posts[:, 0]))
+    assert np.all(np.abs(np.diff(ang)) > 3.0)  # no post directly behind the previous one
+
+
+THR = {"pitch_err_pct": (3.0, "<="), "spec_corr": (0.8, ">=")}
+
+
+def _st(v):
+    return {"mean": v, "min": v, "max": v, "n": 1}
+
+
+def _row(kind, s, judges):
+    return {"kind": kind, "sigma_mm": s, "seeds": [0], "level_delta_db": _st(0.1), "waveform_corr": _st(0.99),
+            "corr_coherence_estimate": 0.99, "judges": None if judges is None else {k: _st(v) for k, v in judges.items()}}
+
+
+def _ph(judged=True, pattern=(True, False, True)):
+    good, bad = {"pitch_err_pct": 2.0, "spec_corr": 0.9}, {"pitch_err_pct": 2.0, "spec_corr": 0.7}
+    j = (lambda ok: (good if ok else bad) if judged else None)
+    return {"judges_inf": j(True), "judges_floor": j(True), "judge_status": "ok" if judged else "no target: test",
+            "jitter": [_row("radial", s, j(ok)) for s, ok in zip((1.0, 2.0, 5.0), pattern)]
+            + [_row("tangential", 50.0, j(True))],
+            "height_free": [{"post_height_m": h, "level_db": -40.0, "delta_db": 0.0, "judges": j(True)}
+                            for h in (1.0, None)],
+            "height_rigid_ground": [{"ear_height_m": 0.5, "post_height_m": 1.0, "level_db": -39.0, "delta_db": 1.0,
+                                     "worst_10ms_delta_db": -1.0, "best_10ms_delta_db": 2.0, "judges": j(False)}],
+            "slices": [{"half_angle_deg": a, "posts": 9, "level_db": -41.0, "delta_db": -1.0, "judges": j(ok)}
+                       for a, ok in ((20.0, True), (10.0, False))],
+            "temperature_judged": [{"T_c": 0.0, "c": 331.3, "level_db": -40.0, "judges": j(False)}]}
+
+
+def test_readout_non_monotone_budget():
+    from stages.build_pack import readout
+
+    r = readout(_ph(pattern=(True, False, True)), {"headline": {}}, THR)
+    rad = next(b for b in r if b.startswith("Radial"))
+    assert "up to 1 mm" in rad and "first failure at 2 mm" in rad and "5 mm" not in rad.split("first failure")[0]
+    assert "spec_corr" in rad
+
+
+def test_readout_not_judged_never_says_fail():
+    from stages.build_pack import readout
+
+    r = readout(_ph(judged=False), {"headline": {"echo_spl_db": 60.0}}, THR)
+    text = "\n".join(r)
+    assert "FAIL" not in text and "fail" not in text.replace("failure", "")
+    assert "not judged (no target: test)" in text
+    assert "0 of" not in text
+
+
+def test_generated_block_no_judges(tmp_path):
+    from stages import build_pack as bp
+
+    sc = _scene(30)
+    rd = _run_dir(tmp_path, sc)
+    (rd / "metrics.json").write_text(json.dumps({"verified": False, "headline": {"echo_spl_db": 70.0},
+                                                 "metrics": [{"id": "spec_corr", "label": "corr", "threshold": 0.8,
+                                                              "comparator": ">=", "pass": True, "value": 0.9,
+                                                              "tier": "tier0", "gating": False}]}))
+    pd = bk.build_pack(rd, tmp_path / "build", physics=False)
+    pk = json.loads((pd / "pack.json").read_text())
+    ph = _ph(judged=False)
+    ph.update({"verified": False, "level_inf_db": -40.0, "target_band_hz": [2000.0, 3500.0],
+               "timing": {"t_first_echo_ms": 18.0, "t_last_echo_ms": 98.0},
+               "range_gradient": {"min": 0.999, "max": 1.0, "bearing_to_range_max": 0.04,
+                                  "bearing_to_range_median": 0.01},
+               "range_period_m": {"f_hz": 3500.0, "period_m": 0.049}, "fresnel": [], "scale_absorption": [],
+               "boundary_layer": [], "temperature": [], "jitter_f_center_hz": 2600.0})
+    pk["physics"] = ph
+    (pd / "pack.json").write_text(json.dumps(pk))
+    blk = bp.generated_block([({"stage": "s1_bird", "run_id": "rid"}, rd, pd)])
+    assert blk.startswith(bp.BEGIN) and blk.endswith(bp.END)
+    assert "not judged" in blk and "FAIL" not in blk

@@ -1,0 +1,172 @@
+{
+ "stage": "s1_bird",
+ "passed": false,
+ "verified": false,
+ "fragile": false,
+ "headline": {
+  "echo_level_db_re_direct": -51.90963127960257,
+  "echo_level_db_re_direct_raw3d": -51.90963127960257,
+  "echo_spl_db": 58.54794362600418,
+  "depth_m": 13.66845354991094,
+  "post_count": 3029,
+  "fill_fraction": 0.009988899595546075,
+  "tier_gap_db": null,
+  "likely_inaudible_on_site": false
+ },
+ "metrics": [
+  {
+   "id": "pitch_err_pct",
+   "label": "Pitch error along the note, worst frame",
+   "value": 1.8146604456112805,
+   "unit": "%",
+   "threshold": 3.0,
+   "comparator": "<=",
+   "pass": true,
+   "tier": "tier0",
+   "gating": false
+  },
+  {
+   "id": "pitch_err_mean_pct",
+   "label": "Pitch error along the note, mean",
+   "value": 0.8695721204385883,
+   "unit": "%",
+   "threshold": null,
+   "comparator": null,
+   "pass": null,
+   "tier": "tier0",
+   "gating": false
+  },
+  {
+   "id": "pitch_err_median_pct",
+   "label": "Pitch error along the note, median (info)",
+   "value": 0.8032040694091137,
+   "unit": "%",
+   "threshold": null,
+   "comparator": null,
+   "pass": null,
+   "tier": "tier0",
+   "gating": false
+  },
+  {
+   "id": "spec_corr",
+   "label": "Spectrogram correlation, log-mel",
+   "value": 0.8698257710858279,
+   "unit": "",
+   "threshold": 0.8,
+   "comparator": ">=",
+   "pass": true,
+   "tier": "tier0",
+   "gating": false
+  }
+ ],
+ "per_clap": [
+  {
+   "clap": 0,
+   "tier": "tier0",
+   "metrics": {
+    "pitch_err_pct": 2.163527806050136,
+    "pitch_err_mean_pct": 0.7255510162880141,
+    "pitch_err_median_pct": 0.3757047227409438,
+    "spec_corr": 0.8849892704555876
+   }
+  },
+  {
+   "clap": 1,
+   "tier": "tier0",
+   "metrics": {
+    "pitch_err_pct": 1.0922749852576574,
+    "pitch_err_mean_pct": 0.5215784411299922,
+    "pitch_err_median_pct": 0.49886228686495393,
+    "spec_corr": 0.8407980239738135
+   }
+  },
+  {
+   "clap": 2,
+   "tier": "tier0",
+   "metrics": {
+    "pitch_err_pct": 2.9519872251902113,
+    "pitch_err_mean_pct": 1.450069490230454,
+    "pitch_err_median_pct": 1.5483895386416702,
+    "spec_corr": 0.8860715842958631
+   }
+  },
+  {
+   "clap": 3,
+   "tier": "tier0",
+   "metrics": {
+    "pitch_err_pct": 0.7288588367839521,
+    "pitch_err_mean_pct": 0.31228714242284406,
+    "pitch_err_median_pct": 0.26528719375977783,
+    "spec_corr": 0.8470514481442041
+   }
+  },
+  {
+   "clap": 4,
+   "tier": "tier0",
+   "metrics": {
+    "pitch_err_pct": 2.1366533747744443,
+    "pitch_err_mean_pct": 1.338374512121637,
+    "pitch_err_median_pct": 1.3277766050382223,
+    "spec_corr": 0.8902185285596709
+   }
+  }
+ ],
+ "robustness": [],
+ "failure_cause": null,
+ "judge_floor": {
+  "per_clap": [
+   {
+    "clap": 0,
+    "metrics": {
+     "pitch_err_pct": 2.1495660793619087,
+     "pitch_err_mean_pct": 0.8773828613055091,
+     "pitch_err_median_pct": 0.6705655800522292,
+     "spec_corr": 0.9810071664300322
+    }
+   },
+   {
+    "clap": 1,
+    "metrics": {
+     "pitch_err_pct": 0.6005605872097419,
+     "pitch_err_mean_pct": 0.2664542739742952,
+     "pitch_err_median_pct": 0.23891210053528233,
+     "spec_corr": 0.9794432064410593
+    }
+   },
+   {
+    "clap": 2,
+    "metrics": {
+     "pitch_err_pct": 3.088378785498813,
+     "pitch_err_mean_pct": 1.4030382650933189,
+     "pitch_err_median_pct": 1.4570022902211432,
+     "spec_corr": 0.9539344413420715
+    }
+   },
+   {
+    "clap": 3,
+    "metrics": {
+     "pitch_err_pct": 0.5025960907831806,
+     "pitch_err_mean_pct": 0.1679587051530768,
+     "pitch_err_median_pct": 0.1588006439614431,
+     "spec_corr": 0.9923775230848423
+    }
+   },
+   {
+    "clap": 4,
+    "metrics": {
+     "pitch_err_pct": 1.8879534506684559,
+     "pitch_err_mean_pct": 1.1955191071313012,
+     "pitch_err_median_pct": 1.365697284652656,
+     "spec_corr": 0.9493051543803744
+    }
+   }
+  ],
+  "mean": {
+   "pitch_err_pct": 1.6458109987044203,
+   "pitch_err_mean_pct": 0.7820706425315003,
+   "pitch_err_median_pct": 0.7781955798845508,
+   "spec_corr": 0.971213498335676
+  },
+  "note": "metrics of target * clap (band-limited): the floor set by the judge and the clap, not the design"
+ }
+}
