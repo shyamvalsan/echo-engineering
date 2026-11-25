@@ -1,0 +1,64 @@
+/home/shyam/projects/echo/echo/inverse.py:66: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
+  fb = librosa.filters.mel(sr=fs, n_fft=MEL_N_FFT, n_mels=MEL_N, fmin=band[0], fmax=band[1])
+step    0 loss 2.4219 (stft 1.4611 mel 0.9609) 11.5s
+step   25 loss 3.0970 (stft 1.5699 mel 1.5270) 13.0s
+step   50 loss 2.8195 (stft 1.4845 mel 1.3350) 13.7s
+step   75 loss 2.6470 (stft 1.4348 mel 1.2122) 14.3s
+step  100 loss 2.5105 (stft 1.3965 mel 1.1140) 15.2s
+step  125 loss 2.4629 (stft 1.3766 mel 1.0862) 16.8s
+step  150 loss 2.3955 (stft 1.3560 mel 1.0395) 18.4s
+step  175 loss 2.4239 (stft 1.3613 mel 1.0626) 19.9s
+step  200 loss 2.4595 (stft 1.3600 mel 1.0994) 21.4s
+step  225 loss 2.3385 (stft 1.3279 mel 1.0105) 23.2s
+step  250 loss 2.3875 (stft 1.3260 mel 1.0615) 24.8s
+step  275 loss 2.3487 (stft 1.3129 mel 1.0358) 26.4s
+step  300 loss 2.3266 (stft 1.3009 mel 1.0256) 27.5s
+step  325 loss 2.3858 (stft 1.3204 mel 1.0654) 28.2s
+step  350 loss 2.3649 (stft 1.3044 mel 1.0606) 29.2s
+step  375 loss 2.3271 (stft 1.2854 mel 1.0417) 29.8s
+step  400 loss 2.2737 (stft 1.2756 mel 0.9981) 30.3s
+step  425 loss 2.2853 (stft 1.2692 mel 1.0161) 31.3s
+step  450 loss 2.2612 (stft 1.2639 mel 0.9973) 32.4s
+step  475 loss 2.2434 (stft 1.2553 mel 0.9881) 33.7s
+step  500 loss 2.2502 (stft 1.2481 mel 1.0021) 34.6s
+step  525 loss 2.2285 (stft 1.2391 mel 0.9894) 35.2s
+step  550 loss 2.2432 (stft 1.2331 mel 1.0101) 36.5s
+step  575 loss 2.2138 (stft 1.2341 mel 0.9797) 37.2s
+step  600 loss 2.2906 (stft 1.2428 mel 1.0478) 37.9s
+step  625 loss 2.2370 (stft 1.2219 mel 1.0151) 38.6s
+step  650 loss 2.2482 (stft 1.2260 mel 1.0222) 39.4s
+step  675 loss 2.2520 (stft 1.2155 mel 1.0365) 40.7s
+step  700 loss 2.2177 (stft 1.2059 mel 1.0117) 41.8s
+step  725 loss 2.1766 (stft 1.1955 mel 0.9810) 42.8s
+step  750 loss 2.2183 (stft 1.1983 mel 1.0200) 44.4s
+step  775 loss 2.1517 (stft 1.1849 mel 0.9668) 51.8s
+step  800 loss 2.2003 (stft 1.1940 mel 1.0063) 54.8s
+step  825 loss 2.1749 (stft 1.1827 mel 0.9922) 59.5s
+step  850 loss 2.1501 (stft 1.1729 mel 0.9772) 60.9s
+step  875 loss 2.1789 (stft 1.1772 mel 1.0017) 62.2s
+step  900 loss 2.1156 (stft 1.1510 mel 0.9646) 63.2s
+step  925 loss 2.1439 (stft 1.1579 mel 0.9860) 63.7s
+step  950 loss 2.1192 (stft 1.1515 mel 0.9678) 64.5s
+step  975 loss 2.1532 (stft 1.1532 mel 1.0000) 65.2s
+step 1000 loss 2.1449 (stft 1.1486 mel 0.9963) 66.7s
+step 1025 loss 2.1587 (stft 1.1465 mel 1.0122) 67.4s
+step 1050 loss 2.1374 (stft 1.1410 mel 0.9964) 68.4s
+step 1075 loss 2.0714 (stft 1.1277 mel 0.9437) 70.1s
+step 1100 loss 2.1470 (stft 1.1454 mel 1.0016) 73.2s
+step 1125 loss 2.2176 (stft 1.1556 mel 1.0620) 74.6s
+step 1150 loss 2.1597 (stft 1.1422 mel 1.0175) 75.2s
+step 1175 loss 2.1407 (stft 1.1331 mel 1.0075) 76.0s
+step 1200 loss 2.1809 (stft 1.1379 mel 1.0430) 77.2s
+  realized 1269 posts, range scale 1-0.00544 (0 s)
+  stretch: applied -0.00544, measured (medium) -0.00648 (corr 0.572), timing residual -0.00105
+  tier1 749 s (empty cached: False)
+/home/shyam/projects/echo/.venv/lib/python3.11/site-packages/librosa/feature/spectral.py:2148: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
+  mel_basis = filters.mel(sr=sr, n_fft=n_fft, **kwargs)
+  density sweep fill 0.008: 1269 posts, Tier 1 loss 5.6366
+  realized 2538 posts, range scale 1-0.01088 (1 s)
+  stretch: applied -0.01088, measured (medium) -0.00732 (corr 0.374), timing residual +0.00360
+  tier1 354 s (empty cached: True)
+/home/shyam/projects/echo/echo/inverse.py:66: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
+  fb = librosa.filters.mel(sr=fs, n_fft=MEL_N_FFT, n_mels=MEL_N, fmin=band[0], fmax=band[1])
+  density sweep fill 0.016: 2538 posts, Tier 1 loss 5.5676
+correction round 0: loss 5.5676 score -39.0000 gains [0.5, 0.5, 0.5, 0.63, 0.6, 1.24, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1.0] (2 s)
