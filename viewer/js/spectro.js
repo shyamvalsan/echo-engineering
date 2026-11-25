@@ -13,19 +13,20 @@ function lut() {
 }
 
 export class SpectroPanel {
-  constructor(host, clock) {
+  constructor(host, clock, { cells = [["target", "Target"], ["tier0", "Tier 0 echo"], ["tier1", "Tier 1 echo", "No Tier 1 run yet"]], sub = "0 to 5 kHz, design band marked" } = {}) {
     this.clock = clock; this.t = 0;
     this.root = el("section", { class: "panel spectro" });
     this.scale = el("div", { class: "cscale", title: "dB re each panel's own maximum" }, el("span", {}, "−60"), el("i"), el("span", {}, "0 dB"));
-    this.root.append(el("header", {}, el("h2", {}, "Spectrograms"), el("span", { class: "sub" }, "0 to 5 kHz, design band marked"), el("div", { class: "tools" }, this.scale)));
+    this.root.append(el("header", {}, el("h2", {}, "Spectrograms"), this.subEl = el("span", { class: "sub" }, sub), el("div", { class: "tools" }, this.scale)));
     this.row = el("div", { class: "specrow" }); this.root.append(this.row); host.append(this.root);
-    this.cells = ["target", "tier0", "tier1"].map((k) => {
-      const canvas = el("canvas"), cell = el("figure", {}, el("figcaption", {}, { target: "Target", tier0: "Tier 0 echo", tier1: "Tier 1 echo" }[k]), el("div", { class: "stage" }, canvas));
+    // cells: [[key, caption, empty text]]; the first one carries the frequency axis
+    this.cells = cells.map(([k, cap, empty], ci) => {
+      const canvas = el("canvas"), cell = el("figure", {}, el("figcaption", {}, cap), el("div", { class: "stage" }, canvas));
       this.row.append(cell);
       const ac = new AutoCanvas(canvas, (ctx, w, h) => this.draw(k, ctx, w, h));
-      canvas.addEventListener("pointerdown", (e) => { const r = canvas.getBoundingClientRect(), [t0, t1] = this.trange(); const pl = k === "target" ? 26 : 0;
+      canvas.addEventListener("pointerdown", (e) => { const r = canvas.getBoundingClientRect(), [t0, t1] = this.trange(); const pl = ci === 0 ? 26 : 0;
         this.clock.seek(t0 + (e.clientX - r.left - pl) / (r.width - pl) * (t1 - t0)); });
-      return { k, ac, img: null };
+      return { k, ac, img: null, first: ci === 0, empty };
     });
   }
   trange() { const T = this.sp?.times_s; return T?.length ? [0, Math.max(T[T.length - 1], this.duration)] : [0, this.duration || 0.1]; }
@@ -45,9 +46,9 @@ export class SpectroPanel {
   draw(k, ctx, w, h) {
     const C = colors(), font = getComputedStyle(document.body).fontFamily, cell = this.cells.find((c) => c.k === k), sp = this.sp;
     ctx.font = `10px ${font}`;
-    const padL = k === "target" ? 26 : 0, padB = 14, pw = w - padL, ph = h - padB;
+    const padL = cell.first ? 26 : 0, padB = 14, pw = w - padL, ph = h - padB;
     if (!cell.img) { ctx.strokeStyle = C.line; ctx.strokeRect(padL + 0.5, 0.5, pw - 1, ph - 1); ctx.fillStyle = C.dim; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      ctx.font = `12px ${font}`; ctx.fillText(k === "tier1" ? "No Tier 1 run yet" : "No spectrogram", padL + pw / 2, ph / 2); return; }
+      ctx.font = `12px ${font}`; ctx.fillText(cell.empty ?? "No spectrogram", padL + pw / 2, ph / 2); return; }
     const fmax = sp.freqs_hz[sp.freqs_hz.length - 1], T = sp.times_s, [t0, t1] = this.trange();
     // place image columns at their true times (frame centres)
     const dt = T.length > 1 ? T[1] - T[0] : t1, xa = padL + ((T[0] - dt / 2) - t0) / (t1 - t0) * pw, xb = padL + ((T[T.length - 1] + dt / 2) - t0) / (t1 - t0) * pw;

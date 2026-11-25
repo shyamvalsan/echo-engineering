@@ -251,11 +251,12 @@ export class ScenePanel {
     ctx.drawImage(this.off, 0, 0, w, h);
     // 3. live overlay
     this._drawLive(ctx, w, h, showField);
-    this.fieldNote.textContent = f ? (this.layers.field ? (showField ? this._fieldLabel(f) : this.fieldError ? "Pressure field video could not be loaded" : "Loading pressure field") : "Pressure field hidden")
-      : "No pressure field in this run: geometric wavefront shown";
+    this.fieldNote.textContent = (f ? (this.layers.field ? (showField ? this._fieldLabel(f) : this.fieldError ? "Pressure field video could not be loaded" : "Loading pressure field") : "Pressure field hidden")
+      : "No pressure field in this run: geometric wavefront shown") + (this.pulse && showField ? "; wave from an ideal short pulse, band = your sound's length" : this.pulse ? "; band = your sound's length" : "");
     this._readout();
   }
 
+  setPulse(seconds) { this.pulse = seconds || null; this.ac.request(); }
   _fieldLabel(f) {
     const tEnd = f.t0_s + f.n_frames * f.sim_seconds_per_frame;
     if (this.t > tEnd) return `Tier 1 pressure ends at ${num(tEnd * 1000, 1)} ms: last frame shown dimmed`;
@@ -370,6 +371,9 @@ export class ScenePanel {
       if (sx < -9 || sy < -9 || sx > w + 9 || sy > h + 9) return; ctx.moveTo(sx + rr, sy); ctx.arc(sx, sy, rr, 0, 2 * Math.PI); };
     // outgoing wavefront |P - S| = c t; posts it is passing light up
     const R = c * t, band = Math.max(0.06, 2.5 / s);
+    // Live mode: the user's sound occupies c × duration behind the front (34 cm per ms)
+    if (this.pulse && t > 0) { const r0 = Math.max(0, R - c * this.pulse) * s; ctx.save(); ctx.fillStyle = C.accent; ctx.globalAlpha = 0.13;
+      ctx.beginPath(); ctx.arc(Sx, Sy, R * s, 0, 2 * Math.PI); ctx.arc(Sx, Sy, r0, 0, 2 * Math.PI, true); ctx.fill("evenodd"); ctx.restore(); }
     if (!showField && t > 0) { ctx.strokeStyle = C.accent; ctx.globalAlpha = 0.75; ctx.lineWidth = 1.25; ctx.beginPath(); ctx.arc(Sx, Sy, R * s, 0, 2 * Math.PI); ctx.stroke(); ctx.globalAlpha = 1; }
     const lit = new Path2D(); let k = lowerBound(dist, this.byDist, R - band);
     let count = 0; for (; k < this.byDist.length && dist[this.byDist[k]] <= R && count < 4000; k++, count++) { const i = this.byDist[k];

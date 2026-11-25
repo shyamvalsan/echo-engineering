@@ -3,6 +3,8 @@ import WaveSurfer from "../vendor/wavesurfer.esm.js";
 import { Clock } from "./clock.js";
 import { loadIndex, loadRun } from "./data.js";
 import { RunView } from "./runview.js";
+import { LiveView } from "./live/view.js";
+import { lab } from "./live/lab.js";
 import { AutoCanvas, colors, el, niceStep, ticks, num } from "./util.js";
 
 const params = new URLSearchParams(location.search);
@@ -21,12 +23,16 @@ const stageRank = (s) => { const m = /^s(\d+)([a-z]?)_/.exec(s); return m ? +m[1
 // default run of a stage: the newest final run, else the newest run (index is newest first)
 // headline run of a set: newest final run that passed, else newest final run, else newest run
 const defaultRun = (runs) => runs.find((r) => r.status === "final" && r.passed) ?? runs.find((r) => r.status === "final") ?? runs[0];
+// opening run: the first stage's newest final run (stage 1, the representative result)
+const openingRun = (runs) => { const st = [...new Set(runs.map((r) => r.stage))].sort((a, b) => stageRank(a) - stageRank(b) || a.localeCompare(b));
+  for (const s of st) { const r = runs.find((x) => x.stage === s && x.status === "final"); if (r) return r; } return runs[0]; };
 const SUBSTAGES = { "4a": "4a Vowel", "4b": "4b Syllables", "4c": "4c Word" };
 const metaOf = (r) => state.meta?.get(r.path) ?? {};
 const substageOf = (r) => metaOf(r).substage ?? /_(\d[a-z])_/.exec(r.run_id ?? "")?.[1] ?? null;
 const hhmm = (iso) => { const m = /T(\d\d:\d\d)/.exec(iso ?? ""); return m ? m[1] : ""; };
 
-const state = { base: null, runs: [], a: null, b: null, views: [], kind: "as_heard", side: 0, cache: new Map() };
+const state = { base: null, runs: [], a: null, b: null, views: [], kind: "as_heard", side: 0, cache: new Map(), mode: params.get("mode") === "live" ? "live" : "review" };
+const KINDS = { review: [["target", "Target"], ["echo", "Echo"], ["as_heard", "As heard"]], live: [["mix", "Take + echo"], ["echo", "Echo"], ["take", "Take"]] };
 const clock = new Clock();
 const $ = (id) => document.getElementById(id);
 
@@ -60,15 +66,19 @@ function fillSwitcher(stageSel, runSel, current, onPick) {
 const transport = {
   ws: null,
   build() {
-    const speedBox = $("speeds"), kindBox = $("kinds");
+    const speedBox = $("speeds");
     speedBox.replaceChildren(...SPEEDS.map((s) => el("button", { class: "seg", "data-v": s.v, onclick: () => { clock.setSpeed(s.v); this.sync(); } }, s.label)));
-    const kinds = [["target", "Target"], ["echo", "Echo"], ["as_heard", "As heard"]];
-    kindBox.replaceChildren(...kinds.map(([k, label]) => el("button", { class: "seg", "data-k": k, title: `Play the ${label.toLowerCase()} audio from the start`,
-      onclick: () => { state.kind = k; setTrack(); clock.seek(0); clock.play(); this.sync(); } }, label)));
+    this.kinds();
     $("play").onclick = () => clock.toggle();
     $("pitch").onclick = () => { clock.setMuted(false); this.sync(); };
     $("mute").onclick = () => { clock.setMuted(true); this.sync(); };
     this.ticks = new AutoCanvas($("ticks"), (ctx, w, h) => this.drawTicks(ctx, w, h));
+  },
+  kinds() {
+    const kinds = KINDS[state.mode];
+    if (!kinds.some(([k]) => k === state.kind)) state.kind = state.mode === "live" ? "mix" : "as_heard";
+    $("kinds").replaceChildren(...kinds.map(([k, label]) => el("button", { class: "seg", "data-k": k, title: `Play the ${label.toLowerCase()} audio from the start`,
+      onclick: () => { state.kind = k; setTrack(); clock.seek(0); clock.play(); this.sync(); } }, label)));
   },
   sync() {
     for (const b of $("speeds").children) { const on = +b.dataset.v === clock.speed; b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); }
@@ -123,7 +133,10 @@ function setTrack() {
 // ---------- layout
 async function show() {
   const main = $("main"); clock.pause();
-  for (const v of state.views) v.destroy(); state.views = [];
+  const keepLive = state.mode === "live" && state.views[0] instanceof LiveView;
+  if (!keepLive) { for (const v of state.views) v.destroy(); state.views = []; }
+  document.body.classList.toggle("live", state.mode === "live");
+  if (state.mode === "live") return showLive();
   main.classList.toggle("compare", !!state.b); document.body.classList.toggle("comparing", !!state.b);
   $("loading").hidden = false;
   try {
@@ -141,10 +154,53 @@ async function show() {
   } finally { $("loading").hidden = true; }
 }
 
+// Live mode: one run, the scene and timeline driven by the selected take
+async function showLive() {
+  const main = $("main"); main.classList.remove("compare"); document.body.classList.remove("comparing");
+  $("loading").hidden = false;
+  try {
+    const run = await getRun(state.a), cur = state.views[0];
+    if (cur instanceof LiveView) { // keep the microphone running while switching structure
+      state.views = [cur]; LiveView.allRuns = state.runs; await cur.setRun(run); runInfo();
+      const u = new URL(location.href); u.searchParams.set("run", state.a.path); history.replaceState(null, "", u); return; }
+    clock.setDuration(run.duration); clock.setTrack(null); transport.setOverview(null, run.duration);
+    const v = new LiveView(main, run, { clock, onTrackChange: (o) => { if (o?.duration) clock.setDuration(o.duration); setTrack(); transport.ticks.request(); onTime(); },
+      reloadRuns, openRun: (r) => { state.a = r; fillSwitcher($("stage"), $("run"), state.a, (x) => { state.a = x; show(); }); show(); } });
+    LiveView.allRuns = state.runs;
+    state.views = [v]; document.title = `Live: ${run.manifest.title ?? run.entry.run_id} — Composed Echo`;
+    transport.ticks.request(); onTime(); runInfo(); transport.sync();
+    const u = new URL(location.href); u.searchParams.set("run", state.a.path); u.searchParams.set("mode", "live"); u.searchParams.delete("compare"); history.replaceState(null, "", u);
+  } catch (e) { main.append(el("p", { class: "fatal" }, `Could not load the run: ${e.message}.`)); console.warn(e); }
+  finally { $("loading").hidden = true; }
+}
+
+// re-read runs/index.json (after the lab wrote a new run) and open `path` in Live mode
+async function reloadRuns(path) {
+  const idx = await loadIndex(state.base); state.runs = idx.runs; await loadMeta();
+  const r = state.runs.find((x) => x.path === path) ?? state.runs.find((x) => path && path.endsWith(x.path)) ?? state.a;
+  state.a = r; fillSwitcher($("stage"), $("run"), state.a, (x) => { state.a = x; show(); }); await show();
+}
+async function loadMeta() {
+  state.meta = new Map(await Promise.all(state.runs.map(async (r) => {
+    try { const m = await (await fetch(`${state.base}/${r.path}/manifest.json`, { cache: "no-cache" })).json();
+      return [r.path, { substage: m.substage ?? null, realization: m.design?.config?.realization ?? null }]; }
+    catch { return [r.path, {}]; } })));
+}
+
+function setMode(mode) {
+  if (mode === state.mode) return;
+  state.mode = mode; if (mode === "live") { state.b = null; $("compare").classList.remove("on"); $("compareBox").hidden = true; }
+  for (const b of $("modes").children) { const on = b.dataset.m === mode; b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on)); }
+  $("compare").hidden = mode === "live";
+  if (mode === "review") { const u = new URL(location.href); u.searchParams.delete("mode"); history.replaceState(null, "", u); }
+  transport.kinds(); show();
+}
+
 function runInfo() {
   const v = state.views[state.side] ?? state.views[0], m = v?.run.manifest;
   $("cmdBox").hidden = !m?.command; $("cmd").textContent = m?.command ?? "";
   const lv = m?.audio?.as_heard_echo_level_db;
+  if (state.mode === "live") { $("truelevel").textContent = "replay of the selected take"; return; }
   $("truelevel").textContent = lv == null ? "" : `as heard at true level: echo ${num(-lv, 0)} dB below the clap`;
 }
 
@@ -185,21 +241,20 @@ function keys() {
 
 async function boot() {
   transport.build(); setupCompare(); keys();
+  for (const b of $("modes").children) { b.onclick = () => setMode(b.dataset.m); const on = b.dataset.m === state.mode; b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on)); }
+  $("compare").hidden = state.mode === "live"; document.body.classList.toggle("live", state.mode === "live");
   const sp = +params.get("speed"); clock.speed = SPEEDS.some((s) => s.v === sp) ? sp : 0.1; transport.sync();
   const idx = await loadIndex(params.get("runs") ?? "../runs");
   state.base = idx.base; state.runs = idx.runs;
   // small per-run facts for the switcher (sub-stage, realization tag); failures to load are ignored
-  state.meta = new Map(await Promise.all(state.runs.map(async (r) => {
-    try { const m = await (await fetch(`${state.base}/${r.path}/manifest.json`, { cache: "no-cache" })).json();
-      return [r.path, { substage: m.substage ?? null, realization: m.design?.config?.realization ?? null }]; }
-    catch { return [r.path, {}]; } })));
+  await Promise.all([loadMeta(), lab.detect()]);
   $("source").textContent = idx.fallback ? `Fixture data: no runs in ${idx.requested}/index.json yet` : idx.base === "fixtures/runs" ? "Fixture data" : "";
   $("source").title = `Runs read from ${idx.base}/index.json`;
   $("source").classList.toggle("warn", idx.base === "fixtures/runs");
   if (!state.runs.length) { $("loading").hidden = true; $("main").append(el("p", { class: "fatal" }, `No runs found. Run a stage (for example uv run python -m stages.s1_bird) to write ${idx.base}/index.json, or open ?runs=fixtures/runs.`)); return; }
   const find = (p) => state.runs.find((r) => r.path === p);
-  state.a = find(params.get("run")) ?? defaultRun(state.runs);
-  state.b = params.get("compare") ? find(params.get("compare")) ?? null : null;
+  state.a = find(params.get("run")) ?? openingRun(state.runs);
+  state.b = state.mode === "live" ? null : params.get("compare") ? find(params.get("compare")) ?? null : null;
   fillSwitcher($("stage"), $("run"), state.a, (r) => { state.a = r; show(); });
   if (state.b) { fillSwitcher($("stageB"), $("runB"), state.b, (r) => { state.b = r; show(); }); }
   $("compare").classList.toggle("on", !!state.b); $("compareBox").hidden = !state.b;

@@ -19,7 +19,7 @@ export class TimeWindow {
   emit() { for (const f of this.subs) f(); }
 }
 
-class TimePanel {
+export class TimePanel {
   constructor(host, cls, title, sub, win, clock) {
     this.win = win; this.clock = clock; this.t = 0; this.marker = null;
     this.root = el("section", { class: `panel ${cls}` });
