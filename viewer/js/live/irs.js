@@ -43,7 +43,7 @@ async function build(run, tier) {
     const t = await wav(`${run.dir}/${typeof file === "string" ? file : `ir_${tier}.wav`}`);
     data = await to16k(t); if (t.fs !== FS) data = data.map((v) => v * t.fs / FS); // IR taps scale with 1/fs
     const t0 = irm.t0_s ?? 0; if (t0 > 0) { const pad = new Float32Array(Math.round(t0 * FS) + data.length); pad.set(data, Math.round(t0 * FS)); data = pad; }
-    origin = "file"; note = `impulse response ir_${tier}.wav from the run${irm.band_hz ? `, band ${irm.band_hz[0]}–${irm.band_hz[1]} Hz` : ""}`;
+    origin = "file"; note = `impulse response ir_${tier}.wav from the run${irm.band_hz ? `, band ${Math.round(irm.band_hz[0])}–${Math.round(irm.band_hz[1])} Hz` : ""}`;
   } else {
     if (irm && !file) throw new Error(`This run has no ${tier === "tier1" ? "Tier 1" : "Tier 0"} impulse response`);
     const clap = await runClap(run), echoT = run.audio[tier];
@@ -57,12 +57,20 @@ async function build(run, tier) {
     data = deconvolve(echo.map((v) => v * scale), clap.data, FS, band, 3e-3);
     origin = "derived"; note = `derived in the browser: stored echo ÷ stored clap (regularized, ${band[0]}–${band[1]} Hz); this run has no ir_${tier}.wav yet`;
   }
-  // leading silence: geometry, never past the data's own onset (1 % of peak)
-  const pk = peakOf(data); let on = 0; while (on < data.length && Math.abs(data[on]) < 0.01 * pk) on++;
+  // leading silence: geometry, never past the data's own onset (5 % of peak; band-limited deconvolved IRs ring a little before it)
+  const pk = peakOf(data); let on = 0; while (on < data.length && Math.abs(data[on]) < 0.05 * pk) on++;
   const lead = Math.max(0, Math.min(geo, on / FS));
   // true level: the run's clap through this IR, re the clap (direct)
-  let levelDb = m.audio?.as_heard_echo_level_db ?? null;
+  const asHeard = m.audio?.as_heard_echo_level_db ?? null; let levelDb = asHeard;
   if (origin === "file" || levelDb == null) { const clap = await runClap(run).catch(() => null);
     if (clap) levelDb = 20 * Math.log10(peakOf(convolve(clap.data, data)) + 1e-12); }
+  // The run's true level is the 3D, tier-gap-corrected as-heard level (global constraints, "Levels"). An IR file
+  // whose clap echo is off by more than 3 dB (e.g. written at the 2D line-source level of echo_tier1.wav) is
+  // rescaled to it, and the note says so.
+  if (origin === "file" && asHeard != null && levelDb != null && Math.abs(levelDb - asHeard) > 3) {
+    const d = asHeard - levelDb, k = 10 ** (d / 20); data = data.map((v) => v * k);
+    note += `; rescaled by ${d > 0 ? "+" : "−"}${Math.abs(d).toFixed(1)} dB so the clap's echo has this run's 3D as-heard level (the file gives ${levelDb.toFixed(1)} dB)`;
+    levelDb = asHeard;
+  }
   return { data, fs: FS, lead, tDirect, key: `${run.dir}|${tier}|${origin}`, origin, levelDb, note, tier };
 }

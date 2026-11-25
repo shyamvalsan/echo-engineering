@@ -53,6 +53,7 @@ export class LiveView {
     this.spectro = new SpectroPanel(colC, clock, { cells: [["target", "Target (what the structure was designed to say)"], ["echo", "Echo of your take", "Select a take"]], sub: "0 to 5 kHz, dB re each panel's max" });
     this.spectro.root.classList.add("two");
     this._buildTakes(colC);
+    this._renderTakes(); this._syncStart();
     this.setRun(run);
   }
 
@@ -169,7 +170,7 @@ export class LiveView {
       msg.textContent = `${j.stage ?? j.status}${j.message ? `: ${j.message}` : ""}${j.warnings?.length ? ` (${j.warnings.join("; ")})` : ""}, ${el_s < 60 ? `${el_s} s` : `${Math.floor(el_s / 60)} min ${el_s % 60} s`}`;
       if (j.status === "error") throw new Error(j.message ?? "the lab reported an error");
       if (j.status === "done") { bar.hidden = true;
-        msg.textContent = LiveView.designMsg = `Done in ${Math.round(el_s / 60)} min${j.warnings?.length ? ` (${j.warnings.join("; ")})` : ""}: opened "${j.name ?? "the new design"}" (fast model only, not verified${j.tier1 ? " yet" : ""}).`;
+        msg.textContent = LiveView.designMsg = `Done in ${Math.round(el_s / 60)} min${j.warnings?.length ? ` (${j.warnings.join("; ")})` : ""}: opened "${j.name ?? "the new design"}"${j.tier1 ? "" : " (fast model only, not verified)"}.`;
         await this.reloadRuns?.(j.run?.path); return; }
       await new Promise((r) => setTimeout(r, 1000));
     }
@@ -193,6 +194,7 @@ export class LiveView {
     this.firstEcho = firstDelay(run);
     // target spectrogram on the same grid as the take's echo
     this.targetSp = run.audio.target ? spectrogram(run.audio.target.data, run.audio.target.fs, { tEnd: Math.max(run.duration, 0.2) }) : null;
+    if (!this.selTake()) this._idle();
     await this.setTier(this.tier, true);
     this._fillBuiltins(); this._renderDesign();
   }
@@ -350,6 +352,12 @@ export class LiveView {
     this.onTrackChange?.({ duration: this.duration });
   }
   track(kind) { return this.tracks?.[kind] ?? null; }
+  // no take yet: empty echo panel with its invitation, the target spectrogram alone
+  _idle() {
+    this.tracks = null; this.scene.setPulse(null); this.duration = this.run.duration; this.win.reset([0, this.run.duration]);
+    this.echoP.subEl.textContent = "select a take to see it here"; this.echoP.setData(this.run, null, null, null);
+    const ts = this.targetSp; this.spectro.setRun({ spectro: ts ? { freqs_hz: ts.freqs_hz, times_s: ts.times_s, db_floor: -60, panels: { target: ts.panel, echo: null } } : null, duration: this.run.duration });
+  }
   _renderTakes() {
     const sel = LiveView.sel;
     if (!this.takes.length) { this.takeList.replaceChildren(el("li", { class: "empty" }, "No takes yet. Clap with the microphone on, press Record 2 s, or use a sound file.")); this.dlBtns.replaceChildren(); return; }
@@ -367,7 +375,7 @@ export class LiveView {
     if (t) this.dlBtns.prepend(el("span", { class: "dlbl" }, "Download"));
   }
   rename(t) { const n = prompt("Name for this take", t.name); if (n?.trim()) { t.name = n.trim(); this._renderTakes(); if (t.id === LiveView.sel) this.select(t.id); } }
-  remove(t) { const i = this.takes.indexOf(t); if (i >= 0) this.takes.splice(i, 1); if (LiveView.sel === t.id) { LiveView.sel = this.takes[0]?.id ?? null; } this._renderTakes(); if (LiveView.sel) this.select(LiveView.sel); else { this.echoP.setData(this.run, null, null, null); this.tracks = null; this.scene.setPulse(null); this.onTrackChange?.({ duration: this.run.duration }); } }
+  remove(t) { const i = this.takes.indexOf(t); if (i >= 0) this.takes.splice(i, 1); if (LiveView.sel === t.id) { LiveView.sel = this.takes[0]?.id ?? null; } this._renderTakes(); if (LiveView.sel) this.select(LiveView.sel); else { this._idle(); this.onTrackChange?.({ duration: this.run.duration }); } }
   async download(t, kind) {
     const echo = await this.echoOf(t), safe = t.name.replace(/[^\w.-]+/g, "_"), run = this.run.entry.run_id;
     let data = t.data, suffix = "take";
