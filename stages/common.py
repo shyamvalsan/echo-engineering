@@ -67,6 +67,7 @@ class StageConfig:
     note_s: float | None = None  # note length the note judge is told; None = median of target.notes (judge default)
     correction_rounds: int = 5  # max Tier 1 runs in the correction loop (spec: stop after 5 rounds)
     correction_power: float = 1.0  # damping exponent on the per-window gains (1 = full step)
+    correction_clip: tuple | None = None  # per-window gain clip per correction round (None: echo.inverse.CORR_CLIP)
     robustness: bool = True  # run the robustness sweep on the final design
     field: bool = True  # record the Tier 1 field of the final design and render field.webm
     field_dt: float = 0.25e-3  # s of simulation per field frame
@@ -569,7 +570,8 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
         warp["in_loop"] = True
         rounds, ib = correction_loop(profile, build, run1, evaluate, ref, t_echo0, t_stop, r0=cfg.r0, dr=cfg.dr,
                                      c=C0, t_offset=clap_centroid_s(claps), rounds=cfg.correction_rounds,
-                                     power=cfg.correction_power, log=say)
+                                     power=cfg.correction_power, log=say,
+                                     **({} if cfg.correction_clip is None else {"clip": tuple(cfg.correction_clip)}))
         wall["correction_loop_s"] = time.time() - t_loop
         best = rounds[ib]
         des = best.design
