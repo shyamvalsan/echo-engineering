@@ -121,8 +121,9 @@ Contracts used (Live):
   band-limited deconvolution of `echo_tier{0,1}.wav` by the clap (`as_heard.wav` from `t_direct` to the first echo or
   12 ms), scaled so the clap's echo has `audio.as_heard_echo_level_db`. On the stage-1 run this reconstructs the
   stored echo to -39 dB error and the level to 0.0 dB. The UI says "derived in the browser" for such runs.
-- Lab server: `GET /api/health`, `GET /api/inputs`, `POST /api/design`, `GET /api/jobs/<id>` (see the brief in
-  `echo/lab.py`). Detected once at load; on a static server the only console line is the 404 of `/api/health`.
+- Lab server: `GET /api/health`, `GET /api/inputs`, `POST /api/design` (must carry the header `X-Echo-Lab: 1`; the
+  viewer sends it), `GET /api/jobs/<id>` (see the brief in `echo/lab.py`). The server answers only to Host
+  127.0.0.1 / localhost, refuses cross-origin POSTs and keeps at most 5 jobs waiting. Detected once at load; on a static server the only console line is the 404 of `/api/health`.
 - `metrics.json` verdict keys, shown side by side in the scorecard when present: `criteria.spec_v1` ("Original spec
   thresholds"), `criteria.owner_v2` ("Revised thresholds (listening-calibrated)", `passed: null` reads "no automated
   criterion"), `listening_verdict` ("Owner's ear, 25 Nov").

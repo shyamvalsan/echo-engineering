@@ -24,7 +24,8 @@ export const lab = {
   async inputs() { return this.present ? json(api("inputs")).catch(() => null) : null; },
   async design({ file, name, maxDuration = 1.0, tier1 = false }) {
     const fd = new FormData(); fd.append("target", file, file.name); fd.append("name", name); fd.append("max_duration_s", String(maxDuration)); fd.append("tier1", tier1 ? "1" : "0");
-    return json(api("design"), { method: "POST", body: fd }, 30000);
+    // X-Echo-Lab: the server refuses POSTs without it (a custom header keeps other web pages from submitting jobs)
+    return json(api("design"), { method: "POST", body: fd, headers: { "X-Echo-Lab": "1" } }, 30000);
   },
   async job(id) { return json(api(`jobs/${encodeURIComponent(id)}`)); },
   url: (u) => new URL(u, new URL("../", location.href)).href,

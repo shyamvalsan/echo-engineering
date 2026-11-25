@@ -2,14 +2,21 @@
 
     uv run python -m echo.lab [--port 8000] [--host 127.0.0.1]
 
-Static: serves the repo root like `python -m http.server`, plus HTTP Range (206 / 416) for every file, and
-`Cache-Control: no-cache` on .js/.css/.json/.html. Paths with a dot-segment (.git, .cache, ...) are not served.
+Static: serves the repo root like `python -m http.server`, plus HTTP Range (206 / 416; a multi-range request gets
+the whole file with 200, as RFC 7233 allows) for every file, and `Cache-Control: no-cache` on .js/.css/.json/.html.
+Paths with a dot-segment (.git, .cache, ...) or a `_uploads` / `_jobs` segment are not served and not listed.
+
+Request checks: the Host header must name this machine (127.0.0.1, localhost or [::1], any port; plus the --host
+address when that is a specific non-loopback address) so a DNS-rebinding page cannot read the server. POST needs the
+header `X-Echo-Lab: 1` (a custom header forces a CORS preflight, which this server never answers, so no other web
+page can submit jobs) and, when an Origin header is sent, an Origin on an allowed host. At most MAX_QUEUED jobs wait.
 
 API (same origin, JSON):
     GET  /api/health          {"ok": true, "version": "<git short sha>", "features": ["design", "source_echo"]}
     GET  /api/inputs          {"targets": [{"name", "url"}], "sources": [{"name", "url"}]}  (inputs/targets, inputs/sources)
-    POST /api/design          multipart: target (audio file), name?, max_duration_s? (1.0), tier1? ("0"/"1")
-                              -> 202 {"job_id"} | 400 {"error"} | 413 {"error"}
+    POST /api/design          header X-Echo-Lab: 1; multipart: target (audio file), name?, max_duration_s? (1.0),
+                              tier1? ("0"/"1")
+                              -> 202 {"job_id"} | 400 / 403 / 411 / 413 / 429 {"error"}
     GET  /api/jobs            {"jobs": [job, ...]} newest first (at most 50)
     GET  /api/jobs/<job_id>   {"job_id", "status": queued|running|done|error, "stage", "progress", "message",
                                "run": {"stage": "custom", "run_id", "path": "custom/<run_id>"} | null, "warnings": [...]}
@@ -17,7 +24,9 @@ API (same origin, JSON):
 Jobs run one at a time in a worker thread (stages.custom.design_custom); state is in memory and mirrored to
 runs/custom/_jobs/<job_id>.json. Uploads are stored as runs/custom/_uploads/<job_id>.audio (the client's file name is
 never used as a path), limited to 20 MB, and accepted only if soundfile/librosa decode them and the custom designer's
-input checks pass. No shell is ever invoked with user input.
+input checks pass. Uploads are kept in runs/custom/_uploads/ until deleted by hand. Decoding reads at most the first
+stages.custom.MAX_READ_S seconds of a file (a highly compressed long file cannot expand in memory). No shell is ever
+invoked with user input.
 """
 
 from __future__ import annotations
@@ -25,6 +34,7 @@ from __future__ import annotations
 import argparse
 import email.parser
 import email.policy
+import io
 import json
 import os
 import queue
@@ -37,7 +47,7 @@ from functools import partial
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import unquote, urlsplit
+from urllib.parse import quote, unquote, urlsplit
 
 from echo import export
 
@@ -49,6 +59,10 @@ AUDIO_EXT = {".wav", ".flac", ".ogg", ".mp3"}
 JOB_ID_RE = re.compile(r"^[0-9a-z-]{6,40}$")
 FEATURES = ["design", "source_echo"]
 RANGE_RE = re.compile(r"^bytes=(\d*)-(\d*)$")
+MAX_QUEUED = 5  # jobs waiting (not counting the running one); more -> 429
+HIDDEN_SEGMENTS = {"_uploads", "_jobs"}  # never served or listed (uploaded sounds, job mirrors)
+LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "[::1]", "::1"}
+LAB_HEADER = "X-Echo-Lab"
 
 
 class Lab:
@@ -97,6 +111,10 @@ class Lab:
             snap = dict(job)
         self._mirror(snap)
         return snap
+
+    def queued(self) -> int:
+        with self.lock:
+            return sum(1 for j in self.jobs.values() if j.get("status") == "queued")
 
     def submit(self, data: bytes, name: str, max_duration_s: float, tier1: bool) -> str:
         job_id = f"{datetime.now():%Y%m%d-%H%M%S}-{secrets.token_hex(3)}"
@@ -180,9 +198,18 @@ def parse_multipart(content_type: str, body: bytes) -> dict:
     return out
 
 
+def _hostname(value: str) -> str:
+    """Host header / Origin netloc -> lower-case host name without port ("[::1]:8000" -> "[::1]")."""
+    v = value.strip().lower()
+    if v.startswith("["):
+        return v[: v.find("]") + 1] if "]" in v else v
+    return v.rsplit(":", 1)[0] if v.count(":") == 1 else v
+
+
 class LabHandler(SimpleHTTPRequestHandler):
     server_version = "EchoLab/1"
     lab: Lab = None  # set by make_server
+    allowed_hosts: frozenset | None = frozenset(LOOPBACK_HOSTS)  # set by make_server; None = no Host check
     extensions_map = {**SimpleHTTPRequestHandler.extensions_map, ".js": "text/javascript", ".mjs": "text/javascript",
                       ".webm": "video/webm", ".wav": "audio/wav", ".json": "application/json",
                       ".wasm": "application/wasm", ".md": "text/markdown; charset=utf-8"}
@@ -207,23 +234,59 @@ class LabHandler(SimpleHTTPRequestHandler):
             self.send_header("Cache-Control", "no-cache")
         super().end_headers()
 
+    def _host_ok(self, value) -> bool:
+        return self.allowed_hosts is None or value is None or _hostname(value) in self.allowed_hosts
+
+    def _origin_ok(self, origin: str) -> bool:
+        """Same origin only: an allowed host name and this server's port (a page served on another local port is
+        another origin)."""
+        try:
+            o = urlsplit(origin)
+            port = o.port or {"http": 80, "https": 443}.get(o.scheme)
+        except ValueError:
+            return False
+        return (o.scheme in ("http", "https") and bool(o.netloc) and self._host_ok(o.netloc)
+                and port == self.server.server_address[1])
+
+    def _refuse_host(self) -> bool:
+        """True (and a 403 sent) when the Host header names another machine (DNS rebinding)."""
+        if self._host_ok(self.headers.get("Host")):
+            return False
+        self.close_connection = True
+        self._json(403, {"error": "Host not allowed: the lab server answers only to 127.0.0.1 / localhost"})
+        return True
+
     # ---- routing
     def do_GET(self):
+        if self._refuse_host():
+            return
         path = urlsplit(self.path).path
         if path.startswith("/api/"):
             return self._api_get(path)
         return self._static()
 
     def do_HEAD(self):
+        if self._refuse_host():
+            return
         path = urlsplit(self.path).path
         if path.startswith("/api/"):
             return self._api_get(path)
         return self._static()
 
     def do_POST(self):
+        if self._refuse_host():
+            return
         path = urlsplit(self.path).path
         if path != "/api/design":
+            self.close_connection = True
             return self._json(404, {"error": "not found"})
+        origin = self.headers.get("Origin")
+        if origin is not None and not self._origin_ok(origin):
+            self.close_connection = True
+            return self._json(403, {"error": f"cross-origin request refused (Origin {origin[:100]})"})
+        if (self.headers.get(LAB_HEADER) or "").strip() != "1":
+            self.close_connection = True
+            return self._json(403, {"error": f"missing header {LAB_HEADER}: 1 (required on POST; the viewer sends it)"})
         return self._api_design()
 
     def _api_get(self, path):
@@ -248,6 +311,9 @@ class LabHandler(SimpleHTTPRequestHandler):
         except ValueError:
             self.close_connection = True
             return self._json(411, {"error": "Content-Length required"})
+        if length < 0:
+            self.close_connection = True  # the body is not read
+            return self._json(400, {"error": "invalid Content-Length"})
         if length > MAX_BODY:
             self.close_connection = True  # the body is not read
             return self._json(413, {"error": f"upload too large ({length / 1e6:.1f} MB; limit {MAX_UPLOAD // 2**20} MB)"})
@@ -276,18 +342,20 @@ class LabHandler(SimpleHTTPRequestHandler):
         t1 = (form.get("tier1") or b"0").decode().strip()
         if t1 not in ("0", "1", "true", "false", ""):
             return self._json(400, {"error": "tier1 must be 0 or 1"})
-        try:  # validate now so obvious rejections come back immediately
+        try:  # validate now so obvious rejections come back immediately (decodes at most MAX_READ_S seconds)
             x, sr = load_audio(data)
             prepare_target(x, sr, mdur)
         except CustomInputError as exc:
             return self._json(400, {"error": str(exc)})
+        if self.lab.queued() >= MAX_QUEUED:
+            return self._json(429, {"error": f"{MAX_QUEUED} jobs are already waiting; try again when one has finished"})
         jid = self.lab.submit(data, name, mdur, t1 in ("1", "true"))
         return self._json(202, {"job_id": jid})
 
     # ---- static files with Range
     def _static(self):
         raw = unquote(urlsplit(self.path).path)
-        if any(seg.startswith(".") for seg in raw.split("/") if seg):
+        if any(seg.startswith(".") or seg in HIDDEN_SEGMENTS for seg in raw.split("/") if seg):
             self.send_error(HTTPStatus.NOT_FOUND, "File not found")
             return
         fpath = Path(self.translate_path(self.path))
@@ -310,6 +378,8 @@ class LabHandler(SimpleHTTPRequestHandler):
         rng = self.headers.get("Range")
         start, end = 0, size - 1
         partial_ = False
+        if rng and "," in rng:  # multi-range: RFC 7233 lets a server ignore Range; send the whole file (200)
+            rng = None
         if rng:
             m = RANGE_RE.match(rng.strip())
             ok = m is not None and (m.group(1) or m.group(2))
@@ -354,6 +424,34 @@ class LabHandler(SimpleHTTPRequestHandler):
                 left -= len(chunk)
 
 
+    def list_directory(self, path):
+        """Directory index as http.server's, without dot-entries or _uploads/_jobs."""
+        import html
+
+        try:
+            names = sorted((n for n in os.listdir(path) if not n.startswith(".") and n not in HIDDEN_SEGMENTS),
+                           key=str.lower)
+        except OSError:
+            self.send_error(HTTPStatus.NOT_FOUND, "No permission to list directory")
+            return None
+        title = html.escape(unquote(urlsplit(self.path).path), quote=False)
+        items = []
+        for n in names:
+            full = os.path.join(path, n)
+            shown = n + ("/" if os.path.isdir(full) else "@" if os.path.islink(full) else "")
+            link = n + ("/" if os.path.isdir(full) else "")
+            items.append(f'<li><a href="{quote(link, errors="surrogatepass")}">{html.escape(shown, quote=False)}</a></li>')
+        body = (f'<!DOCTYPE HTML>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<title>Directory listing for {title}'
+                f'</title>\n</head>\n<body>\n<h1>Directory listing for {title}</h1>\n<hr>\n<ul>\n' + "\n".join(items)
+                + "\n</ul>\n<hr>\n</body>\n</html>\n").encode("utf-8", "surrogateescape")
+        f = io.BytesIO(body)
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        return f
+
+
 def _public(job):
     if job is None:
         return None
@@ -362,11 +460,20 @@ def _public(job):
     return {k: job.get(k) for k in keys if k in job}
 
 
+def allowed_hosts_for(host: str):
+    """Host names the server answers to: loopback names, plus `host` when it is a specific address; None (no Host
+    check) when bound to all interfaces (0.0.0.0 / ::), which the owner must ask for explicitly with --host."""
+    if host in ("0.0.0.0", "::", ""):
+        return None
+    h = host.lower()
+    return frozenset(LOOPBACK_HOSTS | {h, f"[{h}]" if ":" in h else h})
+
+
 def make_server(host="127.0.0.1", port=8000, root=None, lab=None):
     """ThreadingHTTPServer bound to (host, port) serving `root` (default the repo root). Returns the server; its
     `lab` attribute is the job manager."""
     lab = lab or Lab()
-    handler = type("BoundLabHandler", (LabHandler,), {"lab": lab})
+    handler = type("BoundLabHandler", (LabHandler,), {"lab": lab, "allowed_hosts": allowed_hosts_for(host)})
     srv = ThreadingHTTPServer((host, port), partial(handler, directory=str(root or ROOT)))
     srv.daemon_threads = True
     srv.lab = lab
@@ -379,6 +486,9 @@ def main(argv=None):
     ap.add_argument("--host", default="127.0.0.1", help="bind address (default 127.0.0.1: this machine only)")
     a = ap.parse_args(argv)
     srv = make_server(a.host, a.port)
+    if allowed_hosts_for(a.host) is None:
+        print("warning: bound to all interfaces; the Host check is off and anyone on the network can use the API",
+              flush=True)
     print(f"Composed Echo lab on http://{a.host}:{srv.server_address[1]}/viewer/  (version {srv.lab.version}; "
           f"API /api/health; Ctrl+C to stop)", flush=True)
     try:

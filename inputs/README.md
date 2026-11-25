@@ -16,8 +16,15 @@ Command line (same result as an upload on the Lab page):
     uv run python -m stages.custom --target inputs/targets/rising_two_note.wav --name "rising two-note"
     uv run python -m stages.custom --target inputs/targets/my.wav --name "my sound" --tier1 --max-duration 1.0
 
-Or upload the file on the Lab page (`POST /api/design`). Either way you get a normal run folder,
-`runs/custom/<run_id>/`, and the viewer lists it under the "custom" stage.
+Or upload the file on the Lab page (`POST /api/design`, which needs the header `X-Echo-Lab: 1`; the viewer sends it).
+From the shell:
+
+    curl -H "X-Echo-Lab: 1" -F target=@inputs/targets/rising_two_note.wav -F name="rising two-note" \
+         http://127.0.0.1:8000/api/design
+
+Either way you get a normal run folder, `runs/custom/<run_id>/`, and the viewer lists it under the "custom" stage.
+Uploaded files are kept in `runs/custom/_uploads/` (named by job id; the server never serves or lists that folder)
+until you delete them by hand.
 
 What happens to the file: it is mixed to mono, resampled to 16 kHz, stripped of leading and trailing silence, cut to
 `--max-duration` seconds (default 1.0, at most 2.0, with a 10 ms fade-out), band-limited to the design band
@@ -27,7 +34,8 @@ numbers behind it are stored in `manifest.json` under `custom.classification`.
 
 Formats and lengths that work:
 
-- Formats: wav, flac and ogg (anything libsndfile reads), and mp3. Any sample rate, mono or stereo, at most 20 MB.
+- Formats: wav, flac and ogg (anything libsndfile reads), and mp3. Any sample rate, mono or stereo, at most 20 MB;
+  only the first 30 s of a longer file are read.
 - Length: at least 30 ms of sound after silence is trimmed. A useful range is 50-500 ms. The field gets deeper by
   about 17 cm for every millisecond of sound (340 m/s, there and back), so a 1 s target needs a field about 170 m
   deep.
@@ -35,7 +43,8 @@ Formats and lengths that work:
 - Refused, with a message saying why: files that are not audio, silent files, files shorter than 30 ms after
   trimming, and files with nothing in the band.
 
-These are fast-model (Tier 0) designs. They are marked "UNVERIFIED - Tier 0 only" (`status: tier0_only`), and there
+These are fast-model (Tier 0) designs. They are marked "UNVERIFIED - Tier 0 only" (`status: tier0_only`) unless a
+`--tier1` run completes (then `status: final`, `verified: true`), and there
 is no pass or fail for an arbitrary sound. `metrics.json` reports information only: echo level, field depth, post
 count, ground coverage, and how closely the echo's spectrogram and envelope match the target.
 

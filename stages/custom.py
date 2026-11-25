@@ -7,7 +7,8 @@ Pipeline (`design_custom`): load (soundfile, else librosa) -> mono (channel mean
 (scipy resample_poly) -> trim silence (5 ms RMS frames below -40 dB re the loudest frame, 5 ms kept each side) ->
 trim to max_duration_s with a 10 ms fade (reported) -> band-limit to the design band 500-4000 Hz -> peak-normalize ->
 design on Tier 0 with the settings that worked in stages 1-4 (1 cm posts only, full +-20 deg fan, low coverage,
-stretch pre-compensation prior on ranges) -> run folder runs/custom/<run_id>/ (status tier0_only, verified false).
+stretch pre-compensation prior on ranges) -> run folder runs/custom/<run_id>/ (status tier0_only, verified false;
+after a completed --tier1 run: status final, verified true).
 
 Rejected inputs (CustomInputError, message for the user): not decodable, empty, non-finite samples, silent
 (peak < 1e-5 FS), no energy in 500-4000 Hz (in-band energy < -30 dB of the total), shorter than 30 ms after
@@ -27,7 +28,8 @@ band_min_hz=500, as stage 4: the clap band starts at 898 Hz, user targets may no
 
 Metrics: there is no pass condition for an arbitrary target. metrics.json carries generic information only (echo
 level, depth, post count, coverage, log-mel spectrogram correlation and envelope correlation with the target), no
-thresholds, `pass: null` on every row, `passed: false` / `verified: false` per the contract's unverified convention,
+thresholds, `pass: null` on every row, `passed: false` / `verified: false` per the contract's unverified convention
+(`verified: true` once a --tier1 full-wave run of the design has completed),
 `pass_condition: null`, and `failure_cause` = "no pass condition defined for custom targets".
 
 Full-wave (--tier1 / tier1=1): ONE run of the design through the stage driver (stages.common.run_stage with Tier 1,
@@ -68,6 +70,11 @@ CUSTOM_DIR = export.RUNS / STAGE
 BAND = (500.0, 4000.0)
 MIN_DURATION_S = 0.03
 MAX_DURATION_CAP_S = 2.0
+# Decoding reads at most this much of a file (silence is trimmed after decoding, so some lead-in is allowed beyond
+# MAX_DURATION_CAP_S). Bounds memory for highly compressible files: 20 MB of FLAC near-silence can hold ~40 h.
+MAX_READ_S = 30.0
+MAX_CHANNELS = 8
+SR_RANGE = (1000, 384000)
 TONAL_RATIO_MIN = 0.5
 TIER1_BUDGET_S = 20 * 60.0
 TIER1_CELL_STEPS_PER_S = 55e9 / 260.0  # stage 4's cost model (8 idle threads)
@@ -108,13 +115,24 @@ METRIC_INFO.setdefault("env_corr", ("Envelope correlation, 5 ms RMS (info)", "",
 
 
 # ------------------------------------------------------------------------------------------------------- input
-def load_audio(src):
-    """Decode an audio file (path or bytes). Returns (x [n, ch] float64, sr). Raises CustomInputError."""
+def load_audio(src, warnings=None):
+    """Decode an audio file (path or bytes). Returns (x [n, ch] float64, sr). Raises CustomInputError.
+    Reads at most the first MAX_READ_S seconds (a note is appended to `warnings`, if given, when the file is longer)."""
     data = Path(src).read_bytes() if not isinstance(src, (bytes, bytearray)) else bytes(src)
     if not data:
         raise CustomInputError("empty file")
+    truncated = False
     try:
-        x, sr = sf.read(io.BytesIO(data), dtype="float64", always_2d=True)
+        with sf.SoundFile(io.BytesIO(data)) as f:
+            sr, ch = int(f.samplerate), int(f.channels)
+            if not (SR_RANGE[0] <= sr <= SR_RANGE[1]) or not (1 <= ch <= MAX_CHANNELS):
+                raise CustomInputError(f"unsupported audio: {sr} Hz, {ch} channels (allowed {SR_RANGE[0]}-"
+                                       f"{SR_RANGE[1]} Hz, 1-{MAX_CHANNELS} channels)")
+            cap = int(MAX_READ_S * sr)
+            x = f.read(frames=cap, dtype="float64", always_2d=True)
+            truncated = len(x) >= cap and (f.frames > cap if f.frames > 0 else bool(len(f.read(1))))
+    except CustomInputError:
+        raise
     except Exception:  # noqa: BLE001 - fall back to librosa (audioread) for formats libsndfile cannot read
         try:
             import tempfile
@@ -126,12 +144,15 @@ def load_audio(src):
 
                 tf.write(data)
                 tf.flush()
-                y, sr = librosa.load(tf.name, sr=None, mono=False)
+                y, sr = librosa.load(tf.name, sr=None, mono=False, duration=MAX_READ_S)
             x = np.atleast_2d(y).T.astype(np.float64)
+            truncated = len(x) >= int(MAX_READ_S * sr)
         except Exception as exc:  # noqa: BLE001
             raise CustomInputError(f"not a decodable audio file (wav/flac/ogg/mp3): {type(exc).__name__}") from None
     if x.size == 0 or sr <= 0:
         raise CustomInputError("no audio samples in the file")
+    if truncated and warnings is not None:
+        warnings.append(f"file longer than {MAX_READ_S:.0f} s: only the first {MAX_READ_S:.0f} s were read")
     return x, int(sr)
 
 
@@ -369,8 +390,10 @@ def design_custom(src, name="custom", max_duration_s=1.0, tier1=False, progress=
     t_all = time.time()
     tim = {}
     say("loading audio", 0.02)
-    x, sr = load_audio(src)
+    read_notes = []
+    x, sr = load_audio(src, read_notes)
     audio, info, warnings = prepare_target(x, sr, max_duration_s)
+    warnings = read_notes + list(warnings)
     real, cls = classify(audio)
     target = Target(name=slug(name), audio=audio, duration_s=len(audio) / FS, f_top_hz=cls["f_top_hz"])
     cfg = make_config(target, real, name)

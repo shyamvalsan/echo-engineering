@@ -54,6 +54,10 @@ A fast-model design takes seconds to a minute; `--tier1` adds one full-wave solv
 than 20 minutes (in practice targets up to roughly 150 ms). Formats, limits and what happens to the file:
 [`inputs/README.md`](inputs/README.md).
 
+The lab server answers only on this machine (Host 127.0.0.1 / localhost). Its upload API, `POST /api/design`, needs the
+header `X-Echo-Lab: 1` (the viewer sends it; a curl example is in `inputs/README.md`), so other web pages cannot submit
+jobs. Uploaded files stay in `runs/custom/_uploads/` until you delete them.
+
 ## Reproduce each stage
 
 Each command writes a new run folder under `runs/<stage>/<run_id>/` and updates `runs/index.json`. On the CPU machine
