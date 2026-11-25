@@ -284,7 +284,7 @@ class CorrectionRound:
 
 
 def correction_loop(profile, build, run_t1, evaluate, reference, t_start, t_stop, *, r0, dr, c=C0, t_offset=0.0,
-                    rounds=5, power=1.0, win_s=CORR_WIN_S, verbose=True, log=print):
+                    rounds=5, power=1.0, win_s=CORR_WIN_S, verbose=True, log=print, clip=CORR_CLIP):
     """Spec step 3. Round k: realize `profile_k` (build), run Tier 1 (run_t1), score it (evaluate), then rescale the
     profile per window against `reference` and go on. Stops after `rounds` Tier 1 runs or at the first round whose
     score does not improve on the best so far. Returns (rounds list, index of the best round by score).
@@ -301,7 +301,7 @@ def correction_loop(profile, build, run_t1, evaluate, reference, t_start, t_stop
         des = build(p)
         res, e1 = run_t1(des)
         met, loss, score = evaluate(des, e1)
-        tc, g, _ = window_gains(e1, reference, t_start, t_stop, win_s)
+        tc, g, _ = window_gains(e1, reference, t_start, t_stop, win_s, clip=clip)
         rd = CorrectionRound(k, p, des, res, e1, met, loss, score, g, time.time() - t)
         out.append(rd)
         if verbose:
