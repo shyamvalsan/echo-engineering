@@ -86,6 +86,9 @@ class StageConfig:
     band_max_hz: float | None = None  # cap the stage band (solve, echoes, comparisons) e.g. at a Tier 1 f_max < 4 kHz
     band_min_hz: float | None = None  # override the stage band's low edge (default None: the clap band's, -20 dB re the
     #   clap peak). Stage 4 sets 500 Hz (the speech targets' band): F1 (~740 Hz) lies below the clap band's 898 Hz edge
+    robustness_c_cases: tuple | None = None  # speed-of-sound cases to run (None: echo.robustness.C_CASES, the spec's
+    #   331 and 349 m/s); () skips them (each costs an empty-scene run + a full run) and records them as not run
+    robustness_jitter: bool = True  # run the jitter case (one Tier 1 rerun); False records it as not run
     tier0_equalize_rounds: int = 0  # after the solve: rounds of per-window level correction of the Tier 0 profile echo
     #   toward the physically perfect echo (echo.inverse.window_gains, the Tier 1 loop's rule; judge-free); 0 = off
 
@@ -614,7 +617,9 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
             robust, fragile, fragile_why, tim = sweep(
                 cfg.stage, target, claps, band, des.scene, t_echo0, cfg.r0, best_res,
                 run_t1=lambda sc, c: t1(sc, c), echoes=lambda r, cl, li: hooks.echoes(r, cl, listener=li),
-                tier0_echo=tier0_echo, seed=cfg.seed, rho_mid=rho_mid, log=say)
+                tier0_echo=tier0_echo, seed=cfg.seed, rho_mid=rho_mid, log=say,
+                **({} if cfg.robustness_c_cases is None else {"c_cases": tuple(cfg.robustness_c_cases)}),
+                jitter=cfg.robustness_jitter)
             wall["robustness_s"] = time.time() - t
             wall["robustness_detail_s"] = tim
 

@@ -134,12 +134,14 @@ def fragile_rule(cases) -> tuple[bool, str]:
 
 
 def sweep(stage, target, claps, band, scene: Scene, t_echo0, r0, nominal_t1, *, run_t1, echoes, tier0_echo, seed,
-          rho_mid, log=print):
+          rho_mid, log=print, c_cases=C_CASES, jitter=True):
     """Run the whole sweep for a final design. Returns (cases list, fragile bool, fragile_reason, timings dict).
 
     nominal_t1: the final design's Tier 1 result with sensors `robustness_listeners(scene)`.
     run_t1(scene, c) -> Tier1Result with the same sensors; echoes(result, claps, listener) -> [K, n] (band-limited
     by this function); tier0_echo(scene) -> [K, n] Tier 0 2D echo, band-limited.
+    c_cases: the speed-of-sound cases to run (default the spec's C_CASES); jitter=False skips the jitter rerun. Cases
+    not run are returned in no list: the caller records them (cost) and they never enter `fragile`.
     """
     import time
 
@@ -169,7 +171,7 @@ def sweep(stage, target, claps, band, scene: Scene, t_echo0, r0, nominal_t1, *, 
                           vals(tier0_echo(sc_l), t_echo0 + sh), listener=[float(v) for v in Ln],
                           window_shift_ms=sh * 1e3))
 
-    for c in C_CASES:
+    for c in c_cases:
         t = time.time()
         sc_c = Scene(source=scene.source, listener=scene.listener, posts=scene.posts,
                      half_angle_deg=scene.half_angle_deg, r_min=scene.r_min, c=c)
@@ -186,22 +188,23 @@ def sweep(stage, target, claps, band, scene: Scene, t_echo0, r0, nominal_t1, *, 
                           tier1_wall_s=res.wall_s, empty_cached=bool(res.extra.get("empty_cached"))))
         log(f"robustness c={c:.0f}: {cases[-1]['metrics']} pass {cases[-1]['pass']} ({tim[f'c_{c:.0f}']:.0f} s)")
 
-    t = time.time()
-    pj = jitter_posts(scene.posts, seed)
-    sc_j = Scene(source=scene.source, listener=scene.listener, posts=pj, half_angle_deg=scene.half_angle_deg,
-                 r_min=scene.r_min, c=scene.c)
-    res = run_t1(sc_j, scene.c)
-    tim["jitter"] = time.time() - t
-    d = pj - np.asarray(scene.posts)
-    cases.append(case(stage, "jitter", "Posts jittered 5 mm, radii 1 mm (uniform)", vals(e1(res, 0), t_echo0), nominal,
-                      vals(tier0_echo(sc_j), t_echo0),
-                      jitter={"distribution": "uniform", "pos_half_width_m": POS_JITTER_M,
-                              "rad_half_width_m": RAD_JITTER_M, "seed": int(seed) + JITTER_SEED_OFFSET,
-                              "max_abs_dxy_m": float(np.abs(d[:, :2]).max()) if len(d) else 0.0,
-                              "max_abs_dr_m": float(np.abs(d[:, 2]).max()) if len(d) else 0.0,
-                              "min_gap_m": float(_min_gap(pj))},
-                      tier1_wall_s=res.wall_s))
-    log(f"robustness jitter: {cases[-1]['metrics']} pass {cases[-1]['pass']} ({tim['jitter']:.0f} s)")
+    if jitter:
+        t = time.time()
+        pj = jitter_posts(scene.posts, seed)
+        sc_j = Scene(source=scene.source, listener=scene.listener, posts=pj, half_angle_deg=scene.half_angle_deg,
+                     r_min=scene.r_min, c=scene.c)
+        res = run_t1(sc_j, scene.c)
+        tim["jitter"] = time.time() - t
+        d = pj - np.asarray(scene.posts)
+        cases.append(case(stage, "jitter", "Posts jittered 5 mm, radii 1 mm (uniform)", vals(e1(res, 0), t_echo0), nominal,
+                          vals(tier0_echo(sc_j), t_echo0),
+                          jitter={"distribution": "uniform", "pos_half_width_m": POS_JITTER_M,
+                                  "rad_half_width_m": RAD_JITTER_M, "seed": int(seed) + JITTER_SEED_OFFSET,
+                                  "max_abs_dxy_m": float(np.abs(d[:, :2]).max()) if len(d) else 0.0,
+                                  "max_abs_dr_m": float(np.abs(d[:, 2]).max()) if len(d) else 0.0,
+                                  "min_gap_m": float(_min_gap(pj))},
+                          tier1_wall_s=res.wall_s))
+        log(f"robustness jitter: {cases[-1]['metrics']} pass {cases[-1]['pass']} ({tim['jitter']:.0f} s)")
 
     for k, pc in enumerate(pc_nom):
         cases.append(case(stage, f"clap_{k}", f"Clap variant {k} alone", [pc], nominal, [pc0_nom[k]]))
