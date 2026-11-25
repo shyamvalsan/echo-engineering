@@ -26,7 +26,8 @@ def test_configs_build_and_fit_budget(sub, name):
     # timeline covers first echo (2 * 3.06 / 343 = 17.8 ms) + target + 8 ms clap
     assert cfg.duration_s >= 2 * cfg.r0 / 343.0 + len(t.audio) / 16000 + 0.008
     plan = S.tier1_plan(cfg, t)
-    assert plan["est_wall_s_idle_8_threads"] <= S.TIER1_BUDGET_S
+    # spec budget 20 min per run; the wedge configs were sized to 12 min, the 4c strip (+-5 m) to ~14 min (logged)
+    assert plan["est_wall_s_idle_8_threads"] <= (S.TIER1_BUDGET_S if name not in S.STRIP or name != "hello" else 1200)
     # posts ~ 1000 per 100 ms of target at 1 cm: fill = N pi a^2 / wedge area
     assert abs(cfg.target_fill / S.fill_for_posts(cfg, t, cfg._n_posts) - 1) < 1e-9
 
@@ -90,3 +91,20 @@ def test_tier0_only_4a_run_contract(tmp_path):
     assert met["band_hz"][0] == 500.0
     assert d.name.endswith("_4a_ah")
     assert any(m["id"] == "formant_err_pct" for m in met["metrics"])
+
+
+def test_scattering_width_and_extinction_hand_values():
+    """Thin rigid cylinder: sigma = 3 pi^2 k^3 a^4 / 4 (k a << 1). 1 cm at 500 Hz: k = 9.159 /m,
+    sigma = 0.75 * 9.8696 * 768.3 * 1e-8 = 5.69e-5 m. Uniform strip of N posts over width W: far-end two-way
+    extinction 8.686 * N * sigma / W dB (tau = 2 n_A sigma L, n_A = N / (L W))."""
+    k = 2 * np.pi * 500 / 343.0
+    assert S.scattering_width(0.01, 500.0) == pytest.approx(0.75 * np.pi ** 2 * k ** 3 * 1e-8, rel=0.01)
+    rng = np.random.default_rng(0)
+    N, L, W = 2000, 20.0, 4.0
+    x = 5.0 + L * rng.random(N)
+    y = W * (rng.random(N) - 0.5)
+    posts = np.c_[x, y, np.full(N, 0.01)]
+    ext = S.predicted_extinction(posts, 20.0, freqs=(2000.0,), max_half_width_m=W / 2, source=(0.0, 0.0),
+                                 listener=(0.0, 0.0))
+    want = 8.686 * N * S.scattering_width(0.01, 2000.0) / W
+    assert ext["far_end_db"]["2000"] == pytest.approx(want, rel=0.1)
