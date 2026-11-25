@@ -1673,6 +1673,7 @@
   "owner_v2": {
    "label": "owner_v2 (listening-calibrated, 2026-11-25)",
    "passed": true,
+   "rests_on": "C1 closed-set identification; C2 pitch within 40.0 c (each on >= 3 of 5 claps)",
    "metrics": [
     {
      "id": "id_claps",
@@ -1718,7 +1719,7 @@
     },
     {
      "id": "pitch_cents",
-     "label": "C2: median pitch deviation along the notes (3rd-best clap)",
+     "label": "C2: median pitch deviation (worst note for multi-note), 3rd-best clap",
      "value": 13.388610084581616,
      "unit": "cents",
      "threshold": 40.0,
@@ -1750,17 +1751,6 @@
     }
    ],
    "controls": [
-    {
-     "name": "wrong_target:s2_motif",
-     "kind": "a wrong target",
-     "values": {
-      "claps_pass": 0,
-      "id_claps": 0,
-      "id_margin_median": -10.701184727247282,
-      "pitch_cents": 400.7266670993972
-     },
-     "pass": false
-    },
     {
      "name": "wrong_target:s4a_ah",
      "kind": "a wrong target",
@@ -1835,6 +1825,17 @@
       "id_claps": 0,
       "id_margin_median": -10.738064254107343,
       "pitch_cents": 3270.726667099397
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s2_motif",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -12.135303374528027,
+      "pitch_cents": 490.72666709939676
      },
      "pass": false
     },
@@ -1969,6 +1970,72 @@
       "pitch_cents": 138.1700945919623
      },
      "pass": false
+    },
+    {
+     "name": "near_miss:envelope_noise",
+     "kind": "g near miss (altered target * clap)",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -10.237685938011895,
+      "pitch_cents": 3270.726667099397
+     },
+     "pass": false
+    },
+    {
+     "name": "near_miss:steady_tone_mean_pitch",
+     "kind": "g near miss (altered target * clap)",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -14.684147552682852,
+      "pitch_cents": 164.59721887097172
+     },
+     "pass": false
+    },
+    {
+     "name": "near_miss:rising_glide",
+     "kind": "g near miss (altered target * clap)",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -19.164323962852507,
+      "pitch_cents": 328.81786653269955
+     },
+     "pass": false
+    },
+    {
+     "name": "near_miss:partial_glide_upper",
+     "kind": "g near miss (altered target * clap)",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -5.294321424346808,
+      "pitch_cents": 269.27333290060324
+     },
+     "pass": false
+    },
+    {
+     "name": "near_miss:partial_glide_lower",
+     "kind": "g near miss (altered target * clap)",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -4.517092591752824,
+      "pitch_cents": 230.72666709939716
+     },
+     "pass": false
+    },
+    {
+     "name": "near_miss:time_compressed_glide",
+     "kind": "g near miss (altered target * clap)",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -3.929922234457985,
+      "pitch_cents": 369.1679624228531
+     },
+     "pass": false
     }
    ],
    "controls_all_fail": true,
@@ -1989,7 +2056,7 @@
      }
     },
     "pitch": {
-     "rule": "midway between worst positive and best mistuning control (3rd-best clap), 5-cent rounding",
+     "rule": "midway between worst positive and best mistuning control (accepted and perfect echo +-1, +-2 semitones; 3rd-best clap), 5-cent rounding, >= 20 c from both sides, below 50 c",
      "derived_threshold": 40.0,
      "frozen_threshold": 40.0,
      "matches_frozen": true,
@@ -2025,6 +2092,7 @@
   "scope": "all final runs' current results",
   "quote": "listening to the results, I think all of them are pass",
   "blind": false,
-  "note": "A human judgment, recorded as such; not an automated pass. Not a blind test: the listener knew each target, and knowing the target helps a listener hear it. A blind check is prepared in runs/_criteria/blind_test/."
+  "note": "A human judgment, recorded as such; not an automated pass. Not a blind test: the listener knew each target, and knowing the target helps a listener hear it. A blind check is prepared in runs/_criteria/blind_test/. Written only on the runs the owner heard (metrics_v2.ACCEPTED_RUNS, pinned: the newest final run per test at the time of the statement, about 14:55; for stage 2 that is 20261125-122003-s2, since 20261125-145628-s2v2 was written at 14:57:45).",
+  "run_id": "20261125-104529-s1"
  }
 }

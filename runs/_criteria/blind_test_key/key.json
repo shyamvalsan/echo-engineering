@@ -1,11 +1,13 @@
 {
  "seed": 20261125,
+ "length_samples": 20872,
+ "lead_in_s": 0.25,
  "samples": {
   "sample_01.wav": {
    "test": "s2_motif",
    "title": "Stage 2 four-note motif",
-   "run_id": "20261125-145628-s2v2",
-   "source": "listen/s2v2_echo_only.wav"
+   "run_id": "20261125-122003-s2",
+   "source": "listen/s2_echo_only.wav"
   },
   "sample_02.wav": {
    "test": "s1_bird",

@@ -3006,6 +3006,7 @@
   "owner_v2": {
    "label": "owner_v2 (listening-calibrated, 2026-11-25)",
    "passed": null,
+   "rests_on": "C1 closed-set identification (each on >= 3 of 5 claps)",
    "metrics": [
     {
      "id": "id_claps",
@@ -3068,16 +3069,6 @@
    ],
    "controls": [
     {
-     "name": "wrong_target:s2_motif",
-     "kind": "a wrong target",
-     "values": {
-      "claps_pass": 0,
-      "id_claps": 0,
-      "id_margin_median": -8.678239368068224
-     },
-     "pass": false
-    },
-    {
      "name": "wrong_target:s4a_ah",
      "kind": "a wrong target",
      "values": {
@@ -3134,6 +3125,16 @@
       "claps_pass": 0,
       "id_claps": 0,
       "id_margin_median": -6.162844380640463
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s2_motif",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -7.245225599803746
      },
      "pass": false
     },
@@ -3206,7 +3207,7 @@
     },
     "pitch": null
    },
-   "note": "accepted by ear; no automated criterion separates this echo from the negative controls (the accepted echo fails the criterion)",
+   "note": "accepted by ear; the criterion accepts a perfect echo and rejects every control, and it also rejects the accepted echo (0/5 claps pass; nearest distractor on the failing claps: s3_melody_100ms; for speech echoes this is often a short tonal target padded with silence, a construction effect of the closed set)",
    "test": "s4b_ba",
    "accepted_run": "20261125-134325-s4_4b_ba",
    "echo_source": {
@@ -3231,6 +3232,7 @@
   "scope": "all final runs' current results",
   "quote": "listening to the results, I think all of them are pass",
   "blind": false,
-  "note": "A human judgment, recorded as such; not an automated pass. Not a blind test: the listener knew each target, and knowing the target helps a listener hear it. A blind check is prepared in runs/_criteria/blind_test/."
+  "note": "A human judgment, recorded as such; not an automated pass. Not a blind test: the listener knew each target, and knowing the target helps a listener hear it. A blind check is prepared in runs/_criteria/blind_test/. Written only on the runs the owner heard (metrics_v2.ACCEPTED_RUNS, pinned: the newest final run per test at the time of the statement, about 14:55; for stage 2 that is 20261125-122003-s2, since 20261125-145628-s2v2 was written at 14:57:45).",
+  "run_id": "20261125-134325-s4_4b_ba"
  }
 }

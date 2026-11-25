@@ -3735,6 +3735,7 @@
   "owner_v2": {
    "label": "owner_v2 (listening-calibrated, 2026-11-25)",
    "passed": true,
+   "rests_on": "C3 = the spec_v1 recognizer with the spec's 3-of-5 rule (same judge as spec_v1; owner_v2 adds only the rejected controls, not an independent confirmation) (each on >= 3 of 5 claps)",
    "metrics": [
     {
      "id": "id_claps",
@@ -3813,17 +3814,6 @@
    ],
    "controls": [
     {
-     "name": "wrong_target:s2_motif",
-     "kind": "a wrong target",
-     "values": {
-      "claps_pass": 0,
-      "id_claps": 0,
-      "id_margin_median": -16.425972155186507,
-      "hello_claps": 0
-     },
-     "pass": false
-    },
-    {
      "name": "wrong_target:s4a_ah",
      "kind": "a wrong target",
      "values": {
@@ -3885,6 +3875,17 @@
       "claps_pass": 0,
       "id_claps": 0,
       "id_margin_median": -12.975960711815093,
+      "hello_claps": 0
+     },
+     "pass": false
+    },
+    {
+     "name": "wrong_target:s2_motif",
+     "kind": "a wrong target",
+     "values": {
+      "claps_pass": 0,
+      "id_claps": 0,
+      "id_margin_median": -16.010187730008724,
       "hello_claps": 0
      },
      "pass": false
@@ -4023,6 +4024,7 @@
   "scope": "all final runs' current results",
   "quote": "listening to the results, I think all of them are pass",
   "blind": false,
-  "note": "A human judgment, recorded as such; not an automated pass. Not a blind test: the listener knew each target, and knowing the target helps a listener hear it. A blind check is prepared in runs/_criteria/blind_test/."
+  "note": "A human judgment, recorded as such; not an automated pass. Not a blind test: the listener knew each target, and knowing the target helps a listener hear it. A blind check is prepared in runs/_criteria/blind_test/. Written only on the runs the owner heard (metrics_v2.ACCEPTED_RUNS, pinned: the newest final run per test at the time of the statement, about 14:55; for stage 2 that is 20261125-122003-s2, since 20261125-145628-s2v2 was written at 14:57:45).",
+  "run_id": "20261125-124137-s4_4c_hello"
  }
 }

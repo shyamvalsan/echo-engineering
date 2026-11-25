@@ -1,14 +1,14 @@
-[s1_bird] scored accepted, perfect and 20 controls
+[s1_bird] scored accepted, perfect and 26 controls
   20261125-104529-s1: owner_v2 True ({'claps_pass': 5, 'id_claps': 5, 'id_margin_median': 1.6348656708441611, 'pitch_cents': 13.388610084581616})
   20261125-095837-s1: owner_v2 True ({'claps_pass': 5, 'id_claps': 5, 'id_margin_median': 1.7174778758897276, 'pitch_cents': 14.141752503068414})
   20261125-033940-s1: owner_v2 True ({'claps_pass': 4, 'id_claps': 5, 'id_margin_median': 1.4172949481533141, 'pitch_cents': 26.961485805572316})
-[s2_motif] scored accepted, perfect and 22 controls
-  20261125-145628-s2v2: owner_v2 True ({'claps_pass': 3, 'id_claps': 3, 'id_margin_median': 1.1689135832099762, 'pitch_cents': 224.66421170961783})
-  20261125-122003-s2: owner_v2 False ({'claps_pass': 0, 'id_claps': 0, 'id_margin_median': -14.381826339929354, 'pitch_cents': 504.6642117096179})
-[s3_melody_100ms] scored accepted, perfect and 22 controls
-  20261125-131152-s3: owner_v2 None ({'claps_pass': 0, 'id_claps': 0, 'id_margin_median': -1.5995118370400476, 'pitch_cents': 614.9957715000784})
-[s3_melody_60ms] scored accepted, perfect and 22 controls
-  20261125-133244-s3_60ms: owner_v2 None ({'claps_pass': 0, 'id_claps': 3, 'id_margin_median': 0.13901751090441472, 'pitch_cents': 384.99577150007804})
+[s2_motif] scored accepted, perfect and 28 controls
+  20261125-145628-s2v2: owner_v2 None ({'claps_pass': 0, 'id_claps': 3, 'id_margin_median': 1.1689135832099762, 'pitch_cents': 1204.1725554126997})
+  20261125-122003-s2: owner_v2 None ({'claps_pass': 0, 'id_claps': 0, 'id_margin_median': -14.381826339929354, 'pitch_cents': 1144.1725554126995})
+[s3_melody_100ms] scored accepted, perfect and 28 controls
+  20261125-131152-s3: owner_v2 None ({'claps_pass': 0, 'id_claps': 0, 'id_margin_median': -1.5995118370400476, 'pitch_cents': 854.9957715000779})
+[s3_melody_60ms] scored accepted, perfect and 28 controls
+  20261125-133244-s3_60ms: owner_v2 None ({'claps_pass': 0, 'id_claps': 3, 'id_margin_median': 0.13901751090441472, 'pitch_cents': 854.9957715000779})
 [s4a_ah] scored accepted, perfect and 12 controls
   20261125-142346-s4_4a_ah: owner_v2 None ({'claps_pass': 0, 'id_claps': 0, 'id_margin_median': -1.8689792362795181})
 [s4b_ma] scored accepted, perfect and 12 controls
