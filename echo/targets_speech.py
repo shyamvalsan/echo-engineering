@@ -111,7 +111,8 @@ def _voiced_extent(x, fs, floor_db=-40.0, smooth_s=0.010):
     return int(on[0]), int(on[-1]) + 1
 
 
-def _fade(n, fs, fade_s=FADE_S):
+def fade_window(n, fs, fade_s=FADE_S):
+    """Raised-cosine fade-in and fade-out of fade_s (default 5 ms) each; shared by targets and the ESTOI tiling."""
     k = min(int(round(fade_s * fs)), n // 2)
     w = np.ones(n)
     ramp = 0.5 - 0.5 * np.cos(np.pi * (np.arange(k) + 0.5) / k)
@@ -136,7 +137,7 @@ def shape_clean(name: str, refresh: bool = False, fs: int = FS) -> tuple[np.ndar
         c = (i0 + i1) // 2
         a = max(0, c - n // 2)
         y = y[a: a + n]
-    y = y * _fade(len(y), fs)
+    y = y * fade_window(len(y), fs)
     return y / np.max(np.abs(y)), src
 
 

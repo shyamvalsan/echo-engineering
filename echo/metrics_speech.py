@@ -20,10 +20,10 @@ from scipy.signal import resample_poly
 
 from echo import metrics as M
 from echo.scene import FS
+from echo.targets_speech import BAND, fade_window
 
 ROOT = Path(__file__).resolve().parent.parent
 WHISPER_DIR = ROOT / ".cache" / "whisper-small"
-BAND = (500.0, 4000.0)
 
 # ------------------------------------------------------------------------------------------------------- alignment
 ALIGN_MAX_LAG_S = 0.020
@@ -65,13 +65,15 @@ def align(echo, target, fs=FS, max_lag_s=ALIGN_MAX_LAG_S):
 
 
 # -------------------------------------------------------------------------------------------------------- formants
-LPC_FS = 10000  # analysis rate (Praat convention for a male voice: formants searched up to 5 kHz)
-LPC_ORDER = 10  # 2 * 5 formants below 5 kHz
+LPC_FS = 8000  # analysis rate: Nyquist = top of the design band, so no poles are spent on an empty 4-5 kHz band
+LPC_ORDER = 10  # standard rule p = fs_kHz + 2
 LPC_WIN_S = 0.025
 LPC_HOP_S = 0.005
-FORMANT_MIN_HZ = 250.0  # roots below are the low-cut skirt of the band-limit, not formants
 FORMANT_MAX_BW_HZ = 400.0
+F1_RANGE = (250.0, 1000.0)  # F1 = lowest root in this range (bandwidth < 400 Hz)
+F2_RANGE = (800.0, 2500.0)  # F2 = lowest root above F1 in this range (bandwidth < 400 Hz)
 STEADY = (0.2, 0.8)  # frames whose centre lies in the middle 60 % of the signal
+# These settings were fixed (review of task 9) before any stage-4 design result existed; never revisit them after.
 
 
 def _lpc(frame, order):
@@ -91,11 +93,24 @@ def _lpc(frame, order):
     return a
 
 
-def formant_frames(x, fs=FS):
+def pick_formants(f, bw):
+    """F1 = lowest root in F1_RANGE, F2 = lowest root above F1 in F2_RANGE, both with bandwidth < 400 Hz. The rules
+    are fixed frequency ranges (typical adult male F1/F2) and never reference the target. NaN when absent."""
+    ok = bw < FORMANT_MAX_BW_HZ
+    c1 = np.sort(f[ok & (f > F1_RANGE[0]) & (f < F1_RANGE[1])])
+    f1 = c1[0] if len(c1) else np.nan
+    lo = f1 if np.isfinite(f1) else F2_RANGE[0]
+    c2 = np.sort(f[ok & (f > max(lo, F2_RANGE[0])) & (f < F2_RANGE[1])])
+    c2 = c2[c2 > lo]
+    f2 = c2[0] if len(c2) else np.nan
+    return f1, f2
+
+
+def formant_frames(x, fs=FS, order=LPC_ORDER):
     """Per-frame F1, F2 (Hz) by linear prediction. Returns (frame centre times s, F1, F2); NaN where not found.
 
-    Resample to 10 kHz, pre-emphasis 1 - 0.97 z^-1, 25 ms Hamming frames every 5 ms, order-10 autocorrelation LPC,
-    roots with positive angle, keep 250 Hz < f < 4.95 kHz and bandwidth < 400 Hz, F1/F2 = the two lowest.
+    Resample to 8 kHz, pre-emphasis 1 - 0.97 z^-1, 25 ms Hamming frames every 5 ms, order-10 autocorrelation LPC,
+    roots with positive angle -> frequency and bandwidth, then `pick_formants`.
     """
     y = resample_poly(np.asarray(x, float), LPC_FS, fs) if fs != LPC_FS else np.asarray(x, float)
     y = np.append(y[0], y[1:] - 0.97 * y[:-1])
@@ -105,7 +120,7 @@ def formant_frames(x, fs=FS):
     ts, f1, f2 = [], [], []
     for s in range(0, len(y) - w + 1, h):
         fr = y[s: s + w] * win
-        a = _lpc(fr, LPC_ORDER)
+        a = _lpc(fr, order)
         ts.append((s + w / 2) / LPC_FS)
         if a is None:
             f1.append(np.nan), f2.append(np.nan)
@@ -114,18 +129,16 @@ def formant_frames(x, fs=FS):
         roots = roots[np.imag(roots) > 0]
         f = np.angle(roots) * LPC_FS / (2 * np.pi)
         bw = -np.log(np.abs(roots)) * LPC_FS / np.pi
-        keep = (f > FORMANT_MIN_HZ) & (f < LPC_FS / 2 - 50) & (bw < FORMANT_MAX_BW_HZ)
-        f = np.sort(f[keep])
-        f1.append(f[0] if len(f) > 0 else np.nan)
-        f2.append(f[1] if len(f) > 1 else np.nan)
+        a1, a2 = pick_formants(f, bw)
+        f1.append(a1), f2.append(a2)
     return np.array(ts), np.array(f1), np.array(f2)
 
 
-def formants(x, fs=FS, steady=STEADY, energy_db=-10.0):
+def formants(x, fs=FS, steady=STEADY, energy_db=-10.0, order=LPC_ORDER):
     """(F1, F2) in Hz: median over the steady frames (centre in the middle 60 % of the signal and frame energy within
     10 dB of the loudest such frame), ignoring frames where the formant was not found. NaN if none."""
     x = np.asarray(x, float)
-    t, f1, f2 = formant_frames(x, fs)
+    t, f1, f2 = formant_frames(x, fs, order)
     dur = len(x) / fs
     w = int(round(LPC_WIN_S * fs))
     en = np.array([np.sum(x[max(0, int((ti - LPC_WIN_S / 2) * fs)): int((ti - LPC_WIN_S / 2) * fs) + w] ** 2)
@@ -157,11 +170,8 @@ def formant_errors(echo, target, fs=FS):
 ESTOI_MIN_S = 1.0  # tile the (faded) signal until it lasts at least this long
 
 
-def _tile(x, fs, min_s=ESTOI_MIN_S, fade_s=0.005):
-    k = min(int(round(fade_s * fs)), len(x) // 2)
-    w = np.ones(len(x))
-    ramp = 0.5 - 0.5 * np.cos(np.pi * (np.arange(k) + 0.5) / k)
-    w[:k], w[len(x) - k:] = ramp, ramp[::-1]
+def _tile(x, fs, min_s=ESTOI_MIN_S):
+    w = fade_window(len(x), fs)
     reps = int(np.ceil(min_s * fs / len(x)))
     return np.tile(x * w, reps), reps
 
@@ -214,10 +224,9 @@ def _dtw(A, B):
 def closed_set(echo, own, candidates, fs=FS):
     """Closed-set judge (4b). DTW distance between the mean-normalised log-mel of the echo and of each clean
     candidate target. correct = own target is strictly nearest; margin = (nearest other) - (own), > 0 when correct.
-    The echo is aligned to the own target first (same lag search as ESTOI)."""
-    e, _ = align(echo, candidates[own], fs)
-    E = _logmel_cmn(e, fs)
-    dist = {k: _dtw(E, _logmel_cmn(v, fs)) for k, v in candidates.items()}
+    The echo is aligned to each candidate separately (same lag search as ESTOI), so the distance vector does not
+    depend on the label `own`; the label is used only to read off correct / margin."""
+    dist = {k: _dtw(_logmel_cmn(align(echo, v, fs)[0], fs), _logmel_cmn(v, fs)) for k, v in candidates.items()}
     other = min(v for k, v in dist.items() if k != own)
     return {"correct": bool(dist[own] < other), "margin": float(other - dist[own]), "distances": dist}
 
@@ -274,6 +283,16 @@ def recognize(echo, fs=FS, word=WORD):
     return is_hit(text, word), text
 
 
+def recognized_text(echo_segments, fs=FS, word=WORD):
+    """Per-clap transcripts for metrics.json["recognized_text"] (the numeric per-clap seam cannot carry strings).
+    echo_segments: [K, n], the same segments the stage scorer judged. Memoised, so no extra whisper cost."""
+    out = []
+    for k, seg in enumerate(np.atleast_2d(echo_segments)):
+        hit, text = recognize(seg, fs, word)
+        out.append({"clap": k, "transcript": text, "hit": bool(hit)})
+    return out
+
+
 # ------------------------------------------------------------------------------------------- seam registration
 def _m_vowel(seg, target, fs, band):
     return formant_errors(seg, target.audio, fs)
@@ -309,7 +328,7 @@ M.METRIC_INFO.update({
     "f1_target_hz": ("F1 of target (LPC)", "Hz", None),
     "f2_target_hz": ("F2 of target (LPC)", "Hz", None),
     "closed_set_correct": ("Nearest to own target (fraction of claps)", "", ">="),
-    "closed_set_margin": ("Closed-set margin, DTW log-mel distance", "dB", ">="),
+    "closed_set_margin": ("Closed-set margin (nearest other minus own), DTW log-mel distance", "dB/frame (DTW)", ">="),
     "estoi": ("ESTOI vs target", "", ">="),
     "hello_hit": ("Recognized as \"hello\" (fraction of claps)", "", ">="),
     "hello_count": ("Clap variants recognized as \"hello\"", "claps", ">="),
@@ -337,13 +356,14 @@ def judge_sanity(out_path=ROOT / "artifacts" / "speech" / "judge_sanity.json"):
         n = np.random.default_rng(seed).standard_normal(len(a))
         return a + n * np.sqrt(np.mean(a**2) / np.mean(n**2))  # 0 dB SNR
 
-    out = {"fs": FS, "band": list(BAND), "note": "perfect = band_limit(target * clap[k]); noise = white, 0 dB SNR"}
+    out = {"fs": FS, "band": list(BAND), "note": "perfect = band_limit(target * clap[k]); target_plus_noise_0db = "
+           "target + white noise at 0 dB SNR (not a true negative: speech at 0 dB is still intelligible)"}
     ah = speech_target("ah")
     rows = {"clean": formant_errors(ah.audio, ah.audio)}
     for k, c in enumerate(claps):
         rows[f"perfect_clap{k}"] = formant_errors(perfect(ah.audio, c), ah.audio)
     rows["negative_om"] = formant_errors(speech_target("om").audio, ah.audio)
-    rows["negative_noise_0db"] = formant_errors(noisy(ah.audio), ah.audio)
+    rows["target_plus_noise_0db"] = formant_errors(noisy(ah.audio), ah.audio)
     f_unbl = formants(shape_clean("ah")[0])
     out["s4a_vowel"] = {"target_f1_hz": rows["clean"]["f1_target_hz"], "target_f2_hz": rows["clean"]["f2_target_hz"],
                         "unbandlimited_f1_hz": f_unbl[0], "unbandlimited_f2_hz": f_unbl[1], "rows": rows,
@@ -355,12 +375,12 @@ def judge_sanity(out_path=ROOT / "artifacts" / "speech" / "judge_sanity.json"):
         for k, c in enumerate(claps):
             p = perfect(t.audio, c)
             r[f"perfect_clap{k}"] = {"estoi": estoi(p, t.audio), **closed_set(p, s, t.candidates)}
-        r["negative_noise_0db"] = {"estoi": estoi(noisy(t.audio), t.audio),
+        r["target_plus_noise_0db"] = {"estoi": estoi(noisy(t.audio), t.audio),
                                    **closed_set(noisy(t.audio), s, t.candidates)}
         for o in SYLLABLES:
             if o != s:
                 oa = syl[o].audio
-                oa = np.pad(oa, (0, max(0, len(t.audio) - len(oa))))[: len(t.audio)]
+                oa = np.pad(oa, (0, max(0, len(t.audio) - len(oa))))[: len(t.audio)]  # same length as the target
                 r[f"negative_other_{o}"] = {"estoi": estoi(oa, t.audio)}
         s4b[s] = r
     out["s4b_syllables"] = {"rows": s4b, "threshold_estoi": M.THRESHOLDS["s4b_syllables"]["estoi"]}
@@ -370,7 +390,7 @@ def judge_sanity(out_path=ROOT / "artifacts" / "speech" / "judge_sanity.json"):
         s4c[f"perfect_clap{k}"] = perfect(h.audio, c)
     s4c["negative_ma"] = syl["ma"].audio
     s4c["negative_noise"] = np.random.default_rng(0).standard_normal(len(h.audio))
-    s4c["negative_noise_0db"] = noisy(h.audio)
+    s4c["target_plus_noise_0db"] = noisy(h.audio)
     try:
         import tempfile  # "yellow" is only a negative control, synthesized like a target (same voice and speed)
 
