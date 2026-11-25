@@ -1282,6 +1282,819 @@
      0.08
     ]
    },
+   "stage2_grid": {
+    "f_max": 2500.0,
+    "per_radius": {
+     "0.01": {
+      "max_abs_err_db": 0.74,
+      "pass": true,
+      "max_abs_err_db_all_angles": 2.606,
+      "pass_all_angles": false,
+      "n_backscatter_offsets": 3
+     },
+     "0.02": {
+      "max_abs_err_db": 0.376,
+      "pass": true,
+      "max_abs_err_db_all_angles": 1.726,
+      "pass_all_angles": false,
+      "n_backscatter_offsets": 3
+     },
+     "0.04": {
+      "max_abs_err_db": 0.623,
+      "pass": true,
+      "max_abs_err_db_all_angles": 0.623,
+      "pass_all_angles": true,
+      "n_backscatter_offsets": 3
+     },
+     "0.08": {
+      "max_abs_err_db": 0.964,
+      "pass": true,
+      "max_abs_err_db_all_angles": 0.964,
+      "pass_all_angles": true,
+      "n_backscatter_offsets": 3
+     }
+    },
+    "rows": [
+     {
+      "radius_m": 0.01,
+      "offset_m": [
+       0.0,
+       0.0
+      ],
+      "angle": "back",
+      "listener": [
+       0.0,
+       0.3
+      ],
+      "dx": 0.013636363636363636,
+      "r_over_dx": 0.7333333333333334,
+      "area_scale": 0.908,
+      "band_edges_hz": [
+       500.0,
+       561.2,
+       630.0,
+       707.1,
+       793.7,
+       890.9,
+       1000.0,
+       1122.5,
+       1259.9,
+       1414.2,
+       1587.4,
+       1781.8,
+       2000.0,
+       2244.9
+      ],
+      "err_db": [
+       0.672,
+       0.67,
+       0.669,
+       0.666,
+       0.662,
+       0.657,
+       0.65,
+       0.641,
+       0.628,
+       0.611,
+       0.589,
+       0.559,
+       0.52
+      ],
+      "max_abs_err_db": 0.672,
+      "wall_s": 16.8
+     },
+     {
+      "radius_m": 0.01,
+      "offset_m": [
+       0.0,
+       0.0
+      ],
+      "angle": "forward",
+      "listener": [
+       6.0,
+       0.0
+      ],
+      "dx": 0.013636363636363636,
+      "r_over_dx": 0.7333333333333334,
+      "area_scale": 0.908,
+      "band_edges_hz": [
+       500.0,
+       561.2,
+       630.0,
+       707.1,
+       793.7,
+       890.9,
+       1000.0,
+       1122.5,
+       1259.9,
+       1414.2,
+       1587.4,
+       1781.8,
+       2000.0,
+       2244.9
+      ],
+      "err_db": [
+       2.606,
+       2.606,
+       2.606,
+       2.605,
+       2.599,
+       2.588,
+       2.579,
+       2.574,
+       2.575,
+       2.575,
+       2.567,
+       2.558,
+       2.564
+      ],
+      "max_abs_err_db": 2.606,
+      "wall_s": 16.8
+     },
+     {
+      "radius_m": 0.01,
+      "offset_m": [
+       0.0,
+       0.0
+      ],
+      "angle": "bistatic_90",
+      "listener": [
+       3.0,
+       3.0
+      ],
+      "dx": 0.013636363636363636,
+      "r_over_dx": 0.7333333333333334,
+      "area_scale": 0.908,
+      "band_edges_hz": [
+       500.0,
+       561.2,
+       630.0,
+       707.1,
+       793.7,
+       890.9,
+       1000.0,
+       1122.5,
+       1259.9,
+       1414.2,
+       1587.4,
+       1781.8,
+       2000.0,
+       2244.9
+      ],
+      "err_db": [
+       -0.508,
+       -0.509,
+       -0.508,
+       -0.508,
+       -0.509,
+       -0.508,
+       -0.508,
+       -0.507,
+       -0.504,
+       -0.5,
+       -0.492,
+       -0.479,
+       -0.455
+      ],
+      "max_abs_err_db": 0.509,
+      "wall_s": 16.8
+     },
+     {
+      "radius_m": 0.01,
+      "offset_m": [
+       0.0035,
+       0.0053
+      ],
+      "angle": "back",
+      "listener": [
+       0.0,
+       0.3
+      ],
+      "dx": 0.013636363636363636,
+      "r_over_dx": 0.7333333333333334,
+      "area_scale": 0.908,
+      "band_edges_hz": [
+       500.0,
+       561.2,
+       630.0,
+       707.1,
+       793.7,
+       890.9,
+       1000.0,
+       1122.5,
+       1259.9,
+       1414.2,
+       1587.4,
+       1781.8,
+       2000.0,
+       2244.9
+      ],
+      "err_db": [
+       -0.512,
+       -0.516,
+       -0.52,
+       -0.527,
+       -0.535,
+       -0.545,
+       -0.557,
+       -0.573,
+       -0.593,
+       -0.619,
+       -0.651,
+       -0.691,
+       -0.74
+      ],
+      "max_abs_err_db": 0.74,
+      "wall_s": 4.3
+     },
+     {
+      "radius_m": 0.01,
+      "offset_m": [
+       0.0053,
+       0.0021
+      ],
+      "angle": "back",
+      "listener": [
+       0.0,
+       0.3
+      ],
+      "dx": 0.013636363636363636,
+      "r_over_dx": 0.7333333333333334,
+      "area_scale": 0.908,
+      "band_edges_hz": [
+       500.0,
+       561.2,
+       630.0,
+       707.1,
+       793.7,
+       890.9,
+       1000.0,
+       1122.5,
+       1259.9,
+       1414.2,
+       1587.4,
+       1781.8,
+       2000.0,
+       2244.9
+      ],
+      "err_db": [
+       -0.258,
+       -0.262,
+       -0.267,
+       -0.273,
+       -0.281,
+       -0.291,
+       -0.304,
+       -0.321,
+       -0.343,
+       -0.371,
+       -0.406,
+       -0.451,
+       -0.507
+      ],
+      "max_abs_err_db": 0.507,
+      "wall_s": 2.2
+     },
+     {
+      "radius_m": 0.02,
+      "offset_m": [
+       0.0,
+       0.0
+      ],
+      "angle": "back",
+      "listener": [
+       0.0,
+       0.3
+      ],
+      "dx": 0.013636363636363636,
+      "r_over_dx": 1.4666666666666668,
+      "area_scale": 0.9316571428567574,
+      "band_edges_hz": [
+       500.0,
+       561.2,
+       630.0,
+       707.1,
+       793.7,
+       890.9,
+       1000.0,
+       1122.5,
+       1259.9,
+       1414.2,
+       1587.4,
+       1781.8,
+       2000.0,
+       2244.9
+      ],
+      "err_db": [
+       -0.376,
+       -0.365,
+       -0.352,
+       -0.336,
+       -0.317,
+       -0.294,
+       -0.266,
+       -0.234,
+       -0.197,
+       -0.154,
+       -0.109,
+       -0.064,
+       -0.027
+      ],
+      "max_abs_err_db": 0.376,
+      "wall_s": 6.7
+     },
+     {
+      "radius_m": 0.02,
+      "offset_m": [
+       0.0,
+       0.0
+      ],
+      "angle": "forward",
+      "listener": [
+       6.0,
+       0.0
+      ],
+      "dx": 0.013636363636363636,
+      "r_over_dx": 1.4666666666666668,
+      "area_scale": 0.9316571428567574,
+      "band_edges_hz": [
+       500.0,
+       561.2,
+       630.0,
+       707.1,
+       793.7,
+       890.9,
+       1000.0,
+       1122.5,
+       1259.9,
+       1414.2,
+       1587.4,
+       1781.8,
+       2000.0,
+       2244.9
+      ],
+      "err_db": [
+       1.55,
+       1.541,
+       1.535,
+       1.529,
+       1.521,
+       1.513,
+       1.511,
+       1.52,
+       1.544,
+       1.575,
+       1.609,
+       1.653,
+       1.726
+      ],
+      "max_abs_err_db": 1.726,
+      "wall_s": 6.7
+     },
+     {
+      "radius_m": 0.02,
+      "offset_m": [
+       0.0,
+       0.0
+      ],
+      "angle": "bistatic_90",
+      "listener": [
+       3.0,
+       3.0
+      ],
+      "dx": 0.013636363636363636,
+      "r_over_dx": 1.4666666666666668,
+      "area_scale": 0.9316571428567574,
+      "band_edges_hz": [
+       500.0,
+       561.2,
+       630.0,
+       707.1,
+       793.7,
+       890.9,
+       1000.0,
+       1122.5,
+       1259.9,
+       1414.2,
+       1587.4,
+       1781.8,
+       2000.0,
+       2244.9
+      ],
+      "err_db": [
+       -1.645,
+       -1.63,
+       -1.613,
+       -1.593,
+       -1.569,
+       -1.539,
+       -1.504,
+       -1.461,
+       -1.409,
+       -1.345,
+       -1.265,
+       -1.163,
+       -1.033
+      ],
+      "max_abs_err_db": 1.645,
+      "wall_s": 6.7
+     },
+     {
+      "radius_m": 0.02,
+      "offset_m": [
+       0.0035,
+       0.0053
+      ],
+      "angle": "back",
+      "listener": [
+       0.0,
+       0.3
+      ],
+      "dx": 0.013636363636363636,
+      "r_over_dx": 1.4666666666666668,
+      "area_scale": 0.9316571428567574,
+      "band_edges_hz": [
+       500.0,
+       561.2,
+       630.0,
+       707.1,
+       793.7,
+       890.9,
+       1000.0,
+       1122.5,
+       1259.9,
+       1414.2,
+       1587.4,
+       1781.8,
+       2000.0,
+       2244.9
+      ],
+      "err_db": [
+       0.239,
+       0.245,
+       0.252,
+       0.26,
+       0.268,
+       0.276,
+       0.285,
+       0.293,
+       0.3,
+       0.304,
+       0.305,
+       0.301,
+       0.292
+      ],
+      "max_abs_err_db": 0.305,
+      "wall_s": 1.8
+     },
+     {
+      "radius_m": 0.02,
+      "offset_m": [
+       0.0053,
+       0.0021
+      ],
+      "angle": "back",
+      "listener": [
+       0.0,
+       0.3
+      ],
+      "dx": 0.013636363636363636,
+      "r_over_dx": 1.4666666666666668,
+      "area_scale": 0.9316571428567574,
+      "band_edges_hz": [
+       500.0,
+       561.2,
+       630.0,
+       707.1,
+       793.7,
+       890.9,
+       1000.0,
+       1122.5,
+       1259.9,
+       1414.2,
+       1587.4,
+       1781.8,
+       2000.0,
+       2244.9
+      ],
+      "err_db": [
+       0.211,
+       0.216,
+       0.221,
+       0.227,
+       0.234,
+       0.241,
+       0.248,
+       0.254,
+       0.259,
+       0.261,
+       0.26,
+       0.254,
+       0.242
+      ],
+      "max_abs_err_db": 0.261,
+      "wall_s": 1.8
+     },
+     {
+      "radius_m": 0.04,
+      "offset_m": [
+       0.0,
+       0.0
+      ],
+      "angle": "back",
+      "listener": [
+       0.0,
+       0.3
+      ],
+      "dx": 0.013636363636363636,
+      "r_over_dx": 2.9333333333333336,
+      "area_scale": 1.0,
+      "band_edges_hz": [
+       500.0,
+       561.2,
+       630.0,
+       707.1,
+       793.7,
+       890.9,
+       1000.0,
+       1122.5,
+       1259.9,
+       1414.2,
+       1587.4,
+       1781.8,
+       2000.0,
+       2244.9
+      ],
+      "err_db": [
+       0.456,
+       0.452,
+       0.444,
+       0.428,
+       0.403,
+       0.365,
+       0.311,
+       0.235,
+       0.126,
+       -0.027,
+       -0.187,
+       -0.093,
+       0.404
+      ],
+      "max_abs_err_db": 0.456,
+      "wall_s": 2.9
+     },
+     {
+      "radius_m": 0.04,
+      "offset_m": [
+       0.0035,
+       0.0053
+      ],
+      "angle": "back",
+      "listener": [
+       0.0,
+       0.3
+      ],
+      "dx": 0.013636363636363636,
+      "r_over_dx": 2.9333333333333336,
+      "area_scale": 1.0,
+      "band_edges_hz": [
+       500.0,
+       561.2,
+       630.0,
+       707.1,
+       793.7,
+       890.9,
+       1000.0,
+       1122.5,
+       1259.9,
+       1414.2,
+       1587.4,
+       1781.8,
+       2000.0,
+       2244.9
+      ],
+      "err_db": [
+       0.404,
+       0.399,
+       0.389,
+       0.372,
+       0.343,
+       0.299,
+       0.234,
+       0.136,
+       -0.013,
+       -0.248,
+       -0.56,
+       -0.623,
+       -0.045
+      ],
+      "max_abs_err_db": 0.623,
+      "wall_s": 1.6
+     },
+     {
+      "radius_m": 0.04,
+      "offset_m": [
+       0.0053,
+       0.0021
+      ],
+      "angle": "back",
+      "listener": [
+       0.0,
+       0.3
+      ],
+      "dx": 0.013636363636363636,
+      "r_over_dx": 2.9333333333333336,
+      "area_scale": 1.0,
+      "band_edges_hz": [
+       500.0,
+       561.2,
+       630.0,
+       707.1,
+       793.7,
+       890.9,
+       1000.0,
+       1122.5,
+       1259.9,
+       1414.2,
+       1587.4,
+       1781.8,
+       2000.0,
+       2244.9
+      ],
+      "err_db": [
+       0.47,
+       0.47,
+       0.467,
+       0.456,
+       0.436,
+       0.403,
+       0.351,
+       0.273,
+       0.151,
+       -0.043,
+       -0.314,
+       -0.432,
+       -0.07
+      ],
+      "max_abs_err_db": 0.47,
+      "wall_s": 1.7
+     },
+     {
+      "radius_m": 0.08,
+      "offset_m": [
+       0.0,
+       0.0
+      ],
+      "angle": "back",
+      "listener": [
+       0.0,
+       0.3
+      ],
+      "dx": 0.013636363636363636,
+      "r_over_dx": 5.866666666666667,
+      "area_scale": 1.0,
+      "band_edges_hz": [
+       500.0,
+       561.2,
+       630.0,
+       707.1,
+       793.7,
+       890.9,
+       1000.0,
+       1122.5,
+       1259.9,
+       1414.2,
+       1587.4,
+       1781.8,
+       2000.0,
+       2244.9
+      ],
+      "err_db": [
+       0.21,
+       0.165,
+       0.102,
+       0.021,
+       -0.053,
+       0.007,
+       0.245,
+       0.355,
+       0.244,
+       -0.04,
+       -0.254,
+       0.164,
+       0.142
+      ],
+      "max_abs_err_db": 0.355,
+      "wall_s": 1.6
+     },
+     {
+      "radius_m": 0.08,
+      "offset_m": [
+       0.0035,
+       0.0053
+      ],
+      "angle": "back",
+      "listener": [
+       0.0,
+       0.3
+      ],
+      "dx": 0.013636363636363636,
+      "r_over_dx": 5.866666666666667,
+      "area_scale": 1.0,
+      "band_edges_hz": [
+       500.0,
+       561.2,
+       630.0,
+       707.1,
+       793.7,
+       890.9,
+       1000.0,
+       1122.5,
+       1259.9,
+       1414.2,
+       1587.4,
+       1781.8,
+       2000.0,
+       2244.9
+      ],
+      "err_db": [
+       0.2,
+       0.146,
+       0.07,
+       -0.034,
+       -0.13,
+       -0.033,
+       0.333,
+       0.544,
+       0.498,
+       0.308,
+       0.267,
+       0.805,
+       0.964
+      ],
+      "max_abs_err_db": 0.964,
+      "wall_s": 2.1
+     },
+     {
+      "radius_m": 0.08,
+      "offset_m": [
+       0.0053,
+       0.0021
+      ],
+      "angle": "back",
+      "listener": [
+       0.0,
+       0.3
+      ],
+      "dx": 0.013636363636363636,
+      "r_over_dx": 5.866666666666667,
+      "area_scale": 1.0,
+      "band_edges_hz": [
+       500.0,
+       561.2,
+       630.0,
+       707.1,
+       793.7,
+       890.9,
+       1000.0,
+       1122.5,
+       1259.9,
+       1414.2,
+       1587.4,
+       1781.8,
+       2000.0,
+       2244.9
+      ],
+      "err_db": [
+       0.193,
+       0.144,
+       0.073,
+       -0.019,
+       -0.092,
+       0.037,
+       0.408,
+       0.601,
+       0.527,
+       0.278,
+       0.109,
+       0.589,
+       0.798
+      ],
+      "max_abs_err_db": 0.798,
+      "wall_s": 2.0
+     }
+    ],
+    "validated_radii_backscatter": [
+     0.01,
+     0.02,
+     0.04,
+     0.08
+    ],
+    "validated_radii_all_angles": [
+     0.04,
+     0.08
+    ]
+   },
    "stage3_grid": {
     "f_max": 2000.0,
     "per_radius": {
@@ -2424,6 +3237,23 @@
      }
     }
    },
+   "stage2_grid": {
+    "f_max": 2500.0,
+    "per_radius": {
+     "0.01": {
+      "forward": 2.606,
+      "bistatic_90": 0.509,
+      "worst_db": 2.606,
+      "pass": false
+     },
+     "0.02": {
+      "forward": 1.726,
+      "bistatic_90": 1.645,
+      "worst_db": 1.726,
+      "pass": false
+     }
+    }
+   },
    "stage3_grid": {
     "f_max": 2000.0,
     "per_radius": {
@@ -2458,7 +3288,9 @@
   }
  },
  "caveats": [
-  "1 cm and 2 cm posts: forward/side scattering off the analytic cylinder at the 4 kHz grid (1 cm forward 1.04 dB, 90-degree 1.77 dB; 2 cm forward 1.47 dB, 90-degree 0.43 dB) (dipole part ~10 % strong for sub-cell posts; backscatter within 1 dB); effect on dense-field echoes is not bounded; shadowing and multiple scattering are checked by self-convergence only, not against an exact solution",
+  "1 cm and 2 cm posts: forward/side scattering off the analytic cylinder at the 4 kHz grid (1 cm forward 1.04 dB, 90-degree 1.77 dB; 2 cm forward 1.47 dB, 90-degree 0.43 dB) (backscatter within 1 dB; cause measured at the 4 kHz grid: dipole part ~10 % strong for sub-cell posts); effect on dense-field echoes is not bounded; shadowing and multiple scattering are checked by self-convergence only, not against an exact solution",
+  "1 cm and 2 cm posts: forward/side scattering off the analytic cylinder at the 2.5 kHz grid (1 cm forward 2.61 dB, 90-degree 0.51 dB; 2 cm forward 1.73 dB, 90-degree 1.65 dB) (backscatter within 1 dB; cause measured at the 4 kHz grid: dipole part ~10 % strong for sub-cell posts); effect on dense-field echoes is not bounded; shadowing and multiple scattering are checked by self-convergence only, not against an exact solution",
+  "1 cm posts at the 2.5 kHz grid (r/dx 0.73) pass backscatter at the 3 fixed offsets only: below the calibrated sub-cell range (area factor clamped), no held-out offsets checked there",
   "1 cm posts fail backscatter at the 2 kHz grid: not validated there",
   "the 1 cm backscatter match depends on an area factor fitted to backscatter (area factor 0.908; held-out offsets confirm backscatter only)"
  ]

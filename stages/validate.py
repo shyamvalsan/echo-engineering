@@ -348,7 +348,7 @@ def check_tier0(claps, sample=True):
     return out
 
 
-GRIDS = {"stage1_grid": 4000.0, "stage3_grid": 2000.0}
+GRIDS = {"stage1_grid": 4000.0, "stage2_grid": 2500.0, "stage3_grid": 2000.0}
 
 
 def assemble_cylinder(rows_by_grid, held):
@@ -392,9 +392,16 @@ def assemble_cylinder(rows_by_grid, held):
                             for a, v in weak.items())
             caveats.append(f"{' and '.join(f'{100 * float(a):g} cm' for a in weak)} posts: forward/side scattering "
                            f"off the analytic cylinder at the {f_max / 1000:g} kHz grid ({det}) "
-                           "(dipole part ~10 % strong for sub-cell posts; backscatter within 1 dB); effect on "
+                           "(backscatter within 1 dB; cause measured at the 4 kHz grid: dipole part ~10 % strong for "
+                           "sub-cell posts); effect on "
                            "dense-field echoes is not bounded; shadowing and multiple scattering are checked by "
                            "self-convergence only, not against an exact solution")
+        dx = next((r["dx"] for r in rows), None)
+        below = [a for a in vb if t1.AREA_CAL and dx and a / dx < min(t1.AREA_CAL) - 1e-6]
+        if below:
+            caveats.append(f"{', '.join(f'{100 * a:g} cm' for a in below)} posts at the {f_max / 1000:g} kHz grid "
+                           f"(r/dx {below[0] / dx:.2f}) pass backscatter at the 3 fixed offsets only: below the "
+                           "calibrated sub-cell range (area factor clamped), no held-out offsets checked there")
     # spec pass: every catalog radius validated (backscatter) at the stage-1 grid; the stage-3 grid is per radius
     cyl["pass"] = all(cyl["stage1_grid"]["per_radius"][str(a)]["pass"] for a in RADII)
     cyl["note"] = ("pass = every catalog radius within 1 dB in backscatter at the stage-1 grid (f_max 4 kHz); "
@@ -438,7 +445,14 @@ def reassemble(path=None):
 def main(argv=None):
     """Full validation; `--reassemble` rebuilds the verdict of the existing metrics.json without solving."""
     argv = sys.argv[1:] if argv is None else argv
-    if "--reassemble" in argv:
+    if "--add-grid" in argv:  # e.g. --add-grid stage2_grid: run that grid's single-post solves, then reassemble
+        key = argv[argv.index("--add-grid") + 1]
+        rows, _ = check_cylinder(GRIDS[key], [(0.0, 0.0), (0.0035, 0.0053), (0.0053, 0.0021)])
+        path = OUT / "metrics.json"
+        m = json.loads(path.read_text())
+        m["checks"]["cylinder"][key] = {"f_max": GRIDS[key], "rows": rows}
+        path.write_text(json.dumps(m, indent=1))
+    if "--reassemble" in argv or "--add-grid" in argv:
         m = reassemble()
         print("validation passed:", m["passed"])
         for c in m["caveats"]:
@@ -456,8 +470,10 @@ def main(argv=None):
     offs = [(0.0, 0.0), (0.0035, 0.0053), (0.0053, 0.0021)]
     rows4, pr4 = check_cylinder(4000.0, offs)
     rows2, pr2 = check_cylinder(2000.0, offs)
+    rows25, _ = check_cylinder(2500.0, offs)
     held = check_heldout()
-    m["checks"]["cylinder"] = assemble_cylinder({"stage1_grid": rows4, "stage3_grid": rows2}, held)[0]
+    m["checks"]["cylinder"] = assemble_cylinder({"stage1_grid": rows4, "stage2_grid": rows25,
+                                                  "stage3_grid": rows2}, held)[0]
     print("check 2: grid convergence", flush=True)
     m["checks"]["grid_convergence"] = check_convergence(claps)
     print("check 4: tier0 vs tier1 sparse design (+ sample field video)", flush=True)
