@@ -48,7 +48,7 @@ function fillSwitcher(stageSel, runSel, current, onPick) {
   const runsOf = (s) => state.runs.filter((r) => r.stage === s);
   // what tells runs apart goes first (time, verdict, design tag), then the title
   const label = (r) => { const m = metaOf(r), tag = m.realization ? m.realization.replace(/_/g, " ") : "", hm = hhmm(r.created);
-    const verdict = r.status === "intermediate" ? "intermediate" : !r.verified ? "unverified" : r.passed ? "passed" : "failed";
+    const verdict = r.status === "intermediate" ? "intermediate" : !r.verified ? "unverified" : r.stage === "custom" ? "verified" : r.passed ? "passed" : "failed";
     return `${hm ? `${hm}, ` : ""}${verdict}${tag ? `, ${tag}` : ""}: ${r.title ?? r.run_id}`; };
   const opt = (r, sel) => el("option", { value: r.path, selected: r.path === sel, title: r.path }, label(r));
   // runs grouped by sub-stage (4a/4b/4c) when a stage has them; failures stay listed

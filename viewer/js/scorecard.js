@@ -28,6 +28,8 @@ function longText(cls, text) {
 export function verdictOf(run, metrics = run.metrics) {
   const m = run.manifest, verified = (metrics?.verified ?? m.verified) && m.status !== "tier0_only";
   if (!verified) return { cls: "unverified", text: "UNVERIFIED — Tier 0 only" };
+  // custom designs have no pass condition: say so instead of "failed"
+  if (metrics && !metrics.passed && !(metrics.metrics ?? []).some((x) => x.gating) && !metrics.criteria) return { cls: "basis", text: "Verified on Tier 1, no pass criterion" };
   if (metrics?.passed) return { cls: "pass", text: metrics.fragile ? "Passed on Tier 1, fragile" : "Passed on Tier 1" };
   return { cls: "fail", text: metrics?.fragile ? "Failed on Tier 1, fragile" : "Failed on Tier 1" };
 }
@@ -123,30 +125,36 @@ export class ScorePanel {
 }
 
 // Three verdicts side by side, never merged: the spec's thresholds, the listening-calibrated revision, the owner's ear.
-const yesNo = (p) => (p === true ? ["pass", "passed"] : p === false ? ["fail", "failed"] : ["info", "no automated criterion"]);
 function verdicts(metrics) {
   const c = metrics.criteria ?? {}, s1 = c.spec_v1, o2 = c.owner_v2, lv = metrics.listening_verdict;
-  if (!s1 && !o2 && !lv) return null;
+  if (!s1 && !o2 && !lv) return null; // custom / pilot runs: nothing, rather than a misleading empty verdict
   const cell = (title, cls, text, ...more) => el("div", { class: `vcell ${cls}` }, el("div", { class: "vt" }, title), el("div", { class: "vv" }, text), ...more);
   const cells = [];
-  if (s1) { const [k, t] = yesNo(s1.passed);
-    cells.push(cell("Original spec thresholds", k, t, s1.gating?.length ? el("div", { class: "vd", title: s1.gating.map((g) => (typeof g === "string" ? g : g.label ?? g.id)).join(", ") }, `${s1.gating.length} gating metrics`) : null)); }
-  else cells.push(cell("Original spec thresholds", "info", "not recorded"));
-  if (o2) { const [k, t] = yesNo(o2.passed), ms = o2.metrics ?? [];
-    cells.push(cell("Revised thresholds (listening-calibrated)", k, t,
-      ms.length ? el("div", { class: "vd" }, `${ms.filter((m) => m.pass).length} of ${ms.length} metrics pass`) : null,
-      o2.controls?.length ? el("div", { class: "vd" }, `controls: ${o2.controls.filter((x) => x.pass).length} of ${o2.controls.length} pass`) : null)); }
-  else cells.push(cell("Revised thresholds (listening-calibrated)", "info", "not recorded"));
-  if (lv) cells.push(cell("Owner's ear, 25 Nov", /^(pass|yes|heard|recogni)/i.test(lv.verdict ?? "") ? "pass" : /^(fail|no|not)/i.test(lv.verdict ?? "") ? "fail" : "info", lv.verdict ?? "—",
-    lv.quote ? el("q", { class: "vq" }, lv.quote) : null, el("div", { class: "vd" }, [lv.by, lv.date, lv.basis].filter(Boolean).join(", "))));
-  else cells.push(cell("Owner's ear, 25 Nov", "info", "not recorded"));
-  const out = [el("div", { class: "verdicts" }, cells)];
+  // strict: the spec's own thresholds
+  if (s1) cells.push(cell("Original spec thresholds", s1.passed === true ? "pass" : s1.passed === false ? "fail" : "info",
+    s1.passed === true ? "passed" : s1.passed === false ? "missed" : "not established",
+    s1.gating?.length ? el("div", { class: "vd", title: s1.gating.map((g) => (typeof g === "string" ? g : `${g.label ?? g.id}: ${withUnit(g.value, g.unit)}`)).join("\n") },
+      `${s1.gating.filter((g) => g.pass).length} of ${s1.gating.length} gating metrics met`) : null));
+  // revised: listening-calibrated; null = no automated criterion established for this run
+  if (o2) cells.push(cell("Revised thresholds (listening-calibrated)", o2.passed === true ? "pass" : o2.passed === false ? "fail" : "info",
+    o2.passed === true ? "confirmed" : o2.passed === false ? "not confirmed" : "not established",
+    o2.passed == null ? el("div", { class: "vd" }, "no automated criterion") : null,
+    o2.controls?.length ? el("div", { class: "vd" }, o2.controls_all_fail ? `all ${o2.controls.length} controls rejected` : `${o2.controls.filter((x) => x.pass).length} of ${o2.controls.length} controls pass`) : null));
+  // the owner's ear: always labelled not blind when it was not
+  if (lv) { const acc = /^(pass|accept|yes|heard|recogni)/i.test(lv.verdict ?? ""), rej = /^(fail|reject|no|not)/i.test(lv.verdict ?? "");
+    cells.push(cell("Owner's ear, 25 Nov", acc ? "pass" : rej ? "fail" : "info", el("span", {}, acc ? "accepted" : rej ? "rejected" : lv.verdict ?? "\u2014",
+      lv.blind === false ? el("span", { class: "notblind", title: lv.note ?? "The listener knew each target" }, "not blind") : lv.blind === true ? el("span", { class: "notblind" }, "blind") : null),
+      el("div", { class: "vd" }, [lv.date, lv.by ? `by the ${lv.by}` : null].filter(Boolean).join(", ")),
+      lv.quote ? el("q", { class: "vq", title: lv.basis ?? "" }, lv.quote) : null)); }
+  const out = [el("div", { class: `verdicts n${cells.length}` }, cells)];
+  // what the revised verdict rests on, and its note (collapsed when long)
+  if (o2?.rests_on) out.push(el("p", { class: "rests" }, `Revised verdict rests on: ${o2.rests_on}`));
+  if (o2?.note) out.push(o2.note.length > 140 ? el("details", { class: "caveats v2" }, el("summary", {}, `Note: ${o2.note.slice(0, 90).replace(/[ ,;]+\S*$/, "")}\u2026`), el("p", { class: "diag" }, o2.note))
+    : el("p", { class: "rests" }, `Note: ${o2.note}`));
   // the revised criterion's own numbers, one click away
-  if (o2 && ((o2.metrics ?? []).length || o2.note || o2.controls?.length)) out.push(el("details", { class: "caveats v2" }, el("summary", {}, "Revised thresholds: metrics and controls"),
-    el("ul", { class: "vlist" }, (o2.metrics ?? []).map((m) => el("li", {}, el("span", { class: m.pass == null ? "info" : m.pass ? "pass" : "fail" }, m.pass == null ? "—" : m.pass ? "pass" : "fail"),
-      ` ${m.label ?? m.id}: ${withUnit(m.value, m.unit)}${m.comparator ? ` (${CMP[m.comparator] ?? m.comparator} ${thrUnit(m.threshold, m.unit)})` : ""}`)),
-      (o2.controls ?? []).map((c) => el("li", {}, el("span", { class: c.pass ? "fail" : "pass" }, c.pass ? "passes" : "fails"), ` control "${c.name}"${c.kind ? ` (${c.kind})` : ""}`))),
-    o2.controls?.length ? el("p", { class: "diag" }, o2.controls_all_fail ? "Every control fails, as it should." : "Some controls pass: the criterion does not separate this echo from them.") : null,
-    o2.note ? el("p", { class: "diag" }, o2.note) : null));
+  if (o2 && ((o2.metrics ?? []).length || o2.controls?.length)) out.push(el("details", { class: "caveats v2" }, el("summary", {}, "Revised thresholds: metrics and controls"),
+    el("ul", { class: "vlist" }, (o2.metrics ?? []).map((m) => el("li", {}, el("span", { class: m.pass == null ? "info" : m.pass ? "pass" : "fail" }, m.pass == null ? "\u2014" : m.pass ? "met" : "missed"),
+      ` ${m.label ?? m.id}: ${withUnit(m.value, m.unit)}${m.comparator ? ` (${CMP[m.comparator] ?? m.comparator} ${thrUnit(m.threshold, m.unit)})` : ""}${m.used === false ? " (not used)" : ""}`)),
+      (o2.controls ?? []).map((c) => el("li", {}, el("span", { class: c.pass ? "fail" : "pass" }, c.pass ? "passes" : "rejected"), ` control ${c.name}${c.kind ? ` (${c.kind})` : ""}`)))));
   return out;
 }
