@@ -1,0 +1,304 @@
+{
+ "stage": "custom",
+ "passed": false,
+ "verified": true,
+ "fragile": false,
+ "headline": {
+  "echo_level_db_re_direct": -64.46821430082221,
+  "echo_level_db_re_direct_raw3d": -62.14960339061228,
+  "echo_spl_db": 45.98936060478454,
+  "depth_m": 19.898865801664805,
+  "post_count": 612,
+  "fill_fraction": 0.0010225142300502948,
+  "tier_gap_db": -2.318610910209931,
+  "likely_inaudible_on_site": false,
+  "echo_level_db_re_direct_finite_height": -63.44921141984893,
+  "finite_height_m": 2.0
+ },
+ "metrics": [
+  {
+   "id": "spec_corr",
+   "label": "Spectrogram correlation, log-mel",
+   "value": 0.6706284707537196,
+   "unit": "",
+   "threshold": null,
+   "comparator": null,
+   "pass": null,
+   "tier": "tier1",
+   "gating": false
+  },
+  {
+   "id": "env_corr",
+   "label": "Envelope correlation, 5 ms RMS (info)",
+   "value": 0.12224188980804115,
+   "unit": "",
+   "threshold": null,
+   "comparator": null,
+   "pass": null,
+   "tier": "tier1",
+   "gating": false
+  },
+  {
+   "id": "spec_corr",
+   "label": "Spectrogram correlation, log-mel",
+   "value": 0.7344012871599264,
+   "unit": "",
+   "threshold": null,
+   "comparator": null,
+   "pass": null,
+   "tier": "tier0",
+   "gating": false
+  },
+  {
+   "id": "env_corr",
+   "label": "Envelope correlation, 5 ms RMS (info)",
+   "value": 0.13076153045111832,
+   "unit": "",
+   "threshold": null,
+   "comparator": null,
+   "pass": null,
+   "tier": "tier0",
+   "gating": false
+  }
+ ],
+ "per_clap": [
+  {
+   "clap": 0,
+   "tier": "tier1",
+   "metrics": {
+    "spec_corr": 0.6614771598115067,
+    "env_corr": 0.15094842119811222
+   }
+  },
+  {
+   "clap": 1,
+   "tier": "tier1",
+   "metrics": {
+    "spec_corr": 0.6813711006235152,
+    "env_corr": 0.21116768382779966
+   }
+  },
+  {
+   "clap": 2,
+   "tier": "tier1",
+   "metrics": {
+    "spec_corr": 0.7031043954265195,
+    "env_corr": 0.2928558675896587
+   }
+  },
+  {
+   "clap": 3,
+   "tier": "tier1",
+   "metrics": {
+    "spec_corr": 0.6309760092792259,
+    "env_corr": -0.19472032922912216
+   }
+  },
+  {
+   "clap": 4,
+   "tier": "tier1",
+   "metrics": {
+    "spec_corr": 0.67621368862783,
+    "env_corr": 0.15095780565375755
+   }
+  },
+  {
+   "clap": 0,
+   "tier": "tier0",
+   "metrics": {
+    "spec_corr": 0.7250875414417031,
+    "env_corr": 0.18635835811396712
+   }
+  },
+  {
+   "clap": 1,
+   "tier": "tier0",
+   "metrics": {
+    "spec_corr": 0.7411908757248974,
+    "env_corr": 0.31387926402520616
+   }
+  },
+  {
+   "clap": 2,
+   "tier": "tier0",
+   "metrics": {
+    "spec_corr": 0.7641458076112452,
+    "env_corr": 0.27265516455946265
+   }
+  },
+  {
+   "clap": 3,
+   "tier": "tier0",
+   "metrics": {
+    "spec_corr": 0.7000593201213987,
+    "env_corr": -0.25155098641104695
+   }
+  },
+  {
+   "clap": 4,
+   "tier": "tier0",
+   "metrics": {
+    "spec_corr": 0.7415228909003873,
+    "env_corr": 0.13246585196800267
+   }
+  }
+ ],
+ "robustness": [],
+ "failure_cause": "no pass condition defined for custom targets",
+ "judge_floor": {
+  "per_clap": [
+   {
+    "clap": 0,
+    "metrics": {
+     "spec_corr": 0.9589348140076578,
+     "env_corr": 0.23790397210498268
+    }
+   },
+   {
+    "clap": 1,
+    "metrics": {
+     "spec_corr": 0.9833508256435001,
+     "env_corr": 0.3794657770492467
+    }
+   },
+   {
+    "clap": 2,
+    "metrics": {
+     "spec_corr": 0.975813327922183,
+     "env_corr": 0.3762864137368749
+    }
+   },
+   {
+    "clap": 3,
+    "metrics": {
+     "spec_corr": 0.9844519432180783,
+     "env_corr": 0.836634013256574
+    }
+   },
+   {
+    "clap": 4,
+    "metrics": {
+     "spec_corr": 0.9444338147797823,
+     "env_corr": 0.25018490683189964
+    }
+   }
+  ],
+  "mean": {
+   "spec_corr": 0.9693969451142402,
+   "env_corr": 0.41609501659591563
+  },
+  "note": "metrics of target * clap (band-limited): the floor set by the judge and the clap, not the design"
+ },
+ "verification": {
+  "validation_passed": true,
+  "radii": [
+   0.01,
+   0.02,
+   0.04,
+   0.08
+  ],
+  "radii_all_angles": [
+   0.04,
+   0.08
+  ],
+  "source": "metrics.json:checks.cylinder.stage2_grid (f_max 2500.0 Hz, ppw 10.0)",
+  "path": "/home/shyam/projects/echo/runs/validation/metrics.json",
+  "engine": "fd8-3",
+  "validation_engine": "fd8-3",
+  "radii_used": [
+   0.01
+  ],
+  "radii_ok": true,
+  "caveats": [
+   "1 cm and 2 cm posts: forward/side scattering off the analytic cylinder at the 4 kHz grid (1 cm forward 1.04 dB, 90-degree 1.77 dB; 2 cm forward 1.47 dB, 90-degree 0.43 dB) (backscatter within 1 dB; cause measured at the 4 kHz grid: dipole part ~10 % strong for sub-cell posts); effect on dense-field echoes is not bounded; shadowing and multiple scattering are checked by self-convergence only, not against an exact solution",
+   "1 cm and 2 cm posts: forward/side scattering off the analytic cylinder at the 2.5 kHz grid (1 cm forward 2.61 dB, 90-degree 0.51 dB; 2 cm forward 1.73 dB, 90-degree 1.65 dB) (backscatter within 1 dB; cause measured at the 4 kHz grid: dipole part ~10 % strong for sub-cell posts); effect on dense-field echoes is not bounded; shadowing and multiple scattering are checked by self-convergence only, not against an exact solution",
+   "1 cm posts at the 2.5 kHz grid (r/dx 0.73) pass backscatter at the 3 fixed offsets only: below the calibrated sub-cell range (area factor clamped), no held-out offsets checked there",
+   "1 cm posts fail backscatter at the 2 kHz grid: not validated there",
+   "the 1 cm backscatter match depends on an area factor fitted to backscatter (area factor 0.908; held-out offsets confirm backscatter only)",
+   "radii [0.01] used by this design are validated for backscatter but not at all angles at this grid (metrics.json:checks.cylinder.stage2_grid (f_max 2500.0 Hz, ppw 10.0))"
+  ],
+  "reason": "validation passed and every radius used is validated at this grid"
+ },
+ "caveats": [
+  "1 cm and 2 cm posts: forward/side scattering off the analytic cylinder at the 4 kHz grid (1 cm forward 1.04 dB, 90-degree 1.77 dB; 2 cm forward 1.47 dB, 90-degree 0.43 dB) (backscatter within 1 dB; cause measured at the 4 kHz grid: dipole part ~10 % strong for sub-cell posts); effect on dense-field echoes is not bounded; shadowing and multiple scattering are checked by self-convergence only, not against an exact solution",
+  "1 cm and 2 cm posts: forward/side scattering off the analytic cylinder at the 2.5 kHz grid (1 cm forward 2.61 dB, 90-degree 0.51 dB; 2 cm forward 1.73 dB, 90-degree 1.65 dB) (backscatter within 1 dB; cause measured at the 4 kHz grid: dipole part ~10 % strong for sub-cell posts); effect on dense-field echoes is not bounded; shadowing and multiple scattering are checked by self-convergence only, not against an exact solution",
+  "1 cm posts at the 2.5 kHz grid (r/dx 0.73) pass backscatter at the 3 fixed offsets only: below the calibrated sub-cell range (area factor clamped), no held-out offsets checked there",
+  "1 cm posts fail backscatter at the 2 kHz grid: not validated there",
+  "the 1 cm backscatter match depends on an area factor fitted to backscatter (area factor 0.908; held-out offsets confirm backscatter only)",
+  "radii [0.01] used by this design are validated for backscatter but not at all angles at this grid (metrics.json:checks.cylinder.stage2_grid (f_max 2500.0 Hz, ppw 10.0))"
+ ],
+ "fragile_reason": null,
+ "tier1_correction": {
+  "rounds": [
+   {
+    "round": 0,
+    "loss": 3.7103514671325684,
+    "score": null,
+    "posts": 612,
+    "stretch_eps_applied": -0.0006800000000000006,
+    "stretch_fit": {
+     "eps": -0.0005800000000000449,
+     "tau_s": 5.9999999999999985e-06,
+     "corr": 0.9638588988472796
+    },
+    "gains_next": [
+     0.5381374741966499,
+     0.7939086579876542,
+     0.9322206404312294,
+     0.9699569489445578,
+     0.9009973089912383,
+     0.8164504543817569,
+     0.9629988481639015,
+     1.01602266746906,
+     1.002993346209172,
+     1.0447502292936606,
+     1.0589174220166868,
+     1.1707768216096295,
+     1.0
+    ],
+    "tier_gap_db": -2.318610910209931,
+    "wall_s": 248.24630165100098,
+    "gating": {}
+   }
+  ],
+  "best_round": 0,
+  "tier1_runs": [
+   {
+    "what": "design",
+    "wall_s": 247.36923050880432,
+    "stretch_eps_applied": -0.0006800000000000006,
+    "stretch_eps_measured": -0.0005800000000000449,
+    "stretch_timing_residual": 0.00010006804627149535,
+    "stretch_corr": 0.9638588988472796,
+    "empty_cached": true,
+    "empty_s": 0.0,
+    "scene_s": 245.15464854240417
+   }
+  ],
+  "stretch": {
+   "enabled": true,
+   "stretch_per_fill_prior": -0.68,
+   "definition": "Tier 1 echo(t) ~ Tier 0 echo of the same posts at t (1 + eps_measured) (the medium's stretch); ranges scaled by 1 + eps_applied; timing residual = (1 + eps_measured) / (1 + eps_applied) - 1; refit after each Tier 1 run",
+   "final_applied": -0.0006800000000000006,
+   "final_measured": -0.0005800000000000449,
+   "final_timing_residual": 0.00010006804627149535
+  },
+  "field_colour": {
+   "limit": 0.00037872548242329267,
+   "percentile": 99.97,
+   "direct_excluded_halfwidth_m": 1.2,
+   "compress": "asinh",
+   "compress_k": 2.0,
+   "level_decay_exponent": -1.3019270372342455,
+   "time_gain_exponent": 0.7811562223405473,
+   "t_ref_s": 0.0809,
+   "zero_rgb": "#0e1620",
+   "crf": 54,
+   "bytes": 10082658
+  }
+ },
+ "pass_condition": null,
+ "custom": {
+  "note": "information metrics only (target-agnostic); no thresholds"
+ }
+}
