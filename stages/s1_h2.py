@@ -60,7 +60,7 @@ def main(argv=None):
     ap.add_argument("--radius", type=float, default=None, help="post radius (also the profile's a_ref)")
     ap.add_argument("--tier0-only", action="store_true", help="print Tier 0 numbers, no Tier 1 run")
     a = ap.parse_args(argv)
-    torch.set_num_threads(8)
+    torch.set_num_threads(4)
     from echo.tier1 import echoes, run_tier1
 
     cfg = replace(CONFIG, realization=a.realization, posts_per_period=a.K)
@@ -82,7 +82,7 @@ def main(argv=None):
               f"{np.mean([x['pitch_err_pct'] for x in v]):.2f} corr {np.mean([x['spec_corr'] for x in v]):.3f}]")
         return
     t = time.time()
-    r = run_tier1(d.scene, cfg.f_max, cfg.duration_s, listeners=stage_listeners(cfg, target), threads=8)
+    r = run_tier1(d.scene, cfg.f_max, cfg.duration_s, listeners=stage_listeners(cfg, target), threads=4)
     e1 = band_limit(echoes(r, claps, listener=0), band[0], band[1])
     wall = time.time() - t
     n0, nw = res.n0, len(target.audio) + claps.shape[1]

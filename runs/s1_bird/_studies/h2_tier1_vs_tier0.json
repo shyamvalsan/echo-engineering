@@ -69,6 +69,75 @@
     -0.9658790758656184,
     -0.7335890798761762
    ]
+  },
+  {
+   "label": "phase_locked K=1 N=420 a=0.04",
+   "radius": 0.04,
+   "realization": "phase_locked",
+   "posts_per_period": 1,
+   "n_posts": 420,
+   "fill": 0.02266588632909383,
+   "tier1_wall_s": 698.3482246398926,
+   "loss_tier0": 3.2376198768615723,
+   "loss_tier1": 7.526777267456055,
+   "tier_gap_db": 1.0014193240208997,
+   "wave_corr_tier1_vs_tier0": 0.15830530249314498,
+   "residue_db_tier1_vs_tier0": -0.1796533663374828,
+   "judges_tier0_info_only": {
+    "pitch_err_pct": 2.891514070429988,
+    "spec_corr": 0.7084209549084262
+   },
+   "judges_tier1_info_only": {
+    "pitch_err_pct": 51.859313192804606,
+    "spec_corr": 0.19030467083970426
+   },
+   "tier0_jitter_equivalents": [
+    {
+     "sigma_m": 0.0005,
+     "wave_corr_vs_tier0": 0.9987800370151616,
+     "residue_db_vs_tier0": -26.31571543402004,
+     "loss": 4.156509240468343,
+     "spec_corr_info_only": 0.6879043503646649
+    },
+    {
+     "sigma_m": 0.001,
+     "wave_corr_vs_tier0": 0.9951263013516587,
+     "residue_db_vs_tier0": -20.30655666378369,
+     "loss": 4.54823621114095,
+     "spec_corr_info_only": 0.6631080387380556
+    },
+    {
+     "sigma_m": 0.0015,
+     "wave_corr_vs_tier0": 0.9890627225049274,
+     "residue_db_vs_tier0": -16.807166911971933,
+     "loss": 4.819092432657878,
+     "spec_corr_info_only": 0.6427902633086562
+    },
+    {
+     "sigma_m": 0.002,
+     "wave_corr_vs_tier0": 0.9806330672660932,
+     "residue_db_vs_tier0": -14.341895439072744,
+     "loss": 5.03200101852417,
+     "spec_corr_info_only": 0.625738309098773
+    },
+    {
+     "sigma_m": 0.003,
+     "wave_corr_vs_tier0": 0.9569526866364457,
+     "residue_db_vs_tier0": -10.920464997662648,
+     "loss": 5.368799527486165,
+     "spec_corr_info_only": 0.5978761740813651
+    }
+   ],
+   "per_window_level_db_tier1_minus_tier0": [
+    -0.3488254457480147,
+    1.7938257583691952,
+    -5.7131598202773635,
+    -10.454431683007666,
+    -13.939681228227547,
+    -17.50311021669724,
+    -19.74122843118058,
+    -21.970021422251502
+   ]
   }
  ]
 }

@@ -73,6 +73,20 @@
     }
    ],
    "equivalent_radial_jitter_m": 0.0037580096466049524
+  },
+  {
+   "run": "h2_echoes_phase_locked_K1_N420_a0.04.npz",
+   "n_posts": 420,
+   "radius": 0.04,
+   "tier1_vs_tier0": {
+    "stretch_eps": -0.005700000000000145,
+    "offset_s": 0.00013399999999999998,
+    "corr_raw": 0.08461775785592353,
+    "corr_stretched": 0.19089857125066453,
+    "residue_db_gain_only": -0.031208062497612012,
+    "residue_db_stretched": -0.16122257702430629,
+    "residue_db_stretched_fir33": -0.7968006653361237
+   }
   }
  ]
 }

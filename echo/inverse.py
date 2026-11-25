@@ -351,6 +351,7 @@ def fit_stretch(echo_t1, echo_t0, n0, n1, fs=FS, eps_range=(-0.008, 0.004), tau_
 
 
 def compose_stretch(eps_applied, eps_residual):
-    """Total pre-warp after a round: the ranges were scaled by (1 + eps_applied); Tier 1 still shows a residual
-    stretch eps_residual against Tier 0 of those posts, so scale by (1 + eps_residual) more."""
+    """Compose two warps: ranges scaled by (1 + eps_applied), then by (1 + eps_residual). Use it with a residual
+    measured against the intended timing (e.g. Tier 1 vs Tier 0 of the UNWARPED design); a fit of Tier 1 against
+    Tier 0 of the same warped posts is the medium's stretch itself and replaces, not composes."""
     return (1.0 + eps_applied) * (1.0 + eps_residual) - 1.0

@@ -322,7 +322,7 @@ def _say(verbose):
 
 def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, verbose=True, runs_root=None):
     """Run a stage end to end and write its run folder. Returns (run_dir, design, solve_result)."""
-    from echo.inverse import (clap_centroid_s, compose_stretch, correction_loop, fit_stretch, reference_echo,
+    from echo.inverse import (clap_centroid_s, correction_loop, fit_stretch, reference_echo,
                               stage_score, window_gains, window_loss)
     from echo.realize import wedge_area
     from echo.clap import band_limit
@@ -436,15 +436,19 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
             r = t1(d.scene, record_field=bool(warp["in_loop"] and cfg.field and cfg.correction_rounds == 1))
             fit = fit_stretch(e1_of(r), d.echo_t0_2d, n_w0, n_w1)
             d.extra["stretch_fit"] = fit
-            d.extra["stretch_eps_total"] = compose_stretch(d.extra.get("stretch_eps_applied", 0.0), fit["eps"])
+            # Tier 1 vs Tier 0 of the SAME posts measures the medium's stretch, whatever pre-warp was applied: it is
+            # the warp the next design needs (not a composition). The remaining timing error of this design against
+            # the intended (unwarped) timing is (1 + eps_medium) / (1 + eps_applied) - 1.
+            d.extra["stretch_eps_total"] = fit["eps"]
+            d.extra["stretch_timing_residual"] = (1.0 + fit["eps"]) / (1.0 + d.extra.get("stretch_eps_applied", 0.0)) - 1.0
             if cfg.stretch_comp:
                 warp["eps_next"] = d.extra["stretch_eps_total"]
-            say(f"  stretch: applied {d.extra.get('stretch_eps_applied', 0.0):+.5f}, residual {fit['eps']:+.5f} "
-                f"(corr {fit['corr']:.3f}) -> next {d.extra['stretch_eps_total']:+.5f}")
+            say(f"  stretch: applied {d.extra.get('stretch_eps_applied', 0.0):+.5f}, measured (medium) {fit['eps']:+.5f} "
+                f"(corr {fit['corr']:.3f}), timing residual {d.extra['stretch_timing_residual']:+.5f}")
             wall["tier1_loop_s"] += time.time() - t
             t1_runs.append({"what": "design", "wall_s": r.wall_s, "stretch_eps_applied":
-                            d.extra.get("stretch_eps_applied", 0.0), "stretch_eps_residual": fit["eps"],
-                            "stretch_eps_total": d.extra["stretch_eps_total"], "stretch_corr": fit["corr"], "empty_cached": bool(r.extra.get("empty_cached")),
+                            d.extra.get("stretch_eps_applied", 0.0), "stretch_eps_measured": fit["eps"],
+                            "stretch_timing_residual": d.extra["stretch_timing_residual"], "stretch_corr": fit["corr"], "empty_cached": bool(r.extra.get("empty_cached")),
                             "empty_s": r.extra.get("t_empty_s"), "scene_s": r.extra.get("t_scene_s")})
             say(f"  tier1 {r.wall_s:.0f} s (empty cached: {r.extra.get('empty_cached')})")
             memo[id(d)] = (r, e1_of(r))
@@ -472,9 +476,9 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
                                    + float(np.mean(echo_level_db(e_f) - echo_level_db(d_f.echo_t0_2d))),
                                    "spec_corr_tier1_info_only": _spec_corr_mean(e_f, target, t_echo0, band),
                                    "stretch_eps_applied": d_f.extra["stretch_eps_applied"],
-                                   "stretch_eps_residual": d_f.extra["stretch_fit"]["eps"],
-                                   "stretch_eps_total": d_f.extra["stretch_eps_total"],
-                                   "stretch_eps_per_fill": d_f.extra["stretch_eps_total"] / fill_fraction(d_f.scene),
+                                   "stretch_eps_measured": d_f.extra["stretch_fit"]["eps"],
+                                   "stretch_timing_residual": d_f.extra["stretch_timing_residual"],
+                                   "stretch_eps_per_fill": d_f.extra["stretch_fit"]["eps"] / fill_fraction(d_f.scene),
                                    "profile": p_f})
                 say(f"  density sweep fill {fill}: {len(d_f.posts)} posts, Tier 1 loss {loss_f:.4f}")
             pick = min(range(len(sweep_rows)), key=lambda i: sweep_rows[i]["loss_tier1"])
@@ -518,13 +522,16 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
         t1_info["best_round"] = ib
         t1_info["tier1_runs"] = t1_runs
         history["phases"][-1]["stretch_eps_applied"] = [r.design.extra.get("stretch_eps_applied") for r in rounds]
-        history["phases"][-1]["stretch_eps_residual"] = [(r.design.extra.get("stretch_fit") or {}).get("eps")
+        history["phases"][-1]["stretch_eps_measured"] = [(r.design.extra.get("stretch_fit") or {}).get("eps")
                                                          for r in rounds]
+        history["phases"][-1]["stretch_timing_residual"] = [r.design.extra.get("stretch_timing_residual") for r in rounds]
         t1_info["stretch"] = {"enabled": cfg.stretch_comp, "stretch_per_fill_prior": cfg.stretch_per_fill,
-                              "definition": "Tier 1 echo(t) ~ Tier 0 echo of the same posts at t (1 + eps); ranges "
-                                            "scaled by 1 + eps_applied; residual refit after each Tier 1 run",
+                              "definition": "Tier 1 echo(t) ~ Tier 0 echo of the same posts at t (1 + eps_measured) "
+                                            "(the medium's stretch); ranges scaled by 1 + eps_applied; timing residual "
+                                            "= (1 + eps_measured) / (1 + eps_applied) - 1; refit after each Tier 1 run",
                               "final_applied": des.extra.get("stretch_eps_applied"),
-                              "final_residual": (des.extra.get("stretch_fit") or {}).get("eps")}
+                              "final_measured": (des.extra.get("stretch_fit") or {}).get("eps"),
+                              "final_timing_residual": des.extra.get("stretch_timing_residual")}
         if cfg.field and best_res.field is None:  # the final design once more, recording the field (same ir)
             t = time.time()
             fres = t1(des.scene, record_field=True)

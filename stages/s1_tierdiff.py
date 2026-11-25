@@ -109,3 +109,45 @@ def main(argv=None):
 
 if __name__ == "__main__":
     main()
+
+
+def analyse_npz(path: Path, eps_lo=-0.03) -> dict:
+    """Same decomposition for an `s1_h2` echo file (tier0/tier1 [K, n], clap 0 used), with a wider stretch range
+    (dense fields stretch more)."""
+    from echo.inverse import fit_stretch
+
+    z = np.load(path)
+    a, b, n0 = z["tier0"][0], z["tier1"][0], int(z["n0"])
+    n1 = n0 + int(0.080 * FS) + 10
+    coarse = fit_stretch(b[None], a[None], n0, n1, eps_range=(eps_lo, 0.004), tau_max=300e-6)
+    fit = _fit_around(a, b[n0:n1], n0, n1, coarse["eps"], coarse["tau_s"])
+    return {"run": path.name, "n_posts": int(len(z["posts"])), "radius": float(z["posts"][0, 2]),
+            "tier1_vs_tier0": fit}
+
+
+def _fit_around(x_full, y, n0, n1, eps, tau):
+    t = np.arange(len(x_full)) / FS
+    cs = CubicSpline(t, x_full)
+    tt = t[n0:n1]
+    x = cs(tt * (1 + eps) + tau)
+    c = float(np.dot(x, y) / np.sqrt(np.dot(x, x) * np.dot(y, y)))
+    h = 16
+    X = np.stack([np.roll(x, k) for k in range(-h, h + 1)], 1)[h:-h]
+    Y = y[h:-h]
+    w, *_ = np.linalg.lstsq(X, Y, rcond=None)
+    r = Y - X @ w
+    c0 = float(np.dot(x_full[n0:n1], y) / np.sqrt(np.dot(x_full[n0:n1], x_full[n0:n1]) * np.dot(y, y)))
+    return {"stretch_eps": float(eps), "offset_s": float(tau), "corr_raw": c0, "corr_stretched": c,
+            "residue_db_gain_only": float(10 * np.log10(max(1 - c0 ** 2, 1e-12))),
+            "residue_db_stretched": float(10 * np.log10(max(1 - c ** 2, 1e-12))),
+            "residue_db_stretched_fir33": float(10 * np.log10(np.dot(r, r) / np.dot(Y, Y)))}
+
+
+def main_npz(paths):
+    path = export.RUNS / "s1_bird" / "_studies" / "tier_diff.json"
+    d = json.loads(path.read_text())
+    for p in paths:
+        res = analyse_npz(Path(p))
+        d["rows"] = [r for r in d["rows"] if r["run"] != res["run"]] + [res]
+        print(json.dumps(res, indent=1))
+    path.write_text(json.dumps(d, indent=1))
