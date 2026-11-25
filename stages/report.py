@@ -1,14 +1,22 @@
-"""Morning report generator: `uv run python -m stages.report` rewrites REPORT.md entirely from files on disk.
+"""Report generator: `uv run python -m stages.report` rewrites REPORT.md and the appendices under docs/report/
+entirely from files on disk.
 
 Inputs (read-only): runs/index.json and the run folders it lists (plus each stage's `_studies/*.json`),
-runs/validation/metrics.json, DECISIONS.md, BUILD.md (generated block), artifacts/speech/judge_sanity.json,
-artifacts/report/*.png and the controller ledger .superpowers/sdd/plan/progress.md. Every number in the output is
-read from one of these files (or from the test-suite summary line). Hand-written text lives only in the commentary
-block, which is preserved between runs.
+runs/_criteria/summary.json (three verdicts per test: spec_v1, owner_v2, the owner's listening verdict),
+runs/validation/metrics.json, listen/README.md, BUILD.md, build/*/pack.json, DECISIONS.md,
+artifacts/speech/judge_sanity.json, artifacts/report/*.png and the controller ledger
+.superpowers/sdd/plan/progress.md. Every number in the output is read from one of these files (or from the test-suite
+summary line). Hand-written text lives only in the commentary block, which is preserved between runs.
+
+REPORT.md is short and leads with what works; the full per-test scorecards, validation, design studies, criteria,
+timeline with every ruling, and deviations go to docs/report/*.md. The three verdicts are never merged into one tally:
+spec_v1 (original spec thresholds) is pass/fail; owner_v2 (revised, listening-calibrated thresholds) is PASS or
+"not established" on the runs it was calibrated on; the listening verdict is a human judgment and always carries
+"not blind" when it was not blind.
 
 Results are grouped into units of the spec's stage table (1, 2, 3, 4a, 4b, 4c); inside a unit runs are grouped by
-member (stage 3: note length; stage 4b: syllable). The newest final run of a member is its result; older finals are
-earlier attempts.
+member (stage 3: note length; stage 4b: syllable). The newest final run of a member is its result in the scorecards;
+the run the owner listened to (summary.json `accepted_runs`) is the run the three verdicts are about.
 
 Options: --no-tests reuses the test summary already in REPORT.md instead of running `uv run pytest -q`;
 --reset-commentary replaces the preserved commentary block with the default text in this file.
@@ -41,34 +49,22 @@ UNITS = [
     ("4c", "Stage 4c — Word", "s4", "4c", "4c"),
 ]
 DEFAULT_COMMENTARY = """\
-*Current best understanding (hand-written, no numbers; the tables above and below carry the values).*
+*Commentary (hand-written, no numbers; the generated sections carry the values and their sources).*
 
-**Placement.** Deterministic placement beats density sampling. Placing one ring of posts per carrier period at the
-target's phase (stage 1, second and third attempts) gave a louder echo that is less sensitive to placement error than
-sampling posts from a positive density, where most posts carry a slowly varying bias instead of the note (stage-1
-earlier-attempts table and design-study rows).
+**What to take away.** One design family works in simulation and is worth building toward: the ring-layout whistle.
+It is the only result that a listener (the owner, knowing the target) accepted and that an automated test also
+confirms against negative controls. It still misses the spec's original strict marks, narrowly, next to judges that
+score a perfect echo close to those marks too. The other results were accepted by ear (not blind) but no automated test confirms
+them; they are recorded, not chased.
 
-**The post field is a medium.** Sound travelling through the posts is slightly slowed and loses energy. The slowing
-is a stretch of the echo's time axis that can be compensated by scaling the ranges (stage-1 third attempt); the loss
-(extinction) cannot be compensated. Extinction per unit of echo grows with frequency, with the square of post
-radius, and with how narrowly the posts are confined laterally. That is why thin posts in a wide fan are needed and
-why long structures simulated in a narrow strip fail: stage 2 with thicker posts in a narrower wedge lost its late
-notes, and the melody strip loses level along its length (predicted-vs-measured extinction tables).
+**Why the verdicts differ.** The original thresholds measure fidelity strictly (worst-frame pitch, spectrogram
+match over a wide dynamic range). The revised criteria ask a narrower question: is the echo nearer its own target than
+to plausible wrong answers, and is its pitch right, on most claps? The owner's ear asks the widest one, with the
+target in mind. No single verdict replaces the others, and a blind listening test has not been run yet.
 
-**A broadband residue limits fidelity.** On the full-wave solver an incoherent residue sits well below the echo but
-above what the spectrogram judge tolerates at stage 1. Whether it is real forward scattering by the posts or the
-solver's coarse rendering of posts smaller than two grid cells is not settled (validation caveats). The 1:10 scale
-model would settle it.
-
-**Spectrum tilt.** The clap's spectrum and the weak low-frequency scattering of thin posts tilt every echo toward
-2–3 kHz. That hurts low notes, the melody's lower notes and vowels (the speech ablation tables put the clap spectrum
-first).
-
-**Sweet spot.** For a wide fan the listening spot is centimetres wide (stage-1 sweet-spot table, listener rows of
-the robustness tables).
-
-**Judges.** The pitch and formant judges sit close to their own floor on a physically perfect echo (judge-floor
-columns), and the word recognizer is lenient (the stage-4c pass carries its controls beside it).
+**What decides the real thing.** Whether a person hears an echo that arrives tens of dB under their own clap is a
+question about hearing, not acoustics; simulation cannot answer it. The build path therefore starts with a cheap
+outdoor hearing test and a tabletop scale model, before any full-size structure.
 """
 
 NEXT_STEPS = [
@@ -241,6 +237,34 @@ def render_block(obj, src, key, depth=0):
 
 
 # --------------------------------------------------------------------------------------------------------- data model
+def parse_listen(path: Path):
+    """listen/README.md table -> {run tag: {true_db, boost_db, spl_db, title}} (empty when missing)."""
+    out = {}
+    try:
+        text = Path(path).read_text()
+    except OSError:
+        return out
+    for ln in text.splitlines():
+        cells = [c.strip() for c in ln.strip().strip("|").split("|")]
+        if len(cells) < 7 or not cells[2].startswith("`"):
+            continue
+        tag = cells[2].strip("`")
+
+        def f(x):
+            try:
+                return float(x)
+            except ValueError:
+                return None
+        out[tag] = {"true_db": f(cells[3]), "boost_db": f(cells[4]), "spl_db": f(cells[5]), "title": cells[6]}
+    return out
+
+
+def run_tag(run_id: str) -> str:
+    """'20261125-104529-s1' -> 's1' (the tag used by listen/)."""
+    parts = run_id.split("-", 2)
+    return parts[2] if len(parts) == 3 else run_id
+
+
 def unit_of(run):
     m = re.match(r"s(\d)", run.get("stage", ""))
     if not m:
@@ -279,6 +303,9 @@ class Data:
         self.decisions = (self.root / "DECISIONS.md").read_text() if (self.root / "DECISIONS.md").exists() else ""
         self.build_md = (self.root / "BUILD.md").read_text() if (self.root / "BUILD.md").exists() else ""
         self.speech = _load(self.root / "artifacts" / "speech" / "judge_sanity.json")
+        self.criteria = _load(self.runs_dir / "_criteria" / "summary.json")
+        self.listen = parse_listen(self.root / "listen" / "README.md")
+        self.prefix = ""  # path prefix for links written into appendices (docs/report/ -> "../../")
         self.runs, self.other, self.seen = [], [], {}
         for r in sorted(self.index, key=lambda r: (r.get("created", ""), r.get("run_id", "")), reverse=True):
             d = self.runs_dir / r.get("path", "")
@@ -290,6 +317,7 @@ class Data:
                 continue
             run["unit"], run["member"] = u, member_of(run)
             self.runs.append(run)
+        self.by_id = {r["run_id"]: r for r in self.runs + self.other if r.get("run_id")}
 
     @property
     def val_passed(self):
@@ -442,13 +470,8 @@ def _shot_key(r):
 
 
 def how_to_look(data: Data):
-    out = ["Serve the repo and open the viewer (it reads the run folders directly):", "",
-           "```", "uv run python -m http.server 8000      # from the repo root", "```", "",
-           "- Viewer: <http://localhost:8000/viewer/> (opens the newest final run; pick runs in the header; "
-           "`?run=<stage>/<run_id>` opens a given run).",
-           "- Lay explainer: <http://localhost:8000/explainer/> (`explainer/index.html`, rebuilt by "
-           "`uv run python explainer/build.py`).",
-           "- Build path: [`BUILD.md`](BUILD.md).", ""]
+    out = ["Serve the repo with the lab server (`uv run python -m echo.lab`, default port 8000; `--port` to change) "
+           "and open `/viewer/` (`?run=<stage>/<run_id>` opens a given run) or `/explainer/`.", ""]
     rows = []
     for u in data.units():
         for mem, rs in data.members(u[0]).items():
@@ -486,13 +509,13 @@ def how_to_look(data: Data):
                 note += " This run has no field video (`manifest.field` is null)."
         out += ["", f"Viewer, {k}" + (f" — run `{r['run_id']}`" if r else "") +
                 f" (screenshot taken {taken.isoformat(timespec='minutes')}).{note}", "",
-                f"![viewer screenshot, {k}]({rel(data.root, p)})"]
+                f"![viewer screenshot, {k}]({data.prefix}{rel(data.root, p)})"]
     missing = [k for k in keys if not (data.root / "artifacts" / "report" / f"viewer-{k}.png").exists()]
     if missing:
         out += ["", "No viewer screenshot yet for: " + ", ".join(f"`{k}`" for k in missing) + "."]
     ex = data.root / "artifacts" / "report" / "explainer-results.png"
     if ex.exists():
-        out += ["", "Explainer, results section:", "", f"![explainer results section]({rel(data.root, ex)})"]
+        out += ["", "Explainer, results section:", "", f"![explainer results section]({data.prefix}{rel(data.root, ex)})"]
     return "\n".join(out)
 
 
@@ -885,9 +908,11 @@ def scorecard(data: Data, u):
             out += ["", speech_prep(data, u[0])]
         return "\n".join(out)
     st = unit_state(data, u[0])
-    out += [f"**{u[4]} {'PASSED' if st.startswith('pass') else 'FAILED'}**"
+    out += [f"**{u[4]}, original spec thresholds (newest final run of each part): "
+            f"{'passed' if st.startswith('pass') else 'missed'}**"
             + (" (unverified)" if st.endswith("_unverified") else "")
-            + (f" — {len(mem)} parts: " + ", ".join(mem) if len(mem) > 1 else "") + ".", ""]
+            + (f" — {len(mem)} parts: " + ", ".join(mem) if len(mem) > 1 else "") + ". The three verdicts "
+            "(original thresholds, revised thresholds, owner's ear) are kept apart in the table below.", ""]
     if u[0] == "3" and "100 ms" in mem:
         out += ["The spec's pass condition is the 100 ms melody; the 60 ms run answers an open question.", ""]
     if u[0] == "4b":
@@ -902,11 +927,17 @@ def scorecard(data: Data, u):
         out += [table(["syllable", "run", "result"] + ids, rows), "", closed_set_block(data, res), ""]
     for mname, rs in mem.items():
         lab = f"{u[4]}" + (f" — {mname}" if mname else "")
+        out += [f"**Three verdicts, {lab}** (every final run, newest first):", "", verdict_table(data, rs), ""]
         if len(rs) > 1:
             out += [f"**Earlier attempts, {lab}** (newest first; the first row is the result):", "",
                     attempts_table(rs), ""]
-        out += [run_card(data, rs[0], f"#### {lab} — {'PASSED' if run_passed(rs[0]) else 'FAILED'}"
+        out += [run_card(data, rs[0], f"#### {lab} — newest run, original thresholds: "
+                         f"{'passed' if run_passed(rs[0]) else 'missed'}"
                          + ("" if run_verified(rs[0]) else " (UNVERIFIED)")), ""]
+        heard = [r for r in rs[1:] if r["run_id"] in accepted_ids(data)]
+        for r in heard:
+            out += [run_card(data, r, f"#### {lab} — run the owner listened to, original thresholds: "
+                             f"{'passed' if run_passed(r) else 'missed'}"), ""]
     nonfinal = [r for r in data.unit_runs(u[0], final=False) if r.get("status") != "final"]
     if nonfinal:
         out += ["Other runs of this stage that are not final (history only):", "",
@@ -1115,7 +1146,7 @@ def next_steps(data: Data, commentary: str):
 def build_section(data: Data):
     if not data.build_md:
         return "`BUILD.md` does not exist yet.\n\n" + build_pilot_section(data)
-    out = ["[`BUILD.md`](BUILD.md) is the plan from simulation to a real structure: a decision ladder (desk → 1:10 "
+    out = [f"[`BUILD.md`]({data.prefix}BUILD.md) is the plan from simulation to a real structure: a decision ladder (desk → 1:10 "
            "ultrasonic scale model → full-scale calibration posts → pilot), with a fabrication pack under `build/`. "
            "Its simulated numbers live in a generated block refreshed by "
            "`uv run python -m stages.build_pack --refresh-doc`."]
@@ -1277,7 +1308,7 @@ def deviations(data: Data):
         if n_other:
             others.append(f"{name.lower()}: {n_other}")
     if others:
-        out.append("Other choices logged in [`DECISIONS.md`](DECISIONS.md) — " + "; ".join(others) + ".")
+        out.append(f"Other choices logged in [`DECISIONS.md`]({data.prefix}DECISIONS.md) — " + "; ".join(others) + ".")
     return "\n".join(out)
 
 
@@ -1297,8 +1328,868 @@ def _between(text, a, b):
     return m.group(1) if m else None
 
 
+# ------------------------------------------------------------------------------------------- three verdicts per test
+# criteria test key -> (unit, member) of the spec's stage table, in report order
+TESTS = [("s1_bird", "1", ""), ("s2_motif", "2", ""), ("s3_melody_100ms", "3", "100 ms"),
+         ("s3_melody_60ms", "3", "60 ms"), ("s4a_ah", "4a", ""), ("s4b_ma", "4b", "ma"), ("s4b_ba", "4b", "ba"),
+         ("s4b_om", "4b", "om"), ("s4c_hello", "4c", "")]
+MISSING = "missing"  # no owner_v2 block in the file at all (distinct from null = not established)
+APPENDIX_DIR = Path("docs/report")
+APPENDICES = [("scorecards.md", "Per-test scorecards"), ("criteria.md", "Criteria: original, revised, by ear"),
+              ("validation.md", "Solver validation"), ("design-studies.md", "Design studies and open questions"),
+              ("timeline-and-rulings.md", "Timeline and rulings"), ("deviations.md", "Deviations from the spec")]
+
+
+def slug(heading: str) -> str:
+    """GitHub-style anchor of a Markdown heading."""
+    h = re.sub(r"^#+\s*", "", heading).strip().lower()
+    return re.sub(r"[^\w\- ]", "", h).replace(" ", "-")
+
+
+def app(name, heading=None, prefix="docs/report/"):
+    return prefix + name + (f"#{slug(heading)}" if heading else "")
+
+
+def accepted_ids(data: Data):
+    return set(((data.criteria or {}).get("accepted_runs") or {}).values())
+
+
+def v1_of(run):
+    if run is None:
+        return None
+    c = ((run.get("metrics") or {}).get("criteria") or {}).get("spec_v1") or {}
+    return c.get("passed", run_passed(run)) if c else run_passed(run)
+
+
+def v2_of(run):
+    if run is None:
+        return MISSING
+    c = ((run.get("metrics") or {}).get("criteria") or {})
+    if "owner_v2" not in c:
+        return MISSING
+    return c["owner_v2"].get("passed")
+
+
+def ear_of(run):
+    return (run or {}).get("metrics", {}).get("listening_verdict") if run else None
+
+
+def v1_word(x):
+    return {True: "passed", False: "missed"}.get(x, "not scored")
+
+
+def v2_word(x):
+    if x is MISSING or x == MISSING:
+        return "not scored"
+    return {True: "PASS", False: "fail"}.get(x, "not established")
+
+
+def ear_word(lv, short=False):
+    """The owner's listening verdict; always says whether it was blind."""
+    if not lv:
+        return "not heard by the owner"
+    blind = "blind" if lv.get("blind") else "not blind"
+    word = "accepted by ear" if lv.get("verdict") == "pass" else f"{fmt(lv.get('verdict'))} by ear"
+    if short:
+        return f"{word} ({blind})"
+    return f"{word} ({fmt(lv.get('by'))}, {fmt(lv.get('date'))}, {blind})"
+
+
+def verdict_rows(data: Data):
+    """One row per test: the run the three verdicts are about and the three verdicts, never merged."""
+    crit = data.criteria or {}
+    acc = crit.get("accepted_runs") or {}
+    tests = crit.get("tests") or {}
+    rows = []
+    if acc:
+        keys = [k for k, _, _ in TESTS if k in acc] + [k for k in acc if k not in {t[0] for t in TESTS}]
+        for k in keys:
+            unit, member = next(((u, m) for kk, u, m in TESTS if kk == k), ("?", ""))
+            run = data.by_id.get(acc[k])
+            t = tests.get(k) or {}
+            rows.append({"key": k, "title": t.get("title") or k, "unit": unit, "member": member, "run": run,
+                         "run_id": acc[k], "v1": v1_of(run), "v2": v2_of(run), "ear": ear_of(run), "test": t})
+        return rows
+    for u in data.units():
+        for mem, r in data.results(u[0]).items():
+            rows.append({"key": f"{u[0]}{mem}", "title": u[1] + (f" — {mem}" if mem else ""), "unit": u[0],
+                         "member": mem, "run": r, "run_id": r["run_id"], "v1": v1_of(r), "v2": v2_of(r),
+                         "ear": ear_of(r), "test": {}})
+    return rows
+
+
+def short_title(row):
+    return row["title"]
+
+
+def counts(rows):
+    n = len(rows)
+    ear_rows = [r for r in rows if r["ear"] and r["ear"].get("verdict") == "pass"]
+    v2_pass = [r for r in rows if r["v2"] is True]
+    v2_null = [r for r in rows if r["v2"] is None]
+    v2_fail = [r for r in rows if r["v2"] is False]
+    v2_none = [r for r in rows if r["v2"] is MISSING or r["v2"] == MISSING]
+    by_ear_only = [r for r in ear_rows if r["v1"] is not True and r["v2"] is not True]
+    return {"n": n, "v1": [r for r in rows if r["v1"] is True], "ear": ear_rows, "v2": v2_pass, "v2_null": v2_null,
+            "v2_fail": v2_fail, "v2_none": v2_none, "ear_only": by_ear_only}
+
+
+def independence_note(row):
+    ro = ((row.get("test") or {}).get("rests_on") or "") + " " + str(
+        ((((row.get("run") or {}).get("metrics") or {}).get("criteria") or {}).get("owner_v2") or {}).get(
+            "rests_on") or "")
+    return ", same recognizer as the original test, so not independent" if "independent" in ro else ""
+
+
+def status_line(data: Data, rows):
+    c = counts(rows)
+    n = c["n"]
+    if not n:
+        line = "**Status: no final results yet.**"
+    else:
+        lv = next((r["ear"] for r in c["ear"]), None)
+        def names(rs, note=False):
+            return "; ".join(r["title"] + (independence_note(r) if note else "") for r in rs)
+        parts = [f"original spec thresholds: {len(c['v1'])} of {n} passed" + (f" ({names(c['v1'])})" if c["v1"] else "")]
+        if lv:
+            parts.append(f"owner's ear ({fmt(lv.get('date'))}, {'blind' if lv.get('blind') else 'not blind'}): "
+                         f"{len(c['ear'])} of {n} accepted")
+        else:
+            parts.append(f"owner's ear: 0 of {n} heard")
+        if c["v2_none"] and len(c["v2_none"]) == n:
+            parts.append("revised thresholds: not scored")
+        else:
+            v2 = f"revised thresholds: {len(c['v2'])} of {n} confirmed automatically"
+            if c["v2"]:
+                v2 += f" ({names(c['v2'], True)})"
+            if c["v2_fail"]:
+                v2 += f", {len(c['v2_fail'])} failed"
+            v2 += f", {len(c['v2_null'])} not established"
+            parts.append(v2)
+        if lv:
+            parts.append(f"{len(c['ear_only'])} of {n} accepted by ear (not blind) and not confirmed by any automated "
+                         "test")
+        line = f"**Status, {n} tests, three separate verdicts (simulated, full-wave solver):** " + " · ".join(parts) + "."
+    if not data.val_passed:
+        line = "UNVERIFIED — the full-wave solver has not passed validation; every result below is unverified. " + line
+    return line
+
+
+def verdict_table(data: Data, rs):
+    """Three verdicts for a list of runs of one test (used in the scorecards appendix)."""
+    acc = accepted_ids(data)
+    rows = []
+    for i, r in enumerate(rs):
+        role = ("newest" if i == 0 else "earlier") + (", heard by the owner" if r["run_id"] in acc else "")
+        g = "; ".join(f"{x.get('id')} {num(x.get('value'), x.get('id') or '')} (needs {x.get('comparator')} "
+                      f"{num(x.get('threshold'), x.get('id') or '')})"
+                      for x in (((r["metrics"].get("criteria") or {}).get("spec_v1") or {}).get("gating")
+                                or gating(r, "tier1") or gating(r)))
+        rows.append([f"`{r['run_id']}`", role, v1_word(v1_of(r)) + (f": {g}" if g else ""), v2_word(v2_of(r)),
+                     ear_word(ear_of(r))])
+    return table(["run", "role", "original spec thresholds", "revised thresholds (owner_v2)", "owner's ear"], rows)
+
+
+# ------------------------------------------------------------------------------------------------- main sections
+def _h(run):
+    return (run or {}).get("metrics", {}).get("headline") or {}
+
+
+def true_level(data, run):
+    """True echo level re the clap at the ear (dB): manifest.audio.as_heard_echo_level_db, else listen/README."""
+    if not run:
+        return None
+    v = ((run.get("manifest") or {}).get("audio") or {}).get("as_heard_echo_level_db")
+    if v is None:
+        v = (data.listen.get(run_tag(run["run_id"])) or {}).get("true_db")
+    return v
+
+
+def v1_values(run, with_floor=True):
+    m = (run or {}).get("metrics") or {}
+    gm = ((m.get("criteria") or {}).get("spec_v1") or {}).get("gating") or gating(run or {"metrics": m}, "tier1")
+    floor = (m.get("judge_floor") or {}).get("mean") or {}
+    out = []
+    for x in gm:
+        i = x.get("id") or ""
+        v = x.get("value")
+        s = f"{i} {num(v, i) if v is not None else 'no value'} (needs {x.get('comparator')} {num(x.get('threshold'), i)}"
+        if with_floor and i in floor:
+            s += f"; perfect echo {num(floor[i], i)}"
+        out.append(s + ")")
+    return "; ".join(out)
+
+
+def v2_values(row):
+    """The numbers an owner_v2 verdict rests on, in a phrase."""
+    t = row.get("test") or {}
+    run = row.get("run") or {}
+    ov = ((run.get("metrics") or {}).get("criteria") or {}).get("owner_v2") or {}
+    mets = {x.get("id"): x for x in ov.get("metrics") or []}
+    bits = []
+    idc = mets.get("id_claps")
+    if idc and idc.get("used", True) is not False:
+        bits.append(f"nearest its own target on {fmt(int(idc['value']) if idc.get('value') is not None else None)} "
+                    "of 5 claps")
+    pc = mets.get("pitch_cents")
+    if pc and pc.get("value") is not None:
+        thr = pc.get("threshold")
+        bits.append(f"median pitch off by {n0(pc['value'])} cents" + (
+            f" (threshold {n0(thr)})" if thr is not None else " (no threshold exists)"))
+    hc = mets.get("hello_claps")
+    if hc:
+        bits.append(f"recognizer says \"hello\" on {fmt(int(hc['value']))} of 5 claps")
+    if t.get("controls_total") is not None:
+        bits.append(f"controls rejected {fmt(t.get('controls_rejected'))}/{fmt(t.get('controls_total'))}")
+    elif ov.get("controls"):
+        bits.append(f"controls rejected {sum(1 for c in ov['controls'] if c.get('pass') is False)}/{len(ov['controls'])}")
+    return "; ".join(bits)
+
+
+def came_back(row):
+    """What came back, in a phrase, from the run's own judges."""
+    run = row.get("run") or {}
+    m = run.get("metrics") or {}
+    g = {x.get("id"): x.get("value") for x in ((m.get("criteria") or {}).get("spec_v1") or {}).get("gating") or []}
+    if "pitch_err_pct" in g:
+        return f"a falling whistle; worst-frame pitch error {num(g['pitch_err_pct'], '_pct')} %"
+    if "notes_in_order" in g:
+        k = g["notes_in_order"]
+        return (f"notes in the right order on {fmt(round(5 * k)) if k is not None else '—'} of 5 claps; "
+                f"worst note {n0(g.get('note_cents_max'))} cents off")
+    if "hello_count" in g:
+        rt = m.get("recognized_text") or []
+        tr = sorted({fmt(x.get("transcript")) for x in rt})
+        return f"the recognizer heard {', '.join(f'“{t}”' for t in tr) or '—'} on {fmt(int(g['hello_count']))} of 5 claps"
+    if "estoi" in g:
+        cs = g.get("closed_set_correct")
+        return (f"intelligibility (ESTOI) {num(g['estoi'])}; picked out from the other two syllables: "
+                f"{'yes' if cs else 'no'}")
+    if "formant_err_pct" in g:
+        return ("formant judge found no first formant" if g["formant_err_pct"] is None
+                else f"worst formant error {num(g['formant_err_pct'], '_pct')} %")
+    return "—"
+
+
+def n1(v):
+    """One decimal for the main report (dB, m); never None/NaN."""
+    if isinstance(v, (int, float)) and not isinstance(v, bool) and not (math.isnan(v) or math.isinf(v)):
+        return f"{v:.1f}"
+    return "—"
+
+
+def n0(v):
+    if isinstance(v, (int, float)) and not isinstance(v, bool) and not (math.isnan(v) or math.isinf(v)):
+        return f"{v:.0f}"
+    return "—"
+
+
+def _row(rows, key):
+    return next((r for r in rows if r["key"] == key), None)
+
+
+def what_works(data: Data, rows):
+    out = []
+    w = _row(rows, "s1_bird") or next((r for r in rows if r["unit"] == "1"), None)
+    if not w or not w["run"]:
+        return "No final stage-1 run yet."
+    run = w["run"]
+    mf, h = run["manifest"], _h(run)
+    cfg = (mf.get("design") or {}).get("config") or {}
+    real = (mf.get("design") or {}).get("realization") or {}
+    t = w.get("test") or {}
+    lvl = true_level(data, run)
+    out += [f"### The ring-layout whistle (stage 1: {fmt(cfg.get('title') or run.get('title'))})", "",
+            "A clap at a marked spot, thin vertical posts standing in a fan in front of it, and a falling bird "
+            "whistle coming back. Each ring of posts lies on one equal-delay curve, and successive rings are one "
+            "period of the note apart, so each ring adds one cycle of the whistle and the shrinking ring spacing makes "
+            "the pitch fall (like the chirp from a clap in front of a long flight of stairs).", "",
+            f"- **Design** (run `{run['rel']}`): {fmt(h.get('post_count'))} posts of "
+            f"{fmt(100 * float(cfg['a_ref']), 0) if cfg.get('a_ref') else '—'} cm radius in "
+            f"{fmt(real.get('n_rings'))} rings, {n1(h.get('depth_m'))} m deep, fan "
+            f"±{fmt(cfg.get('half_angle_deg'), 0)}°, covering "
+            f"{num(100 * h['fill_fraction'] if h.get('fill_fraction') is not None else None, '_pct')} % of the ground "
+            f"(`metrics.json` `headline`, `manifest.json` `design`).",
+            f"- **How loud** (simulated): the echo is {n1(lvl)} dB re the clap at the ear "
+            f"(`manifest.audio.as_heard_echo_level_db`); for a 100 dB clap about {n1(h.get('echo_spl_db'))} dB "
+            "SPL (`headline.echo_spl_db`), roughly quiet conversation.", "",
+            "**Three verdicts, kept apart:**", ""]
+    v1 = v1_word(w["v1"])
+    out.append(f"1. **Original spec thresholds: {v1}**, narrowly: {v1_values(run)}. The \"perfect echo\" value is "
+               "what the same judge gives a physically perfect echo (target ⊛ clap), so the pitch mark sits close to "
+               "the judge's own floor (`criteria.spec_v1`, `judge_floor.mean`).")
+    mt = (t.get("margin") or {}).get("pitch") or {}
+    extra = ""
+    if mt:
+        extra = (f" The pitch threshold sits between the worst accepted or perfect echo "
+                 f"({n0(mt.get('worst_positive'))} cents) and the best mistuned control "
+                 f"({n0(mt.get('best_mistuning_control'))} cents).")
+    out.append(f"2. **Revised thresholds (owner_v2): {v2_word(w['v2'])}**: {v2_values(w)}.{extra} Rests on: "
+               f"{fmt(t.get('rests_on') or '—')} (`runs/_criteria/summary.json`).")
+    lv = w["ear"]
+    out.append(f"3. **Owner's ear: {ear_word(lv)}**" + (f": “{fmt(lv.get('quote'))}” — basis "
+                                                       f"{fmt(lv.get('basis'))}." if lv else "."))
+    others = [x for x in ((data.criteria or {}).get("runs") or [])
+              if x.get("test") == w["key"] and x.get("run_id") != w["run_id"]]
+    if others:
+        out += ["", "Earlier whistle designs scored with the same frozen revised criterion: " + "; ".join(
+            f"`{x['run_id']}` {v2_word(x.get('owner_v2'))}" for x in others) + "."]
+    tag = run_tag(run["run_id"])
+    files = [f for f in (f"listen/{tag}_echo_only.wav", f"listen/{tag}_clap_then_echo_boosted.wav",
+                         f"listen/{tag}_target.wav") if (data.root / f).exists()]
+    out += ["", "**Play:** " + ", ".join(f"[`{f}`]({f})" for f in files)
+            + (f" (echo alone; clap then echo raised {n1((data.listen.get(tag) or {}).get('boost_db'))} dB; "
+               "the target)" if files else "no files in `listen/` yet")
+            + f", and the run's own `{run['rel']}/echo_tier1.wav`.", ""]
+    # hello
+    hrow = _row(rows, "s4c_hello")
+    if hrow and hrow["run"]:
+        hm = hrow["run"]["metrics"]
+        est = next((x.get("value") for x in hm.get("metrics") or [] if x.get("id") == "estoi" and x.get("tier") == "tier1"),
+                   None)
+        fl = ((hm.get("judge_floor") or {}).get("mean") or {}).get("estoi")
+        ctl = (hm.get("recognizer_controls") or {}).get("cases") or {}
+        rob = {x.get("case"): x.get("pass") for x in hm.get("robustness") or []}
+        out += ["### \"hello\" (stage 4c)", "",
+                f"- What came back: {came_back(hrow)} (`recognized_text`). Wrong echoes given to the same "
+                f"recognizer: {sum(1 for c in ctl.values() if c.get('hello_count') == 0)} of {len(ctl)} never heard "
+                f"\"hello\" (`recognizer_controls`).",
+                f"- Intelligibility is low: ESTOI {num(est)} against {num(fl)} for a perfect echo; with the listener "
+                f"1 m sideways the original test {'passes' if rob.get('listener_side_1m') else 'fails'} "
+                "(`robustness`).",
+                f"- Verdicts: original thresholds {v1_word(hrow['v1'])}; revised thresholds {v2_word(hrow['v2'])}, "
+                f"but that pass rests on the same recognizer and 3-of-5 rule as the original test plus "
+                f"{fmt((hrow['test'] or {}).get('controls_rejected'))}/{fmt((hrow['test'] or {}).get('controls_total'))}"
+                " rejected controls, so it is not an independent confirmation; owner's ear "
+                f"{ear_word(hrow['ear'])}.",
+                f"- Play: `listen/{run_tag(hrow['run_id'])}_echo_only.wav`. Details: "
+                f"[scorecard]({app('scorecards.md', '### Stage 4c — Word')}).", ""]
+    return "\n".join(out)
+
+
+def hear_and_try(data: Data):
+    lv = [v.get("true_db") for v in data.listen.values() if v.get("true_db") is not None]
+    rng = f"{n1(max(lv))} to {n1(min(lv))} dB" if lv else "tens of dB"
+    blind = data.root / "runs" / "_criteria" / "blind_test"
+    nsamp = len(list(blind.glob("sample_*.wav"))) if blind.exists() else 0
+    results = [p for p in blind.glob("*result*")] if blind.exists() else []
+    out = ["**Listen** ([`listen/`](listen/), [`listen/README.md`](listen/README.md)): for each test, "
+           "`<tag>_target.wav` (the aim), `<tag>_echo_only.wav` (the simulated echo alone, at full volume) and "
+           "`<tag>_clap_then_echo_boosted.wav` (the clap, then the echo raised to sit 12 dB under it). "
+           f"In reality the echo is {rng} re the clap (true level per test in the README), which is why a run "
+           "folder's `as_heard.wav`, kept at the true ratio, sounds like only a clap. Whether a person hears the echo "
+           "right after their own clap is a question about hearing that simulation does not cover.", "",
+           "**Live mode** (microphone in, echo out):", "", "```", "uv run python -m echo.lab        # then open "
+           "http://127.0.0.1:8000/viewer/?mode=live", "```", "",
+           "Clap or whistle at the microphone and the speakers play the chosen structure's echo of it, live "
+           "(convolution with the run's impulse response, `manifest.json` `ir`); every sound is kept as a take you "
+           "can replay with the waves moving through the posts. Default echo boost puts it 12 dB under the clap; "
+           "0 dB is the true level. Tested in headless Chrome with a fake microphone only: **not tested with a real "
+           "microphone and speakers, not tested in Firefox, and system latency can only be compensated up to the "
+           "first post's delay** (beyond that the echo comes late, and the panel says so). Structure responses of "
+           "the full-wave runs are reconstructed from the clap-0 echo and are accurate only inside the clap's band "
+           "([`viewer/README.md`](viewer/README.md#live-mode)).", "",
+           "**Design from your own sound:** upload a file on the Live page (lab server), or run "
+           "`uv run python -m stages.custom --target inputs/targets/<file>.wav --name \"my sound\"` (add `--tier1` "
+           "for one full-wave check of short targets). These are fast-model designs, marked unverified, with no "
+           "pass or fail ([`inputs/README.md`](inputs/README.md)).", "",
+           "**Look:** the [viewer](viewer/) (review mode: scene, wave video, echo, spectrograms and the three "
+           "verdicts per run), the lay [explainer](explainer/index.html), and the [build path](BUILD.md).", "",
+           f"**Blind test kit** ([`runs/_criteria/blind_test/`](runs/_criteria/blind_test/README.md)): {nsamp} "
+           "shuffled echo-only samples of equal length and the target choices, with the key kept in a separate "
+           "folder. " + ("A results file exists in the folder." if results else
+                         "It has not been run: no blind result exists, so the owner's verdict remains the only "
+                         "listening verdict, and it is not blind.")]
+    return "\n".join(out)
+
+
+def _unit_heading(data, unit):
+    u = next((u for u in data.units() if u[0] == unit), None)
+    return f"### {u[1]}" if u else None
+
+
+def glance(data: Data, rows):
+    t = []
+    for r in rows:
+        run = r["run"]
+        h = _h(run)
+        lvl = true_level(data, run)
+        hd = _unit_heading(data, r["unit"])
+        t.append([short_title(r), came_back(r), v1_word(r["v1"]) + (f": {v1_values(run, False)}" if run else ""),
+                  v2_word(r["v2"]) + (f": {v2_values(r)}" if r["v2"] is True else ""),
+                  ear_word(r["ear"], short=True),
+                  f"{n1(lvl)} dB / {n1(h.get('echo_spl_db'))} dB SPL",
+                  f"{n1(h.get('depth_m'))} m / {fmt(h.get('post_count'))}",
+                  f"[card]({app('scorecards.md', hd)})" if hd else "—"])
+    out = ["One row per test; the run is the one the owner listened to (`runs/_criteria/summary.json` "
+           "`accepted_runs`). \"Not established\" means no automated criterion separates the echo from the negative "
+           "controls: it is neither a pass nor a fail. Level: true echo level re the clap / estimated level for a "
+           "100 dB clap (simulated).", "",
+           table(["test", "what came back", "original spec thresholds", "revised thresholds", "owner's ear",
+                  "level", "depth / posts", "details"], t)]
+    s2 = _row(rows, "s2_motif")
+    if s2:
+        later = [r for r in data.unit_runs("2") if r["run_id"] != s2["run_id"]]
+        if later:
+            out += ["", f"**To be confirmed by the owner:** for stage 2 the files attach the listening verdict to the "
+                    f"first design `{s2['run_id']}`; a second design "
+                    + ", ".join(f"`{r['run_id']}` (created {fmt(r.get('created'))})" for r in later)
+                    + " existed by the time the listening files were made, and the record does not establish which "
+                    "of the two the owner heard (`listening_verdict.note` in the run's `metrics.json`)."]
+    # earlier attempts: whistle and motif
+    for unit, label in (("1", "The whistle's redesign history"), ("2", "The motif's two designs")):
+        rs = sorted(data.unit_runs(unit), key=lambda r: r.get("created", ""))
+        if unit == "1":
+            rs += sorted([r for r in data.other if r.get("stage", "").startswith("build")],
+                         key=lambda r: r.get("created", ""))
+        if len(rs) < 2:
+            continue
+        tr = []
+        for r in rs:
+            cfg = (r["manifest"].get("design") or {}).get("config") or {}
+            h = _h(r)
+            what = (f"{fmt(cfg.get('realization') or 'density sampling')}, ±{fmt(cfg.get('half_angle_deg'), 0)}°, "
+                    f"{fmt(100 * float(cfg['a_ref']), 0) if cfg.get('a_ref') else '—'} cm posts"
+                    + (", stretch compensated" if cfg.get("stretch_comp") else ""))
+            if r.get("stage", "").startswith("build"):
+                what = "build pilot: " + what
+            tr.append([f"`{r['run_id']}`", what, v1_values(r, False) or "—", v2_word(v2_of(r)),
+                       ear_word(ear_of(r), short=True), f"{n1(_h(r).get('echo_spl_db'))} dB SPL",
+                       fmt(h.get("post_count")),
+                       num(100 * h["fill_fraction"] if h.get("fill_fraction") is not None else None, "_pct") + " %"])
+        out += ["", f"**{label}** (oldest first):", "",
+                table(["run", "design", "original thresholds (values)", "revised", "owner's ear", "level", "posts",
+                       "coverage"], tr)]
+    return "\n".join(out)
+
+
+def _jitter(data, run):
+    p = data.root / "build" / f"{run['stage']}-{run['run_id']}" / "pack.json" if run else None
+    pk = _load(p) if p else None
+    return pk, (rel(data.root, p) if p else "")
+
+
+def learned(data: Data, rows, commentary):
+    out = []
+    w = (_row(rows, "s1_bird") or {}).get("run")
+    s1 = sorted(data.unit_runs("1"), key=lambda r: r.get("created", ""))
+    n = 0
+
+    def item(txt):
+        nonlocal n
+        n += 1
+        out.append(f"{n}. {txt}")
+    if len(s1) >= 2:
+        a, b = s1[0], s1[1]
+        ca = (a["manifest"].get("design") or {}).get("config") or {}
+        cb = (b["manifest"].get("design") or {}).get("config") or {}
+        item(f"**Exact rings beat scattered posts.** Same {fmt(_h(a).get('post_count'))} posts: "
+             f"{fmt(ca.get('realization') or 'density sampling')} gave {v1_values(a, False)}; "
+             f"{fmt(cb.get('realization') or 'density sampling')} rings gave {v1_values(b, False)} "
+             f"(`{a['rel']}`, `{b['rel']}`).")
+    if w:
+        st = ((w["metrics"].get("tier1_correction") or {}).get("stretch")) or {}
+        item(f"**The post field slows sound (compensable) and extinguishes it (not).** The slowing stretches the echo's "
+             f"time axis (prior {num(st.get('stretch_per_fill_prior'))} × coverage; applied "
+             f"{num(100 * st['final_applied'] if st.get('final_applied') is not None else None, '_pct')} % for the "
+             "whistle) and is undone by scaling the ranges. Extinction removes sound and grows with frequency, with "
+             "post radius squared and with how narrowly the posts are confined sideways. Predicted vs measured for the "
+             "motif (two-way, dB):")
+        rows_e = []
+        for f in ("v1_extinction.json", "v2_extinction.json"):
+            j = _load(data.runs_dir / "s2_motif" / "_studies" / f) or {}
+            for x in j.get("rows") or []:
+                rows_e.append([f"`{fmt(j.get('run'))}`", f"{n0(x.get('note_hz'))} Hz",
+                               n1(x.get("predicted_two_way_extinction_db")),
+                               n1(x.get("measured_tier1_minus_tier0_db_clap0"))])
+        if rows_e:
+            out += ["", "   " + table(["run", "note", "predicted", "measured (full-wave − fast model)"], rows_e)
+                    .replace("\n", "\n   "), "",
+                    "   The first design (2 cm posts, narrow fan) lost its upper notes; the second (1 cm, wide fan) "
+                    "kept them. Sources: `runs/s2_motif/_studies/v*_extinction.json`."]
+    td = _load(data.runs_dir / "s1_bird" / "_studies" / "tier_diff.json") or {}
+    trs = [x for x in td.get("rows") or [] if str(x.get("run", "")).startswith("20")]
+    thick = [x for x in td.get("rows") or [] if x.get("radius")]
+    if trs:
+        x = trs[-1]
+        item(f"**A broadband residue sits under the whistle.** The full-wave echo of the "
+             f"{fmt(x.get('n_posts'))}-post design differs from the fast model of the same posts by an incoherent "
+             f"residue {n1((x.get('tier1_vs_tier0') or {}).get('residue_db_stretched_fir33'))} dB below it, "
+             f"the size of {n1(1000 * x['equivalent_radial_jitter_m'] if x.get('equivalent_radial_jitter_m') else None)}"
+             " mm of random placement error"
+             + (f"; with {fmt(thick[0].get('n_posts'))} posts of {fmt(100 * thick[0]['radius'], 0)} cm it is "
+                f"{n1((thick[0].get('tier1_vs_tier0') or {}).get('residue_db_stretched_fir33'))} dB"
+                if thick else "")
+             + ". Whether it is real scattering between posts or the solver drawing 1 cm posts on a ~1 cm grid is "
+             "not settled; the 1:10 model would settle it (`runs/s1_bird/_studies/tier_diff.json`).")
+    att = [((r["metrics"].get("ablations") or {}).get("attribution") or {}).get("largest_single_cost_by_loss")
+           for uid in ("4a", "4b", "4c") for r in data.results(uid).values()]
+    att = [a for a in att if a]
+    if att:
+        top = max(set(att), key=att.count)
+        item(f"**The clap's spectrum and weak low-frequency scattering tilt everything toward 2–3 kHz.** In the speech "
+             f"ablations the largest single cost is the {top} on {att.count(top)} of {len(att)} speech runs "
+             f"(`ablations.attribution`); low notes, the melody's lower notes and vowels suffer most "
+             f"([design studies]({app('design-studies.md')})).")
+    dst = _load(data.runs_dir / "s1_bird" / "_studies" / "design_study_tier0.json") or {}
+    ss = [x for x in dst.get("sweet_spot") or [] if (x.get("offset_m") or [None])[0] == 0.0]
+    if ss:
+        fan = ss[0].get("half_angle_deg")
+        side = [x for x in ss if x.get("half_angle_deg") == fan and (x.get("offset_m") or [0, 0])[1] in (0.1, 0.25)]
+        item(f"**The listening spot is centimetres wide.** For the ±{fmt(fan, 0)}° fan the echo heard "
+             + " and ".join(f"{n0(100 * x['offset_m'][1])} cm sideways correlates {fmt(x.get('wave_corr_vs_nominal'))}"
+                            for x in side)
+             + " with the design listener's (1 = identical; fast model, `runs/s1_bird/_studies/design_study_tier0.json` "
+             "`sweet_spot`).")
+    pk, pkp = _jitter(data, w)
+    if pk:
+        jt = {x.get("sigma_mm"): x for x in (pk.get("physics") or {}).get("jitter") or [] if x.get("kind") == "radial"}
+        bits = []
+        for sg in (1.0, 2.0, 5.0):
+            x = jt.get(sg)
+            if x:
+                sc = ((x.get("judges") or {}).get("spec_corr") or {}).get("mean")
+                bits.append(f"{fmt(sg, 0)} mm: spectrogram score {num(sc)}, waveform correlation "
+                            f"{num((x.get('waveform_corr') or {}).get('mean'))}")
+        if bits:
+            item("**Millimetre placement moves the strict score, not the waveform.** Random radial error, fast model: "
+                 + "; ".join(bits) + f" (`{pkp}` `physics.jitter`; the original mark is ≥ 0.8).")
+        tp = (pk.get("physics") or {}).get("temperature") or []
+        if tp:
+            item("**Temperature retunes it.** The whole whistle's pitch follows the speed of sound: "
+                 + ", ".join(f"{fmt(x.get('T_c'))} °C {fmt(x.get('pitch_shift_pct'), 1, signed=True)} %" for x in tp)
+                 + f" (`{pkp}` `physics.temperature`).")
+    lv = [v.get("true_db") for v in data.listen.values() if v.get("true_db") is not None]
+    if lv:
+        item(f"**The echo is {n1(-max(lv))} to {n1(-min(lv))} dB below the clap** (`listen/README.md`). "
+             "A loud sound raises the ear's threshold for tens of milliseconds afterwards (forward masking); whether a "
+             "person hears the echo right after their own clap is not something this simulation covers.")
+    out += ["", "**Commentary** (hand-written, preserved between runs of the generator):", "",
+            COMMENT_BEGIN, commentary.strip("\n"), COMMENT_END]
+    return "\n".join(out)
+
+
+def dead_ends(data: Data, rows):
+    out = ["Recorded, not chased (owner, afternoon of 25 Nov: focus on what works). Every number is in the "
+           f"[scorecards]({app('scorecards.md')})."]
+    s2 = sorted(data.unit_runs("2"), key=lambda r: r.get("created", ""))
+    if s2:
+        bits = "; ".join(f"`{r['run_id']}` ({fmt(_h(r).get('post_count'))} posts, "
+                         f"{n1(_h(r).get('depth_m'))} m): {came_back({'run': r})}" for r in s2)
+        out.append(f"- **Motif (stage 2).** {bits}. The first design's thick posts in a narrow fan extinguished the "
+                   "upper notes; the thin-post redesign kept them but not the balance between notes "
+                   f"([card]({app('scorecards.md', '### Stage 2 — Motif')})).")
+    s3 = data.results("3")
+    if s3:
+        bits = []
+        for mem, r in s3.items():
+            la = (r["metrics"].get("s3_extra") or {}).get("level_along_melody") or {}
+            below = la.get("notes_below_35_db_spl") or []
+            bits.append(f"{mem}: {came_back({'run': r})}, {n1(_h(r).get('depth_m'))} m deep, "
+                        f"{len(below)} of {len(la.get('notes_hz') or [])} notes below 35 dB SPL")
+        out.append("- **Melody (stage 3).** " + "; ".join(bits) + ". The structure is a long strip; the sound fades "
+                   "along it, and on the fast model no realized design transcribes for every clap "
+                   f"([card]({app('scorecards.md', '### Stage 3 — Melody')})).")
+    for uid, name in (("4a", "Vowel (4a)"), ("4b", "Syllables (4b)")):
+        res = data.results(uid)
+        if not res:
+            continue
+        bits = "; ".join((f"“{mem}”: " if mem else "") + came_back({"run": r}) for mem, r in res.items())
+        out.append(f"- **{name}.** {bits}. Thin posts scatter little at low frequency and the clap carries little "
+                   "there, so the low formants are weak; the speech ablations put the clap spectrum first "
+                   f"([card]({app('scorecards.md', _unit_heading(data, uid))})).")
+    return "\n".join(out)
+
+
+def build_brief(data: Data):
+    b = data.build_md
+    out = []
+    if not b:
+        return "`BUILD.md` does not exist yet."
+    cost = {}
+    for ph in ("2a", "2b", "2c", "3a", "3b"):
+        mm = re.search(rf"^\| {re.escape(ph)}\.[^|]*\|[^|]*\| ([^|]*?) \|", b, re.M)
+        if mm:
+            cost[ph] = re.sub(r"\s*\(est[^)]*\)?\)?", "", mm.group(1)).strip().lstrip("+~").strip()
+    listeners = re.search(r"at least (\d+ of \d+) listeners", b)
+    res1 = re.search(r"residue of (-?[\d.]+) dB at 1 mm", b)
+    res0 = re.search(r"incoherent full-wave residue of (-?[\d.]+) dB", b)
+    out.append(
+        "From [`BUILD.md`](BUILD.md): **first**, an outdoor hearing test on a quiet site — one 20 mm bar, then a small "
+        f"grating of posts — listened to by several people (estimated {cost.get('3a', 'a few hundred euros')}), because the "
+        "simulations cannot say whether anyone hears an echo that far under their own clap. **In parallel**, the 1:10 "
+        "ultrasonic tabletop model (estimated " + ", then ".join(cost[p] for p in ("2a", "2b", "2c") if p in cost)
+        + " more), which answers fidelity and whether the residue is physics or solver, but not audibility. **Full scale** "
+        f"(estimated {cost.get('3b', '—')}) only if at least {listeners.group(1) if listeners else '8 of 10'} listeners hear the "
+        "grating's tone after the clap and the scale model's residue lands near the fast model's "
+        f"{res1.group(1) if res1 else '—'} dB at 1 mm placement rather than the full-wave "
+        f"{res0.group(1) if res0 else '—'} dB.")
+    pil = [r for r in data.other if r.get("stage", "").startswith("build")]
+    w = next((r for r in data.unit_runs("1")), None)
+    if pil:
+        p = pil[0]
+        out += ["", f"Build pilot `{p['run_id']}` ({fmt(_h(p).get('post_count'))} posts, a narrower fan, "
+                f"{n1(_h(p).get('echo_spl_db'))} dB SPL): original thresholds {v1_word(run_passed(p))} — "
+                f"{v1_values(p)}"
+                + (f"; it did worse than the {fmt(_h(w).get('post_count'))}-post design ({v1_values(w, False)})"
+                   if w else "") + ". Fabrication packs: `build/`."]
+    return "\n".join(out)
+
+
+def validation_rows(v):
+    c = (v or {}).get("checks") or {}
+    cyl = c.get("cylinder") or {}
+    g1 = _grids(v).get("stage1_grid") or {}
+    worst = max((x.get("max_abs_err_db") for x in (g1.get("per_radius") or {}).values()
+                 if x.get("max_abs_err_db") is not None), default=None)
+    gc = c.get("grid_convergence") or {}
+    es = c.get("empty_scene") or {}
+    tt = c.get("tier0_vs_tier1") or {}
+    return [
+        ["Single post, backscatter vs exact theory", f"worst {num(worst, '_db')} dB", f"≤ {fmt(cyl.get('threshold_db'), 1)} dB",
+         pf(cyl.get("pass")), "exact theory, backscatter only"],
+        ["Grid convergence, sparse design", f"{num((gc.get('sparse') or {}).get('max_abs_delta_db'), '_db')} dB", "< 1 dB",
+         pf((gc.get("sparse") or {}).get("pass")), "self-convergence"],
+        ["Grid convergence, dense patch", f"{num((gc.get('dense') or {}).get('max_abs_level_delta_db'), '_db')} dB",
+         "< 1 dB", pf((gc.get("dense") or {}).get("pass")), "self-convergence only"],
+        ["Empty scene: nothing after the clap", f"{fmt(es.get('max_after_direct_db'), 1)} dB",
+         f"< {fmt(es.get('threshold_db'), 0)} dB", pf(es.get("pass")), "—"],
+        ["Fast model vs full-wave, sparse design", f"{num(tt.get('max_abs_delta_db'), '_db')} dB",
+         f"≤ {fmt(tt.get('threshold_db'), 1)} dB", pf(tt.get("pass")), "model agreement"],
+    ]
+
+
+def trust(data: Data, tests_line):
+    v = data.validation
+    out = []
+    if v is None:
+        out.append("UNVERIFIED: `runs/validation/metrics.json` does not exist.")
+    else:
+        out += [f"Solver validation (`runs/validation/metrics.json`, engine `{fmt((v.get('solver') or {}).get('engine'))}`,"
+                f" overall `passed`: **{fmt(v.get('passed'))}**):", "",
+                table(["check", "value", "threshold", "result", "what it compares against"], validation_rows(v)), ""]
+        ext = (v.get("extended_checks") or {}).get("angular_scattering") or {}
+        bad = []
+        for gname, g in _grids(v).items():
+            for r, x in (g.get("per_radius") or {}).items():
+                if x.get("pass_all_angles") is False:
+                    e = (ext.get(gname) or {}).get("per_radius", {}).get(r) or {}
+                    bad.append(f"{float(r) * 100:.0f} cm at {fmt(g.get('f_max'), 0)} Hz (forward "
+                               f"{num(e.get('forward'), '_db')} dB)")
+        out += ["In plain words:", "",
+                "- The solver is checked against exact theory only for one post scattering straight back.",
+                "- Thin posts are off at other angles: " + ("; ".join(bad) if bad else "none recorded") + ".",
+                "- Dense fields are checked only by comparing the solver with itself on a finer grid; a bias both "
+                "grids share would not show.",
+                "- Live mode's structure responses for full-wave runs are reconstructed from one echo and are "
+                "accurate only inside the clap's band.",
+                f"- Full detail: [validation appendix]({app('validation.md')}).", ""]
+    out += ["**Automated versus human.** The original and revised thresholds are automated judges on simulated audio. "
+            "The owner's verdict is a human judgment by ear, not blind; the blind kit has not been run.", "",
+            "**What was reviewed independently.** The solver, the fast model, the design pipeline, the speech judges, "
+            "the build path and the revised criteria each had an independent review recorded in the ledger (the "
+            "revised-criteria review withdrew the motif's revised pass; see the "
+            f"[criteria appendix]({app('criteria.md')})). Stages 2–4 themselves, the explainer, the viewer and the "
+            "lab server were not separately reviewed.", "",
+            "**Tests.**", "", TESTS_BEGIN, tests_line, TESTS_END]
+    return "\n".join(out)
+
+
+def questions_short(data: Data, rows):
+    out = []
+    lv = [(r["title"], _h(r["run"]).get("echo_spl_db")) for r in rows if r["run"]]
+    lv = [(t, x) for t, x in lv if isinstance(x, (int, float))]
+    if lv:
+        lo, hi = min(lv, key=lambda x: x[1]), max(lv, key=lambda x: x[1])
+        mel = []
+        for mem, r in data.results("3").items():
+            la = (r["metrics"].get("s3_extra") or {}).get("level_along_melody") or {}
+            if la.get("notes_hz"):
+                mel.append(f"{len(la.get('notes_below_35_db_spl') or [])} of {len(la['notes_hz'])} notes at {mem}")
+        out.append(f"1. **How loud?** For a 100 dB clap the simulated echoes peak between {n1(lo[1])} dB SPL "
+                   f"({lo[0]}) and {n1(hi[1])} dB SPL ({hi[0]}); {sum(1 for _, x in lv if x < 35)} of "
+                   f"{len(lv)} peaks are below the spec's 35 dB line (`headline.echo_spl_db`)"
+                   + (f", but along the melody {', '.join(mel)} fall below it "
+                      "(`s3_extra.level_along_melody`)" if mel else "") + ".")
+    else:
+        out.append("1. **How loud?** Not yet answered: no final run.")
+    ans = None
+    for r in data.unit_runs("3"):
+        a = ((r["metrics"].get("design_study") or {}).get("note_length_sweep") or {}).get("answer")
+        if a:
+            ans = (r, a)
+            break
+    if ans:
+        r, a = ans
+        real = a.get("shortest_note_ms_realized_design_transcribes_all_claps")
+        out.append(f"2. **How short can notes get?** A perfect echo transcribes down to "
+                   f"{fmt(a.get('shortest_note_ms_perfect_echo_transcribes_all_claps'))} ms notes; the realized design "
+                   + ("at no tested length" if real is None else f"at {fmt(real)} ms") + " (fast model only, "
+                   f"`{r['rel']}/metrics.json` `design_study.note_length_sweep`).")
+    else:
+        out.append("2. **How short can notes get?** Not yet answered.")
+    att = [((r["metrics"].get("ablations") or {}).get("attribution") or {}).get("largest_single_cost_by_loss")
+           for uid in ("4a", "4b", "4c") for r in data.results(uid).values()]
+    att = [a for a in att if a]
+    if att:
+        top = max(set(att), key=att.count)
+        out.append(f"3. **What limits speech?** The {top}: the largest single cost on {att.count(top)} of {len(att)} "
+                   "speech runs' ablations, ahead of positivity and small-post scattering (`ablations.attribution`).")
+    else:
+        out.append("3. **What limits speech?** Not yet answered.")
+    w = (_row(rows, "s1_bird") or {}).get("run")
+    pk, pkp = _jitter(data, w)
+    jt = {x.get("sigma_mm"): x for x in ((pk or {}).get("physics") or {}).get("jitter") or [] if x.get("kind") == "radial"}
+    if 5.0 in jt:
+        x = jt[5.0]
+        out.append(f"4. **Do 5 mm build tolerances matter?** Yes for the strict score: at 5 mm random radial error the "
+                   f"whistle's spectrogram score falls to {num(((x.get('judges') or {}).get('spec_corr') or {}).get('mean'))}"
+                   f" while its waveform still correlates {num((x.get('waveform_corr') or {}).get('mean'))} with the "
+                   f"exact design (`{pkp}`); whether a listener hears the difference is a listening test.")
+    else:
+        out.append("4. **Do 5 mm build tolerances matter?** See the design-studies appendix.")
+    out.append(f"\nFull answers with tables: [design studies]({app('design-studies.md', '## The spec' + chr(39) + 's four open questions')}).")
+    return "\n".join(out)
+
+
+def _ledger_line(data, pat, n=1, cap=240):
+    for i, ln in enumerate(data.ledger.splitlines()):
+        mm = re.match(r"^- (\d\d:\d\d) (.*)$", ln)
+        if mm and re.search(pat, mm.group(2)):
+            first = " ".join(re.split(r"(?<=[a-z0-9)%][.])\s+(?=[A-Z])", mm.group(2))[:n])
+            if len(first) > cap:
+                first = first[:cap - 3].rsplit(" ", 1)[0] + " …"
+            return i, f"**{mm.group(1)}** {first}"
+    return None
+
+
+def process(data: Data):
+    nrul = len(re.findall(r"Ruling:\s*(.+)$", data.ledger, re.M))
+    picks = [(r"slow downloads", 1, 120), (r"Task 3 review: Needs fixes", 2, 240),
+             (r"Task 3: fix round 1/5 done", 1, 200), (r"USAGE LIMIT", 1, 200), (r"SESSION STALLED", 1, 200),
+             (r"OWNER STEER", 1, 300)]
+    found = sorted(x for x in (_ledger_line(data, p, n, c) for p, n, c in picks) if x)
+    out = [f"- {t}" for _, t in found]
+    out += ["", f"The controller made **{nrul} rulings** on the owner's behalf; every one, in order, with its "
+            f"cost-if-wrong, is in [timeline and rulings]({app('timeline-and-rulings.md')}), with the full timeline. "
+            f"Deviations from the spec's letter: [deviations]({app('deviations.md')})."]
+    return "\n".join(out)
+
+
+# ------------------------------------------------------------------------------------------------------- appendices
+def criteria_appendix(data: Data, rows):
+    crit = data.criteria
+    out = ["# Criteria: original thresholds, revised thresholds, and the owner's ear", "",
+           "Generated by `stages/report.py` from `runs/_criteria/summary.json`, each run's `metrics.json` "
+           "(`criteria.spec_v1`, `criteria.owner_v2`, `listening_verdict`), `echo/metrics_v2.py` and the ledger.", ""]
+    if not crit:
+        return "\n".join(out + ["`runs/_criteria/summary.json` does not exist: only the original thresholds are scored."])
+    out += ["## The three verdicts", "",
+            f"- **{fmt(crit.get('label_v1'))}**: the spec's thresholds and judges, unchanged; top-level `passed`.",
+            f"- **{fmt(crit.get('label_v2'))}**: calibrated afterwards to the owner's listening and required to "
+            "reject every negative control. On a run it was calibrated on it can only return PASS or null "
+            "(\"not established\"); null is neither a pass nor a fail.",
+            f"- **Listening verdict**: {ear_word(crit.get('listening_verdict'))}: "
+            f"“{fmt((crit.get('listening_verdict') or {}).get('quote'))}”. "
+            f"{fmt((crit.get('listening_verdict') or {}).get('note'))}", "",
+            "## The rule (docstring of `echo/metrics_v2.py`)", ""]
+    try:
+        import ast
+        doc = ast.get_docstring(ast.parse((data.root / "echo" / "metrics_v2.py").read_text())) or ""
+    except (OSError, SyntaxError):
+        doc = ""
+    out += (["```", doc, "```", ""] if doc else ["(`echo/metrics_v2.py` not found.)", ""])
+    thr = crit.get("thresholds_v2") or {}
+    out += ["## Frozen thresholds (`thresholds_v2`)", "",
+            table(["test", "thresholds"], [[k, ", ".join(f"{kk} {fmt(vv)}" for kk, vv in v.items()) or "—"]
+                                          for k, v in thr.items()]), ""]
+    out += ["## Per test: what a pass rests on, and the controls", ""]
+    for k, t in (crit.get("tests") or {}).items():
+        ctl = t.get("controls") or []
+        kinds = {}
+        for c in ctl:
+            kinds.setdefault(c.get("kind"), [0, 0])
+            kinds[c.get("kind")][0] += c.get("pass") is False
+            kinds[c.get("kind")][1] += 1
+        out += [f"### {fmt(t.get('title'))}", "",
+                f"- Run the owner heard: `{fmt(t.get('accepted_run'))}`; established: {fmt(t.get('established'))}.",
+                f"- A pass rests on: {fmt(re.sub(r'within None c', 'within (no threshold exists)', t.get('rests_on') or ''))}.",
+                f"- Accepted echo: {fmt(json.dumps((t.get('accepted') or {}).get('values')))}; perfect echo: "
+                f"{fmt(json.dumps((t.get('perfect_echo') or {}).get('values')))}.",
+                f"- Controls rejected {fmt(t.get('controls_rejected'))}/{fmt(t.get('controls_total'))}: "
+                + "; ".join(f"{kk} {a}/{b}" for kk, (a, b) in kinds.items()) + "."]
+        mp = (t.get("margin") or {}).get("pitch") or {}
+        if mp:
+            out.append(f"- Pitch threshold derivation: worst positive {n0(mp.get('worst_positive'))} cents, best "
+                       f"mistuned control {n0(mp.get('best_mistuning_control'))} cents → threshold "
+                       f"{n0(mp.get('derived_threshold')) if mp.get('derived_threshold') is not None else 'none'} "
+                       f"(frozen {n0(mp.get('frozen_threshold')) if mp.get('frozen_threshold') is not None else 'none'};"
+                       f" rule: {fmt(mp.get('rule'))}).")
+        if t.get("note"):
+            out.append("- Note: " + fmt(t["note"]).replace("accepted by ear", "accepted by ear (owner, not blind)"))
+        out.append("")
+    out += ["## Every scored run", "",
+            table(["test", "run", "heard by owner", "original", "revised", "owner's ear", "controls rejected"],
+                  [[x.get("test"), f"`{x.get('run_id')}`", fmt(x.get("accepted")), v1_word(x.get("spec_v1")),
+                    v2_word(x.get("owner_v2")),
+                    (x.get("listening") or "not heard") + ("" if not x.get("listening") or "not blind" in
+                                                           x.get("listening", "") else " (not blind)"),
+                    f"{fmt(x.get('controls_rejected'))}/{fmt(x.get('controls_total'))}"]
+                   for x in crit.get("runs") or []]), ""]
+    rev = [ln for ln in data.ledger.splitlines() if re.search(r"T14|Task 14|OWNER LISTENING|OWNER REQUESTS", ln)]
+    rev += [ln for ln in data.ledger.splitlines() if ln.startswith("- Ruling: thresholds")]
+    if rev:
+        out += ["## History from the ledger (including the review that withdrew the motif's revised pass)", ""]
+        out += ["> " + fmt(ln.lstrip("- ").strip()) + "\n" for ln in rev]
+    return "\n".join(out)
+
+
+def scorecards_appendix(data: Data, rows):
+    out = ["# Per-test scorecards", "",
+           "Generated by `stages/report.py`. Each unit of the spec's stage table, with the three verdicts per run, "
+           "earlier attempts, and the full metric, per-clap and robustness tables of the newest run (and of the run "
+           "the owner heard, when that differs). Paths are relative to the repository root.", "",
+           "## Audio and screenshots", "", how_to_look(data), "",
+           "## Scorecards", "", "\n\n".join(scorecard(data, u) for u in data.units())]
+    return "\n".join(out)
+
+
+def design_appendix(data: Data):
+    out = ["# Design studies and open questions", "",
+           "Generated by `stages/report.py` from the run files and `_studies/*.json`.", "",
+           "## The spec's four open questions", "", open_questions(data), "",
+           "## What limited each stage", "",
+           next_steps(data, "").split("**Commentary**")[0].strip(), "",
+           "## What to try next (ranked by information per unit cost)", ""]
+    out += [f"{i}. {s}" for i, s in enumerate(NEXT_STEPS, 1)]
+    out += ["", "## Build path detail", "", build_section(data)]
+    return "\n".join(out)
+
+
+def appendices(data: Data, rows):
+    data.prefix = "../../"
+    try:
+        data.seen = {}
+        return {
+            "scorecards.md": scorecards_appendix(data, rows),
+            "criteria.md": criteria_appendix(data, rows),
+            "validation.md": "# Solver validation\n\n" + validation_section(data),
+            "design-studies.md": design_appendix(data),
+            "timeline-and-rulings.md": "# Timeline and rulings\n\n" + overnight(data),
+            "deviations.md": "# Deviations from the spec\n\n" + deviations(data),
+        }
+    finally:
+        data.prefix = ""
+
+
+def _shot(data, name, alt):
+    p = data.root / "artifacts" / "report" / name
+    return f"![{alt}](artifacts/report/{name})" if p.exists() else ""
+
+
 # ------------------------------------------------------------------------------------------------------------ assemble
-def build_report(root: Path = ROOT, run_test_suite: bool = True, reset_commentary: bool = False) -> str:
+def build_all(root: Path = ROOT, run_test_suite: bool = True, reset_commentary: bool = False):
+    """{relative path: text} for REPORT.md and every appendix."""
     root = Path(root)
     old = (root / "REPORT.md").read_text() if (root / "REPORT.md").exists() else ""
     commentary = None if reset_commentary else _between(old, COMMENT_BEGIN, COMMENT_END)
@@ -1314,24 +2205,44 @@ def build_report(root: Path = ROOT, run_test_suite: bool = True, reset_commentar
         tests = ((prev + " " if prev else "") + f"*(Not re-run by the generation at {now} (`--no-tests`); "
                  "the line before is the last recorded run.)*")
     stamp = _dt.datetime.now().astimezone().isoformat(timespec="minutes")
-    parts = [
-        banner(data), "",
-        "# Composed Echo — morning report", "",
-        f"*Generated {stamp} by `uv run python -m stages.report` from the files on disk; re-run it as results land. "
-        "Open: [viewer](viewer/) · [explainer](explainer/index.html) · [build path](BUILD.md) · "
-        "[decisions](DECISIONS.md).*", "",
-        "## 1. Verdict", "", verdict(data), "",
-        "## 2. How to look at the results", "", how_to_look(data), "",
-        "## 3. Solver validation", "", validation_section(data), "",
-        "## 4. Scorecards", "", "\n\n".join(scorecard(data, u) for u in data.units()), "",
-        "## 5. Open questions from the spec", "", open_questions(data), "",
-        "## 6. What limited each stage, and what to try next", "", next_steps(data, commentary), "",
-        "## 7. Build path", "", build_section(data), "",
-        "## 8. What happened overnight", "", overnight(data), "",
-        "## 9. Deviations from the spec", "", deviations(data), "",
-        "## 10. Tests", "", TESTS_BEGIN, tests, TESTS_END, "",
+    rows = verdict_rows(data)
+    status = status_line(data, rows)
+    links = ("[Viewer](viewer/) · [Live mode](viewer/?mode=live) · [Explainer](explainer/index.html) · "
+             "[Build path](BUILD.md) · [Listen](listen/) · [Repository](https://github.com/shyamvalsan/echo-engineering)")
+    head = [status, "", "# Composed Echo — report"] if status.startswith("UNVERIFIED") else \
+        ["# Composed Echo — report", "", status]
+    shot1 = _shot(data, "shot-viewer-review-s1.png", "viewer, review mode, stage-1 whistle with the three verdicts")
+    shot2 = _shot(data, "shot-viewer-live.png", "viewer, Live mode")
+    parts = head + [
+        "", links, "",
+        f"*Generated {stamp} by `uv run python -m stages.report` from the files on disk. A passive field of rigid posts "
+        "is designed so that a hand clap comes back as a chosen sound; everything here is simulated. Detailed tables: "
+        + " · ".join(f"[{t}]({app(n)})" for n, t in APPENDICES) + ".*", "",
+        "## 1. What works", "", what_works(data, rows), ""]
+    if shot1:
+        parts += [shot1, ""]
+    parts += ["## 2. Hear it and try it", "", hear_and_try(data), ""]
+    if shot2:
+        parts += [shot2, ""]
+    parts += [
+        "## 3. All results at a glance", "", glance(data, rows), "",
+        "## 4. What we learned", "", learned(data, rows, commentary), "",
+        "## 5. What did not work, briefly", "", dead_ends(data, rows), "",
+        "## 6. Build path", "", build_brief(data), "",
+        "## 7. How far to trust this", "", trust(data, tests), "",
+        "## 8. The spec's four open questions", "", questions_short(data, rows), "",
+        "## 9. Process notes", "", process(data), "",
     ]
-    return "\n".join(parts)
+    files = {"REPORT.md": "\n".join(parts)}
+    for name, text in appendices(data, rows).items():
+        files[str(APPENDIX_DIR / name)] = (
+            f"*Appendix of [REPORT.md](../../REPORT.md); generated {stamp} by `uv run python -m stages.report`.*\n\n"
+            + text + "\n")
+    return files
+
+
+def build_report(root: Path = ROOT, run_test_suite: bool = True, reset_commentary: bool = False) -> str:
+    return build_all(root, run_test_suite, reset_commentary)["REPORT.md"]
 
 
 def main(argv=None):
@@ -1341,9 +2252,12 @@ def main(argv=None):
     ap.add_argument("--reset-commentary", action="store_true", help="replace the commentary block with the default")
     a = ap.parse_args(argv)
     root = Path(a.root)
-    text = build_report(root, run_test_suite=not a.no_tests, reset_commentary=a.reset_commentary)
-    (root / "REPORT.md").write_text(text)
-    print(text.splitlines()[0])
+    files = build_all(root, run_test_suite=not a.no_tests, reset_commentary=a.reset_commentary)
+    for rp, text in files.items():
+        p = root / rp
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(text)
+    print(files["REPORT.md"].splitlines()[0])
 
 
 if __name__ == "__main__":
