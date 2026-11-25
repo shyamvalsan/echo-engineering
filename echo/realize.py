@@ -97,8 +97,6 @@ def realize(profile, scene_cfg: Scene | None = None, seed=0, *, r0, dr=DR_PROFIL
                                     angle_jitter=angle_jitter, posts_per_period=posts_per_period, n_posts=n_posts,
                                     fractional=fractional and mode == "phase_locked", range_scale=range_scale,
                                     uniform=mode == "phase_locked_uniform", max_half_width_m=max_half_width_m)
-    if max_half_width_m is not None:
-        raise ValueError("max_half_width_m is implemented for the phase-locked modes only")
     if mode != "sampling":
         raise ValueError(f"mode must be 'sampling' or 'phase_locked', got {mode!r}")
     scene = scene_cfg if scene_cfg is not None else Scene()
@@ -159,8 +157,11 @@ def realize(profile, scene_cfg: Scene | None = None, seed=0, *, r0, dr=DR_PROFIL
 
     # Phase C: angular placement along each equal-delay ellipse.
     rhos = rhos * range_scale
+    # max_half_width_m (strip): applied at angular placement only; the radius choice's capacity estimate still uses the
+    # wedge arc (exact for a single-radius catalog, where pick_radius has one option)
     posts, shadow_viol, drop_c = place_on_arcs(rhos, rads, scene, rng, r0=r0, dr=dr, radii=radii, gap=gap,
-                                               shadow_depth=shadow_depth, n_try=n_try, angle_jitter=angle_jitter)
+                                               shadow_depth=shadow_depth, n_try=n_try, angle_jitter=angle_jitter,
+                                               max_half_width_m=max_half_width_m)
     dropped += drop_c
     # realized profile on the bin grid (linear split between the two nearest bin centres)
     real = np.zeros(n)
