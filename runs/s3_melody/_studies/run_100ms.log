@@ -1,0 +1,75 @@
+/home/shyam/projects/echo/echo/inverse.py:66: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
+  fb = librosa.filters.mel(sr=fs, n_fft=MEL_N_FFT, n_mels=MEL_N, fmin=band[0], fmax=band[1])
+step    0 loss 1.8329 (stft 1.0913 mel 0.7416) 94.7s
+  realized 2500 posts, range scale 1-0.00195 (4 s)
+waiting for Tier 1 lock… (0 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (60 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (120 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (180 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (240 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (300 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (361 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (421 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (481 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (541 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (601 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (661 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (721 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (781 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (842 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (902 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (962 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (1022 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (1082 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (1142 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (1202 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (1262 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (1322 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (1382 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (1442 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (1503 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (1563 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (1623 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (1683 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (1743 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (1803 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (1863 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (1923 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (1983 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (2043 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (2103 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (2163 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (2224 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (2284 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (2344 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+Tier 1 lock acquired after 2395 s
+  stretch: applied -0.00195, measured (medium) -0.00118 (corr 0.679), timing residual +0.00077
+  tier1 1787 s (empty cached: False)
+/home/shyam/projects/echo/.venv/lib/python3.11/site-packages/librosa/feature/spectral.py:2148: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
+  mel_basis = filters.mel(sr=sr, n_fft=n_fft, **kwargs)
+/home/shyam/projects/echo/echo/inverse.py:66: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
+  fb = librosa.filters.mel(sr=fs, n_fft=MEL_N_FFT, n_mels=MEL_N, fmin=band[0], fmax=band[1])
+correction round 0: loss 5.3927 score -23.0000 gains [2.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.81, 0.66, 0.51, 0.66, 0.82, 0.76, 0.72, 0.87, 0.67, 0.77, 0.89, 0.94, 0.98, 1.04, 1.14, 1.27, 1.05, 1.15, 1.33, 1.4, 1.21, 1.57, 0.99, 1.12, 1.18, 1.1, 1.25, 1.24, 1.23, 1.27, 1.38, 1.36, 0.85, 1.16, 1.33, 1.91, 2.0, 2.0, 1.56, 2.0, 1.89, 1.59, 0.52, 0.79, 0.8, 1.08, 1.16, 1.32, 1.74, 1.44, 1.53, 1.76, 0.5, 0.67, 0.91, 1.04, 1.12, 1.43, 1.57, 1.63, 1.77, 1.43, 0.5, 0.5, 0.51, 0.63, 0.74, 0.58, 0.72, 0.62, 0.9, 0.66, 1.0] (4205 s)
+
+=== s3_melody  FAILED  verified=True  fragile=False ===
+run: /home/shyam/projects/echo/runs/s3_melody/20261125-131152-s3
+  [tier1*] notes_in_order         0.0                    thr >=1.0  pass False
+  [tier1*] note_cents_max         1200.0                 thr <=50.0  pass False
+  [tier1 ] n_notes_detected       5.8                    thr None  pass None
+  [tier1 ] spec_corr              0.27503269808414144    thr None  pass None
+  [tier0 ] notes_in_order         0.0                    thr >=1.0  pass False
+  [tier0 ] note_cents_max         1200.0                 thr <=50.0  pass False
+  judge floor (perfect echo): {'notes_in_order': 1.0, 'note_cents_max': 4.996, 'n_notes_detected': 8.0, 'spec_corr': 0.979}
+  echo level -73.3 dB re direct (raw 3D -71.1, 2.0 m posts -72.0), SPL 37.2 dB, tier gap -2.150222393284494, depth 133.61 m, 2500 posts, fill 0.0001
+  robust nominal            pass False notes_in_order=0 note_cents_max=1.2e+03 spec_corr=0.275
+  robust listener_side_1m   pass False notes_in_order=0 note_cents_max=1.2e+03 spec_corr=0.163
+  robust listener_back_1m   pass False notes_in_order=0 note_cents_max=1.2e+03 spec_corr=0.275
+  robust clap_0             pass False notes_in_order=0 note_cents_max=1.2e+03 spec_corr=0.161
+  robust clap_1             pass False notes_in_order=0 note_cents_max=1.2e+03 spec_corr=0.304
+  robust clap_2             pass False notes_in_order=0 note_cents_max=1.2e+03 spec_corr=0.338
+  robust clap_3             pass False notes_in_order=0 note_cents_max=1.2e+03 spec_corr=0.263
+  robust clap_4             pass False notes_in_order=0 note_cents_max=1.2e+03 spec_corr=0.309
+  failure cause: Tier 1 notes detected in order (fraction of claps) = 0 misses >= 1.0 (judge floor on a perfect echo: 1); Tier 1 worst note pitch error = 1.2e+03cents misses <= 50.0cents (judge floor on a perfect echo: 5cents)
+  wall: {'profile_solve_s': 99.3, 'realize_s': 3.6, 'tier1_loop_s': 4185.4, 'tier1_lock_wait_s': 2394.7, 'correction_loop_s': 4204.5, 'robustness_s': 42.3, 'field_video_s': 4.8, 'total_s': 4384.2}
+stage 3 extras: {"corrected_3d_db": [-73.26343138415555, -89.41208244860047, -92.83300271910493, -92.54354725665249, -93.8708320409185, -93.92550670193674, -97.80593129444802, -100.15253101118465], "spl_db": [37.194143521451196, 21.045492457006276, 17.624572186501823, 17.91402764895426, 16.586742864688247, 16.532068203670008, 12.651643611158732, 10.305043894422099], "notes_below_35_db_spl": [1, 2, 3, 4, 5, 6, 7]}
+tier0 full band in order: 0.0 H2/H1: [17.6, 6.7, -12.4, -9.8, -7.9, -0.1, 14.7, 19.5]

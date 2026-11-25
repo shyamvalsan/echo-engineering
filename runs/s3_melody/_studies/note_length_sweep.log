@@ -1,0 +1,13 @@
+/home/shyam/projects/echo/echo/inverse.py:66: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
+  fb = librosa.filters.mel(sr=fs, n_fft=MEL_N_FFT, n_mels=MEL_N, fmin=band[0], fmax=band[1])
+/home/shyam/projects/echo/.venv/lib/python3.11/site-packages/librosa/feature/spectral.py:2148: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
+  mel_basis = filters.mel(sr=sr, n_fft=n_fft, **kwargs)
+100 ms: depth 136.1 m N=2500 T0 cap {'notes_in_order': 0.0, 'note_cents_max': 1200.0, 'n_notes_detected': [3, 3, 9, 3, 4], 'per_clap_in_order': [0.0, 0.0, 0.0, 0.0, 0.0]} | full 0.2 | perfect cap 1.0 full 1.0 (1389.5 s)
+/home/shyam/projects/echo/echo/inverse.py:66: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
+  fb = librosa.filters.mel(sr=fs, n_fft=MEL_N_FFT, n_mels=MEL_N, fmin=band[0], fmax=band[1])
+ 80 ms: depth 108.8 m N=2500 T0 cap {'notes_in_order': 0.0, 'note_cents_max': 1200.0, 'n_notes_detected': [2, 4, 7, 2, 3], 'per_clap_in_order': [0.0, 0.0, 0.0, 0.0, 0.0]} | full 0.0 | perfect cap 1.0 full 1.0 (182.2 s)
+ 60 ms: depth 81.7 m N=2500 T0 cap {'notes_in_order': 0.0, 'note_cents_max': 1200.0, 'n_notes_detected': [3, 4, 7, 2, 4], 'per_clap_in_order': [0.0, 0.0, 0.0, 0.0, 0.0]} | full 0.2 | perfect cap 1.0 full 1.0 (134.3 s)
+ 45 ms: depth 61.0 m N=2500 T0 cap {'notes_in_order': 0.0, 'note_cents_max': 1200.0, 'n_notes_detected': [6, 5, 9, 1, 5], 'per_clap_in_order': [0.0, 0.0, 0.0, 0.0, 0.0]} | full 0.2 | perfect cap 1.0 full 1.0 (102.3 s)
+ 30 ms: depth 40.8 m N=2474 T0 cap {'notes_in_order': 0.0, 'note_cents_max': 1200.0, 'n_notes_detected': [6, 7, 9, 3, 5], 'per_clap_in_order': [0.0, 0.0, 0.0, 0.0, 0.0]} | full 0.2 | perfect cap 1.0 full 1.0 (79.5 s)
+ 20 ms: depth 27.1 m N=2211 T0 cap {'notes_in_order': 0.4, 'note_cents_max': 725.9983086000314, 'n_notes_detected': [7, 8, 8, 4, 8], 'per_clap_in_order': [0.0, 1.0, 1.0, 0.0, 0.0]} | full 0.2 | perfect cap 0.8 full 0.8 (67.8 s)
+wrote note-length sweep 1956 s

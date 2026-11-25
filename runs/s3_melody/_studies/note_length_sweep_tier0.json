@@ -1,0 +1,560 @@
+{
+ "what": "TIER 0 ONLY note-length sweep (not a Tier 1 result): shortest note length whose realized Tier 0 echo still transcribes for every clap (notes_in_order = 1.0 mean over claps), and the judge on the physically perfect echo (the judge's own floor) at each length",
+ "geometry": {
+  "half_angle_deg": 20.0,
+  "radius_m": 0.01,
+  "target_fill": 0.01,
+  "realization": "phase_locked K=1"
+ },
+ "shortest_passing_note_ms_tier0_capped_band": null,
+ "rows": [
+  {
+   "note_ms": 100,
+   "depth_m": 136.07714653622156,
+   "n_posts": 2500,
+   "fill_realized": 0.00011470232703510547,
+   "loss": 4.083026885986328,
+   "tier0_judge_capped_band": {
+    "notes_in_order": 0.0,
+    "note_cents_max": 1200.0,
+    "n_notes_detected": [
+     3,
+     3,
+     9,
+     3,
+     4
+    ],
+    "per_clap_in_order": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "tier0_judge_full_band": {
+    "notes_in_order": 0.2,
+    "note_cents_max": 963.0008456999846,
+    "n_notes_detected": [
+     7,
+     8,
+     8,
+     4,
+     6
+    ],
+    "per_clap_in_order": [
+     0.0,
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ]
+   },
+   "perfect_echo_judge_capped_band": {
+    "notes_in_order": 1.0,
+    "note_cents_max": 4.995771500078824,
+    "n_notes_detected": [
+     8,
+     8,
+     8,
+     8,
+     8
+    ],
+    "per_clap_in_order": [
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "perfect_echo_judge_full_band": {
+    "notes_in_order": 1.0,
+    "note_cents_max": 4.995771500078824,
+    "n_notes_detected": [
+     8,
+     8,
+     8,
+     8,
+     8
+    ],
+    "per_clap_in_order": [
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "note_level_db_2d_capped": [
+    -65.0270309236764,
+    -75.49830658795852,
+    -82.96461550590567,
+    -77.70172913651045,
+    -76.90884847392503,
+    -82.09616609560871,
+    -83.93223585155903,
+    -73.53731861148165
+   ],
+   "wall_s": 1389.5,
+   "label": "100 ms notes"
+  },
+  {
+   "note_ms": 80,
+   "depth_m": 108.8474235897143,
+   "n_posts": 2500,
+   "fill_realized": 0.00017758406904855732,
+   "loss": 3.719204902648926,
+   "tier0_judge_capped_band": {
+    "notes_in_order": 0.0,
+    "note_cents_max": 1200.0,
+    "n_notes_detected": [
+     2,
+     4,
+     7,
+     2,
+     3
+    ],
+    "per_clap_in_order": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "tier0_judge_full_band": {
+    "notes_in_order": 0.0,
+    "note_cents_max": 1200.0,
+    "n_notes_detected": [
+     7,
+     7,
+     7,
+     4,
+     6
+    ],
+    "per_clap_in_order": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "perfect_echo_judge_capped_band": {
+    "notes_in_order": 1.0,
+    "note_cents_max": 5.9957715000786695,
+    "n_notes_detected": [
+     8,
+     8,
+     8,
+     8,
+     8
+    ],
+    "per_clap_in_order": [
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "perfect_echo_judge_full_band": {
+    "notes_in_order": 1.0,
+    "note_cents_max": 5.9957715000786695,
+    "n_notes_detected": [
+     8,
+     8,
+     8,
+     8,
+     8
+    ],
+    "per_clap_in_order": [
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "note_level_db_2d_capped": [
+    -63.99364592746983,
+    -75.8425869549142,
+    -77.88759246848927,
+    -72.58197858943143,
+    -71.75747714642117,
+    -76.95537492805366,
+    -78.2444371097937,
+    -67.33953550081796
+   ],
+   "wall_s": 182.2,
+   "label": "80 ms notes"
+  },
+  {
+   "note_ms": 60,
+   "depth_m": 81.7194320117718,
+   "n_posts": 2500,
+   "fill_realized": 0.00030931301794057207,
+   "loss": 3.618683338165283,
+   "tier0_judge_capped_band": {
+    "notes_in_order": 0.0,
+    "note_cents_max": 1200.0,
+    "n_notes_detected": [
+     3,
+     4,
+     7,
+     2,
+     4
+    ],
+    "per_clap_in_order": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "tier0_judge_full_band": {
+    "notes_in_order": 0.2,
+    "note_cents_max": 960.9991543000157,
+    "n_notes_detected": [
+     7,
+     6,
+     8,
+     7,
+     6
+    ],
+    "per_clap_in_order": [
+     0.0,
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ]
+   },
+   "perfect_echo_judge_capped_band": {
+    "notes_in_order": 1.0,
+    "note_cents_max": 5.9957715000786695,
+    "n_notes_detected": [
+     8,
+     8,
+     8,
+     8,
+     8
+    ],
+    "per_clap_in_order": [
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "perfect_echo_judge_full_band": {
+    "notes_in_order": 1.0,
+    "note_cents_max": 5.9957715000786695,
+    "n_notes_detected": [
+     8,
+     8,
+     8,
+     8,
+     8
+    ],
+    "per_clap_in_order": [
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "note_level_db_2d_capped": [
+    -65.44700813395737,
+    -74.58821495412647,
+    -71.70377569304766,
+    -66.36034054029975,
+    -65.50333063205532,
+    -70.74079237969927,
+    -71.30880137081868,
+    -59.89001117291089
+   ],
+   "wall_s": 134.3,
+   "label": "60 ms notes"
+  },
+  {
+   "note_ms": 45,
+   "depth_m": 60.99944277131148,
+   "n_posts": 2500,
+   "fill_realized": 0.0005403736229048658,
+   "loss": 3.6042511463165283,
+   "tier0_judge_capped_band": {
+    "notes_in_order": 0.0,
+    "note_cents_max": 1200.0,
+    "n_notes_detected": [
+     6,
+     5,
+     9,
+     1,
+     5
+    ],
+    "per_clap_in_order": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "tier0_judge_full_band": {
+    "notes_in_order": 0.2,
+    "note_cents_max": 965.0008456999843,
+    "n_notes_detected": [
+     9,
+     9,
+     9,
+     7,
+     8
+    ],
+    "per_clap_in_order": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ]
+   },
+   "perfect_echo_judge_capped_band": {
+    "notes_in_order": 1.0,
+    "note_cents_max": 10.995771500078177,
+    "n_notes_detected": [
+     8,
+     8,
+     8,
+     8,
+     8
+    ],
+    "per_clap_in_order": [
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "perfect_echo_judge_full_band": {
+    "notes_in_order": 1.0,
+    "note_cents_max": 10.995771500078177,
+    "n_notes_detected": [
+     8,
+     8,
+     8,
+     8,
+     8
+    ],
+    "per_clap_in_order": [
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "note_level_db_2d_capped": [
+    -66.0827254545071,
+    -68.95431256592985,
+    -66.13541303326221,
+    -60.69463364976884,
+    -59.768838862882134,
+    -65.01353722881228,
+    -65.17934012522464,
+    -53.81765282139664
+   ],
+   "wall_s": 102.3,
+   "label": "45 ms notes"
+  },
+  {
+   "note_ms": 30,
+   "depth_m": 40.77026853768086,
+   "n_posts": 2474,
+   "fill_realized": 0.0011501256712780094,
+   "loss": 3.848174571990967,
+   "tier0_judge_capped_band": {
+    "notes_in_order": 0.0,
+    "note_cents_max": 1200.0,
+    "n_notes_detected": [
+     6,
+     7,
+     9,
+     3,
+     5
+    ],
+    "per_clap_in_order": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "tier0_judge_full_band": {
+    "notes_in_order": 0.2,
+    "note_cents_max": 960.9991543000157,
+    "n_notes_detected": [
+     8,
+     8,
+     8,
+     6,
+     9
+    ],
+    "per_clap_in_order": [
+     0.0,
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ]
+   },
+   "perfect_echo_judge_capped_band": {
+    "notes_in_order": 1.0,
+    "note_cents_max": 12.995771500078115,
+    "n_notes_detected": [
+     8,
+     8,
+     8,
+     8,
+     8
+    ],
+    "per_clap_in_order": [
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "perfect_echo_judge_full_band": {
+    "notes_in_order": 1.0,
+    "note_cents_max": 12.995771500078115,
+    "n_notes_detected": [
+     8,
+     8,
+     8,
+     8,
+     8
+    ],
+    "per_clap_in_order": [
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "note_level_db_2d_capped": [
+    -57.069303364458634,
+    -58.663564998020334,
+    -58.49025058231422,
+    -52.90014433195975,
+    -51.92009781105141,
+    -57.16971708353435,
+    -56.88132385946482,
+    -45.92908264438268
+   ],
+   "wall_s": 79.5,
+   "label": "30 ms notes"
+  },
+  {
+   "note_ms": 20,
+   "depth_m": 27.137495487826595,
+   "n_posts": 2211,
+   "fill_realized": 0.002162841410449253,
+   "loss": 3.7502546310424805,
+   "tier0_judge_capped_band": {
+    "notes_in_order": 0.4,
+    "note_cents_max": 725.9983086000314,
+    "n_notes_detected": [
+     7,
+     8,
+     8,
+     4,
+     8
+    ],
+    "per_clap_in_order": [
+     0.0,
+     1.0,
+     1.0,
+     0.0,
+     0.0
+    ]
+   },
+   "tier0_judge_full_band": {
+    "notes_in_order": 0.2,
+    "note_cents_max": 960.9991543000157,
+    "n_notes_detected": [
+     8,
+     7,
+     8,
+     7,
+     7
+    ],
+    "per_clap_in_order": [
+     0.0,
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ]
+   },
+   "perfect_echo_judge_capped_band": {
+    "notes_in_order": 0.8,
+    "note_cents_max": 258.996617200063,
+    "n_notes_detected": [
+     8,
+     8,
+     8,
+     8,
+     7
+    ],
+    "per_clap_in_order": [
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     0.0
+    ]
+   },
+   "perfect_echo_judge_full_band": {
+    "notes_in_order": 0.8,
+    "note_cents_max": 258.996617200063,
+    "n_notes_detected": [
+     8,
+     8,
+     8,
+     8,
+     7
+    ],
+    "per_clap_in_order": [
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     0.0
+    ]
+   },
+   "note_level_db_2d_capped": [
+    -49.55037907707425,
+    -51.15129728152178,
+    -51.21676487249586,
+    -45.48456930292147,
+    -44.390651045791884,
+    -49.68178398463776,
+    -50.74829073887187,
+    -42.27460941787736
+   ],
+   "wall_s": 67.8,
+   "label": "20 ms notes"
+  }
+ ],
+ "wall_s": 1955.5144805908203,
+ "selection": "none (a sweep; the judge is the quantity being measured, nothing is chosen by it)"
+}

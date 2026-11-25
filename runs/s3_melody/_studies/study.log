@@ -1,0 +1,19 @@
+/home/shyam/projects/echo/echo/inverse.py:66: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
+  fb = librosa.filters.mel(sr=fs, n_fft=MEL_N_FFT, n_mels=MEL_N, fmin=band[0], fmax=band[1])
+profile solve: loss 1.833 (100 s)
+/home/shyam/projects/echo/.venv/lib/python3.11/site-packages/librosa/feature/spectral.py:2148: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
+  mel_basis = filters.mel(sr=sr, n_fft=n_fft, **kwargs)
+fill=1.00% phase_locked K=1        N= 2500 drop=  0 loss cap 7.297 full 6.203 L2d/note [-65.0, -75.5, -83.0, -77.7, -76.9, -82.1, -83.9, -73.5] H2/H1 [18.0, 25.0, 16.3, 5.7, -17.2, -2.2, 11.7, 20.7] ext~10.5 dB [info: order 0.00 cents 1200.0] (36.4 s)
+/home/shyam/projects/echo/echo/inverse.py:66: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
+  fb = librosa.filters.mel(sr=fs, n_fft=MEL_N_FFT, n_mels=MEL_N, fmin=band[0], fmax=band[1])
+fill=1.00% phase_locked K=2        N= 2500 drop=  0 loss cap 7.661 full 6.841 L2d/note [-65.1, -70.9, -75.0, -78.6, -81.4, -86.6, -90.5, -93.7] H2/H1 [12.8, 5.0, 1.0, -11.0, -4.2, -4.0, -18.5, 4.0] ext~10.5 dB [info: order 0.00 cents 1200.0] (37.0 s)
+fill=1.00% phase_locked_uniform K=4 N= 2500 drop=  0 loss cap 7.732 full 7.628 L2d/note [-63.0, -72.9, -72.8, -73.3, -76.5, -81.3, -85.0, -87.0] H2/H1 [13.1, 15.3, -1.3, -13.1, -18.4, -0.6, -6.9, -4.6] ext~10.5 dB [info: order 0.00 cents 1200.0] (33.6 s)
+cost {'note_ms': 100, 'strip_half_width_m': 0.75, 'dx_m': 0.013636363636363636, 'dt_s': 1.25e-05, 'grid': [10499, 288], 'n_steps': 68025, 'cell_steps': 205688008800.0, 'est_wall_s_idle_8_threads': 972.3433143272727, 'f_max': 2500.0}
+cost {'note_ms': 100, 'strip_half_width_m': 1.0, 'dx_m': 0.013636363636363636, 'dt_s': 1.25e-05, 'grid': [10499, 306], 'n_steps': 68025, 'cell_steps': 218543509350.0, 'est_wall_s_idle_8_threads': 1033.1147714727274, 'f_max': 2500.0}
+cost {'note_ms': 100, 'strip_half_width_m': 1.5, 'dx_m': 0.013636363636363636, 'dt_s': 1.25e-05, 'grid': [10499, 343], 'n_steps': 68025, 'cell_steps': 244968704925.0, 'est_wall_s_idle_8_threads': 1158.0338778272728, 'f_max': 2500.0}
+cost {'note_ms': 100, 'strip_half_width_m': 2.0, 'dx_m': 0.013636363636363636, 'dt_s': 1.25e-05, 'grid': [10499, 417], 'n_steps': 68025, 'cell_steps': 297819096075.0, 'est_wall_s_idle_8_threads': 1407.8720905363637, 'f_max': 2500.0}
+cost {'note_ms': 60, 'strip_half_width_m': 0.75, 'dx_m': 0.013636363636363636, 'dt_s': 1.25e-05, 'grid': [6466, 288], 'n_steps': 42425, 'cell_steps': 79004174400.0, 'est_wall_s_idle_8_threads': 373.4742789818182, 'f_max': 2500.0}
+cost {'note_ms': 60, 'strip_half_width_m': 1.0, 'dx_m': 0.013636363636363636, 'dt_s': 1.25e-05, 'grid': [6466, 306], 'n_steps': 42425, 'cell_steps': 83941935300.0, 'est_wall_s_idle_8_threads': 396.8164214181818, 'f_max': 2500.0}
+cost {'note_ms': 60, 'strip_half_width_m': 1.5, 'dx_m': 0.013636363636363636, 'dt_s': 1.25e-05, 'grid': [6466, 343], 'n_steps': 42425, 'cell_steps': 94091777150.0, 'est_wall_s_idle_8_threads': 444.7974919818182, 'f_max': 2500.0}
+cost {'note_ms': 60, 'strip_half_width_m': 2.0, 'dx_m': 0.013636363636363636, 'dt_s': 1.25e-05, 'grid': [6466, 417], 'n_steps': 42425, 'cell_steps': 114391460850.0, 'est_wall_s_idle_8_threads': 540.7596331090908, 'f_max': 2500.0}
+wrote design study 217 s
