@@ -16,7 +16,9 @@ vendored in `viewer/vendor/`), so it works offline.
 | Parameter | Default | Meaning |
 | --- | --- | --- |
 | `runs` | `../runs` | Folder holding `index.json` and the run folders, relative to `viewer/`. `?runs=fixtures/runs` opens the fixture set. If `../runs/index.json` is missing or lists no runs, the viewer falls back to `fixtures/runs` and says so in the header. |
-| `run` | newest final run | Run path as listed in `index.json`, e.g. `s1_bird/20261125-002316-s1`. Without it the newest `status: "final"` run is opened, else the newest run; switching stage picks that stage's newest final run the same way. |
+| `run` | stage 1's newest final run | Run path as listed in `index.json`, e.g. `s1_bird/20261125-002316-s1`. Without it the first stage's (stage 1, the representative result) newest `status: "final"` run is opened. Switching stage picks that stage's newest final run that passed, else its newest final run. |
+| `mode` | `review` | `live` opens Live mode. |
+| `liverate` | none | Live mode only: build the AudioContext at this rate (e.g. `16000`) instead of the device rate. Default resamples the 16 kHz impulse response instead, which Firefox needs (it refuses a microphone in a context at another rate). |
 | `compare` | none | A second run path; opens compare mode. |
 | `speed` | `0.1` | `1`, `0.1` or `0.02` (real time, 10x and 50x slower). |
 | `t` | `0` | Initial timeline position in simulation seconds. |
@@ -64,6 +66,71 @@ may keep serving the old JavaScript modules.
 - History: phase tabs; click a saved iteration chip (or its marker on the curve) to load its scene, profile,
   echo and metrics; "Final" goes back.
 - Compare: second run beside the first, compact panels, one shared timeline; "From" picks whose audio plays.
+
+## Live mode
+
+The Live tab plays the selected structure's echo of your own sound, live from the microphone, and lets you replay
+every sound you made with the waves. Same stage/run switcher as Review; switching run keeps the microphone on.
+
+- **Start listening** (a user gesture creates and resumes the AudioContext, then asks for the microphone with
+  echo cancellation, noise suppression and auto gain off). Path: mic -> AudioWorklet tap (meter, clap detector,
+  takes; `js/live/worklet.js`) and mic -> `ConvolverNode` (`normalize = false`, the run's impulse response) ->
+  echo gain -> soft clipper (exactly linear below -3 dBFS; a DynamicsCompressorNode was rejected because it delays
+  by 6 ms and adds make-up gain) -> speakers. The real clap is heard in the room; the speaker adds only the echo.
+- **Echo level**: 0 dB = true level (the IR as is); default boost = the clap's echo 12 dB under the clap (the
+  `listen/` convention), i.e. `-(true level) - 12` dB, capped at +60. The boost is always shown in dB next to
+  the slider, with the true level and "usually inaudible on speakers" beside the true-level mark.
+- **Timing**: the mic hears the clap `t_direct` after emission and the system adds input + output latency
+  (`baseLatency + outputLatency + track.getSettings().latency` where reported). That much is trimmed from the
+  IR's leading silence (never more than the silence: geometric first-post delay, bounded by the IR's own onset)
+  and the panel says "compensated" or "partly compensated, echo about N ms late". With typical laptop output
+  latency (20-40 ms) and a first post at ~19 ms, the echo comes late by the excess; the panel says so.
+- **Feedback guard**: without headphones, if the output stays above -30 dBFS rms for 0.7 s after the echo should
+  have ended (IR length + 0.5 s since the last clap) and is not falling, the echo is turned down 18 dB with a
+  notice; moving the slider restores it. **Headphones** mixes the dry mic in at an adjustable level.
+- **Takes**: every detected clap (0.6 s from 20 ms of pre-roll, silent tail trimmed) and Record 2 s become takes,
+  as do sound files (dropped or chosen; anything the browser decodes, first 4 s, mixed to mono, decoded at 16 kHz)
+  and built-ins (`inputs/sources/*` via `/api/inputs` when the lab server runs, else this run's clap from
+  `as_heard.wav`; plus a click and a 0.5-4 kHz chirp when the server offers none). Takes live in memory only, at
+  most 12 (oldest dropped), one cached echo each. Download: take, echo (true level), take + echo (boosted), 32-bit
+  float WAV at 16 kHz.
+- **Replay**: selecting a take makes it the timeline source: Echo panel (the take at t = 0, its echo = take ⊛ IR
+  computed in an OfflineAudioContext), spectrograms (target and the take's echo, computed in JS on one grid), the
+  scene with the field video ("wave from an ideal short pulse": the video is the solver's own pulse) or the
+  geometric front, and a band behind the front as long as your sound (c x duration, 34 cm per ms). Listen:
+  Take + echo (take at the direct arrival plus the boosted echo, scaled down together if it would clip), Echo, Take.
+- **Design from a sound** (lab server only): file + name + "also verify on full-wave" -> `POST /api/design`,
+  progress from `/api/jobs/<id>`, then `runs/index.json` is re-read and the new run opens in Live. Custom runs are
+  listed with "fast model only, not verified" unless verified; Hide removes one from the list (browser storage),
+  never from disk. Without the server the panel shows `uv run python -m echo.lab` and the CLI alternative
+  `uv run python -m stages.custom --target <file> --name "<label>"`.
+
+Contracts used (Live):
+
+- `manifest.ir = {tier0, tier1|null, fs, band_hz, t0_s, units, source, peak}` and `ir_tier0.wav` / `ir_tier1.wav`
+  (mono float, sample 0 = emission, `source ⊛ ir` = echo at true level re the direct sound). An IR at another rate
+  is resampled and scaled by `fs_in / fs_out` (taps are a density per sample; the same scaling is applied when the
+  16 kHz IR is resampled to the device rate).
+- Runs without `manifest.ir` (written before that contract): the IR is derived in the browser by a regularized,
+  band-limited deconvolution of `echo_tier{0,1}.wav` by the clap (`as_heard.wav` from `t_direct` to the first echo or
+  12 ms), scaled so the clap's echo has `audio.as_heard_echo_level_db`. On the stage-1 run this reconstructs the
+  stored echo to -39 dB error and the level to 0.0 dB. The UI says "derived in the browser" for such runs.
+- Lab server: `GET /api/health`, `GET /api/inputs`, `POST /api/design`, `GET /api/jobs/<id>` (see the brief in
+  `echo/lab.py`). Detected once at load; on a static server the only console line is the 404 of `/api/health`.
+- `metrics.json` verdict keys, shown side by side in the scorecard when present: `criteria.spec_v1` ("Original spec
+  thresholds"), `criteria.owner_v2` ("Revised thresholds (listening-calibrated)", `passed: null` reads "no automated
+  criterion"), `listening_verdict` ("Owner's ear, 25 Nov").
+
+Testing Live mode (Chrome via Playwright, headless): `--use-fake-ui-for-media-stream --use-fake-device-for-media-stream
+--use-file-for-fake-audio-capture=<48 kHz wav with silence and claps>`. A second AudioWorklet recorded mic and
+output together; the output matched an offline replica (mic ⊛ the convolver's buffer x boost) with lag 0 ms,
+correlation 1.000 and 0.00 dB level difference, at 44.1 kHz and with `?liverate=16000`.
+
+Limitations: latency can only be compensated within the IR's leading silence (about 19 ms minus t_direct for a
+3 m start); Bluetooth outputs add 100-200 ms and the echo then comes late (the panel says by how much). Speakers
+and an open mic can feed back at high boosts; the guard ducks, headphones avoid it. Boosted levels are not what a
+real structure would return: the true level is shown beside the slider. Firefox was not tested here (no Firefox
+in this environment); the code avoids Chrome-only APIs.
 
 ## What it reads (the run-folder contract)
 
@@ -130,4 +197,10 @@ and every fixture says so in its manifest notes. They exist to exercise the view
     js/spectro.js             spectrograms
     js/scorecard.js           scorecard
     js/history.js             history (uPlot)
+    js/live/view.js           Live mode layout, takes, sources, design panel
+    js/live/engine.js         microphone -> convolver -> speakers, meters, latency trim, feedback guard
+    js/live/worklet.js        AudioWorklet: input level, clap detection, take capture with pre-roll
+    js/live/irs.js            impulse responses: run files, or derived in the browser
+    js/live/dsp.js            FFT, deconvolution, resampling, offline convolution, STFT, WAV writer
+    js/live/lab.js            optional lab server client
     vendor/                   wavesurfer.js 7.8.16, uPlot 1.6.31, IBM Plex Sans Condensed

@@ -10,7 +10,7 @@ import { AutoCanvas, colors, el, niceStep, ticks, num } from "./util.js";
 const params = new URLSearchParams(location.search);
 const SPEEDS = [{ v: 1, label: "Real time" }, { v: 0.1, label: "10× slower" }, { v: 0.02, label: "50× slower" }];
 const STAGE_NAMES = { s1_bird: "1 Bird note", s2_motif: "2 Motif", s3_melody: "3 Melody", s4_speech: "4 Speech",
-  s4a_vowel: "4a Vowel", s4b_syllables: "4b Syllables", s4c_word: "4c Word" };
+  custom: "Designed from a sound", s4a_vowel: "4a Vowel", s4b_syllables: "4b Syllables", s4c_word: "4c Word" };
 const words = (s) => s.replace(/[_-]+/g, " ").trim().replace(/^./, (c) => c.toUpperCase());
 function stageName(s) {
   if (STAGE_NAMES[s]) return STAGE_NAMES[s];

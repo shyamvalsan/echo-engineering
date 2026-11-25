@@ -26,7 +26,7 @@ class TakeEchoPanel extends TimePanel {
       const cy = y0 + rowH / 2, cols = Math.max(1, Math.floor(w)), { mn, mx } = envelope(data, FS, win.t0, win.t1, cols), pk = peakOf(data) || 1, a = (rowH / 2 - 4) / pk, xc = win.x(this.t, w);
       ctx.strokeStyle = C.line; ctx.beginPath(); ctx.moveTo(0, cy + 0.5); ctx.lineTo(w, cy + 0.5); ctx.stroke();
       for (let i = 0; i < cols; i++) { const on = !drawnToCursor || i <= xc; ctx.fillStyle = on ? col : C.faint; ctx.globalAlpha = on ? 1 : 0.35; ctx.fillRect(i, cy - mx[i] * a, 1, Math.max(1, (mx[i] - mn[i]) * a)); }
-      ctx.globalAlpha = 1; ctx.textAlign = "left"; ctx.textBaseline = "top"; ctx.fillStyle = C.dim; ctx.fillText(label, 4, y0 + 2);
+      ctx.globalAlpha = 1; ctx.textAlign = "left"; ctx.textBaseline = "top"; ctx.fillStyle = C.dim; ctx.fillText(label, 8, y0 + 3);
     };
     if (!this.take) { ctx.fillStyle = C.dim; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = `13px ${font}`;
       ctx.fillText("Clap, press Record 2 s, or pick a sound: each one becomes a take you can replay here", w / 2, hh / 2); return; }
@@ -117,7 +117,8 @@ export class LiveView {
     const srcs = inp?.sources ?? [];
     if (srcs.length) for (const s of srcs) chips.push([s.name.replace(/\.wav$/, "").replace(/_/g, " "), async () => this.addUrl(lab.url(s.url), s.name)]);
     else chips.push(["this run's clap", async () => { const c = await runClap(this.run); if (!c) throw new Error("this run has no as_heard.wav"); return this.addTake(c.data, "clap (from this run)", "built-in"); }]);
-    chips.push(["click", async () => this.addTake(makeClick(), "click", "built-in")], ["chirp 0.5–4 kHz", async () => this.addTake(makeChirp(), "chirp 0.5–4 kHz, 50 ms", "built-in")]);
+    if (!srcs.some((x) => /click/i.test(x.name))) chips.push(["click", async () => this.addTake(makeClick(), "click", "built-in")]);
+    if (!srcs.some((x) => /chirp/i.test(x.name))) chips.push(["chirp 0.5–4 kHz", async () => this.addTake(makeChirp(), "chirp 0.5–4 kHz, 50 ms", "built-in")]);
     this.builtins.replaceChildren(...chips.map(([label, fn]) => el("button", { class: "chip", onclick: async () => { try { await fn(); } catch (e) { this._notice(`Could not load ${label}: ${e.message}`); } } }, label)),
       el("span", { class: "hint" }, srcs.length ? "clap variants from inputs/sources/" : "claps from inputs/sources/ appear here when the lab server runs"));
   }
@@ -160,10 +161,11 @@ export class LiveView {
       el("button", { class: "tool x", title: "Hide from this list (the run stays on disk)", onclick: () => { hidden.add(r.path); LiveView.saveHidden(hidden); this._renderDesign(); } }, "Hide")))));
   }
   async _pollJob(id, bar, msg) {
+    const t0 = performance.now();
     for (;;) {
-      const j = await lab.job(id);
+      const j = await lab.job(id), el_s = Math.round((performance.now() - t0) / 1000);
       bar.firstChild.style.width = `${Math.round((j.progress ?? 0) * 100)}%`;
-      msg.textContent = `${j.stage ?? j.status}${j.message ? `: ${j.message}` : ""}${j.warnings?.length ? ` (${j.warnings.join("; ")})` : ""}`;
+      msg.textContent = `${j.stage ?? j.status}${j.message ? `: ${j.message}` : ""}${j.warnings?.length ? ` (${j.warnings.join("; ")})` : ""}, ${el_s < 60 ? `${el_s} s` : `${Math.floor(el_s / 60)} min ${el_s % 60} s`}`;
       if (j.status === "error") throw new Error(j.message ?? "the lab reported an error");
       if (j.status === "done") { bar.hidden = true;
         msg.textContent = `Done${j.warnings?.length ? ` (${j.warnings.join("; ")})` : ""}. Opening the new design.`;
@@ -176,7 +178,7 @@ export class LiveView {
     const p = el("section", { class: "panel takes" });
     this.takeList = el("ul", { class: "takelist" });
     this.dlBtns = el("div", { class: "tools" });
-    p.append(el("header", {}, el("h2", {}, "Takes"), el("span", { class: "sub" }, `kept in this tab's memory only, last ${MAX_TAKES}; download to keep`), this.dlBtns), this.takeList);
+    p.append(el("header", {}, el("h2", {}, "Takes"), el("span", { class: "sub", title: `Takes live in this tab's memory only (the newest ${MAX_TAKES}); download a WAV to keep one` }, `in memory only, newest ${MAX_TAKES}`), this.dlBtns), this.takeList);
     host.append(p);
   }
 
@@ -281,28 +283,27 @@ export class LiveView {
   async _takeFromMic(m) {
     let d = await resample(m.data, m.fs, FS);
     const on = Math.round(m.onset * FS / m.fs);
-    // a detected clap starts at its onset; a recording keeps its 20 ms pre-roll only until the first sound
-    const start = m.reason === "clap" ? Math.max(0, on - 16) : Math.max(0, onsetIndex(d.subarray(on), 0.1) + on - 16);
-    d = trimTail(d.subarray(start));
+    // a detected clap starts 1 ms before its onset and loses its silent tail; a recording is kept whole
+    d = m.reason === "clap" ? trimTail(d.subarray(Math.max(0, on - 16))) : d.slice(on);
     await this.addTake(d, m.reason === "clap" ? "clap" : "recording", "mic");
   }
-  async addFile(f) {
+  async addFile(f, kind = "file") {
     try {
       const buf = await f.arrayBuffer(), ab = await new OfflineAudioContext(1, 1, FS).decodeAudioData(buf);
       const n = Math.min(ab.length, MAX_TAKE_S * FS), d = new Float32Array(n);
       for (let c = 0; c < ab.numberOfChannels; c++) { const x = ab.getChannelData(c); for (let i = 0; i < n; i++) d[i] += x[i] / ab.numberOfChannels; }
       const s = Math.max(0, onsetIndex(d, 0.02) - 16);
-      await this.addTake(trimTail(d.subarray(s)), f.name.replace(/\.[^.]+$/, ""), "file", ab.length > n ? `trimmed to ${MAX_TAKE_S} s` : null);
+      await this.addTake(trimTail(d.subarray(s)), f.name.replace(/\.[^.]+$/, ""), kind, ab.length > n ? `trimmed to ${MAX_TAKE_S} s` : null);
     } catch (e) { this._notice(`Could not use ${f.name}: the browser could not decode it (${e.message ?? e}).`); }
   }
   async addUrl(url, name) {
     const r = await fetch(url); if (!r.ok) throw new Error(`${r.status}`);
-    return this.addFile(new File([await r.arrayBuffer()], name));
+    return this.addFile(new File([await r.arrayBuffer()], name), "built-in");
   }
   async addTake(data, name, kind, note = null) {
     const pk = peakOf(data); if (!(pk > 0)) { this._notice("That sound is silent."); return; }
     const n = (LiveView.counter = (LiveView.counter ?? 0) + 1);
-    const take = { id: `t${n}`, name: `${name} ${n}`, kind, data: Float32Array.from(data), note, created: new Date(), echoes: new Map() };
+    const take = { id: `t${n}`, name: `${name} ${n}`, kind, data: Float32Array.from(data), note, created: new Date(), echoes: new Map(), dur95: energyDuration(data) };
     this.takes.unshift(take);
     while (this.takes.length > MAX_TAKES) this.takes.pop();
     this._renderTakes(); await this.select(take.id);
@@ -324,9 +325,9 @@ export class LiveView {
     const dur = Math.min(3, Math.max(this.run.duration, (take.data.length + (this.ir?.data.length ?? 0)) / FS));
     this.duration = dur;
     this.win.reset([0, dur]);
-    this.echoP.subEl.textContent = `${take.name}, ${num(take.data.length / FS * 1000, 0)} ms long, ${this.ir ? tierName(this.ir.tier) : "no response"}`;
+    this.echoP.subEl.textContent = `${take.name}, ${num(take.dur95 * 1000, take.dur95 < 0.01 ? 1 : 0)} ms of sound, ${this.ir ? tierName(this.ir.tier) : "no response"}`;
     this.echoP.setData(this.run, take, echo ? { ...echo } : null, this.firstEcho);
-    this.scene.setPulse(take.data.length / FS);
+    this.scene.setPulse(take.dur95);
     // spectrograms: target and the take's echo on one grid
     const es = echo ? spectrogram(echo.data, FS, { tEnd: dur }) : null, ts = this.targetSp;
     const T = es?.times_s ?? ts?.times_s ?? [];
@@ -356,7 +357,7 @@ export class LiveView {
       name.ondblclick = (e) => { e.stopPropagation(); this.rename(t); };
       return el("li", { class: t.id === sel ? "on" : "", tabindex: 0, onclick: () => this.select(t.id), onkeydown: (e) => { if (e.key === "Enter") this.select(t.id); } },
         el("span", { class: `tkind ${t.kind}` }, t.kind === "mic" ? "mic" : t.kind === "file" ? "file" : "built-in"), name,
-        el("span", { class: "tlen" }, `${num(t.data.length / FS * 1000, 0)} ms`), t.note ? el("span", { class: "tnote" }, t.note) : null,
+        el("span", { class: "tlen", title: `${num(t.data.length / FS * 1000, 0)} ms kept` }, `${num(t.dur95 * 1000, t.dur95 < 0.01 ? 1 : 0)} ms`), t.note ? el("span", { class: "tnote" }, t.note) : null,
         el("button", { class: "tool", title: "Rename", onclick: (e) => { e.stopPropagation(); this.rename(t); } }, "Rename"),
         el("button", { class: "tool", title: "Delete this take", onclick: (e) => { e.stopPropagation(); this.remove(t); } }, "Delete"));
     }));
@@ -388,4 +389,13 @@ LiveView.takes = []; LiveView.sel = null;
 function trimTail(d) {
   const th = peakOf(d) * 10 ** (-50 / 20); let e = d.length - 1; while (e > 0 && Math.abs(d[e]) < th) e--;
   return Float32Array.from(d.subarray(0, Math.min(d.length, Math.max(e + Math.round(0.03 * FS), Math.round(0.04 * FS)))));
+}
+
+// how long the sound is: the span holding the central 95 % of its energy (seconds)
+function energyDuration(d) {
+  let tot = 0; for (let i = 0; i < d.length; i++) tot += d[i] * d[i];
+  let acc = 0, a = 0, b = d.length - 1;
+  for (let i = 0; i < d.length; i++) { acc += d[i] * d[i]; if (acc >= 0.025 * tot) { a = i; break; } }
+  acc = 0; for (let i = d.length - 1; i >= 0; i--) { acc += d[i] * d[i]; if (acc >= 0.025 * tot) { b = i; break; } }
+  return Math.max(1, b - a + 1) / FS;
 }

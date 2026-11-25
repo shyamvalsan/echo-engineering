@@ -252,7 +252,7 @@ export class ScenePanel {
     // 3. live overlay
     this._drawLive(ctx, w, h, showField);
     this.fieldNote.textContent = (f ? (this.layers.field ? (showField ? this._fieldLabel(f) : this.fieldError ? "Pressure field video could not be loaded" : "Loading pressure field") : "Pressure field hidden")
-      : "No pressure field in this run: geometric wavefront shown") + (this.pulse && showField ? "; wave from an ideal short pulse, band = your sound's length" : this.pulse ? "; band = your sound's length" : "");
+      : "No pressure field in this run: geometric wavefront shown") + (this.pulse && showField ? `; wave from an ideal short pulse; shaded band = your sound's length, ${num(this.pulse * 1000, this.pulse < 0.01 ? 1 : 0)} ms = ${num(this.c * this.pulse, 2)} m` : this.pulse ? `; shaded band = your sound's length, ${num(this.pulse * 1000, this.pulse < 0.01 ? 1 : 0)} ms = ${num(this.c * this.pulse, 2)} m` : "");
     this._readout();
   }
 
