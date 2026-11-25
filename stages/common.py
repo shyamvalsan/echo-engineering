@@ -84,6 +84,8 @@ class StageConfig:
     stretch_comp: bool = True
     stretch_per_fill: float = -0.68
     band_max_hz: float | None = None  # cap the stage band (solve, echoes, comparisons) e.g. at a Tier 1 f_max < 4 kHz
+    band_min_hz: float | None = None  # override the stage band's low edge (default None: the clap band's, -20 dB re the
+    #   clap peak). Stage 4 sets 500 Hz (the speech targets' band): F1 (~740 Hz) lies below the clap band's 898 Hz edge
     tier0_equalize_rounds: int = 0  # after the solve: rounds of per-window level correction of the Tier 0 profile echo
     #   toward the physically perfect echo (echo.inverse.window_gains, the Tier 1 loop's rule; judge-free); 0 = off
 
@@ -395,11 +397,12 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
     n_out = int(round(cfg.duration_s * FS))
     t = time.time()
     band_cap = None
-    if cfg.band_max_hz is not None:
+    if cfg.band_max_hz is not None or cfg.band_min_hz is not None:
         from echo.inverse import clap_band
 
         b = clap_band(claps)
-        band_cap = (b[0], min(b[1], float(cfg.band_max_hz)))
+        band_cap = (b[0] if cfg.band_min_hz is None else float(cfg.band_min_hz),
+                    b[1] if cfg.band_max_hz is None else min(b[1], float(cfg.band_max_hz)))
     prof_n, res = solve_profile(target, claps, stage_scene(cfg), r0=cfg.r0, dr=cfg.dr, a_ref=cfg.a_ref,
                                 steps=cfg.steps, lr=cfg.lr, w_mel=cfg.w_mel, n_out=n_out, verbose=verbose,
                                 log_every=25, band=band_cap)
