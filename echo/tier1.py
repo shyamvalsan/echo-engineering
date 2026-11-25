@@ -40,18 +40,17 @@ RHO0 = 1.2  # kg/m^3; only ratios matter for the echo
 K_MAX = 3.0  # cap on the sub-cell bulk-modulus contrast
 FIELD_DTYPE = np.float32  # field precision
 PHI_SOLID = 0.9  # nodes/faces covered at least this much are solid (no weakly coupled trapped pockets)
-PPW_DEFAULT = 9.0  # grid points per wavelength at f_max (validated, see DECISIONS.md)
+PPW_DEFAULT = 10.0  # grid points per wavelength at f_max (spec minimum for finite differences)
 CFL_DEFAULT = 0.45  # c dt / dx (2D 8th-order staggered stability limit is 0.55)
 CACHE_DIR = Path(__file__).resolve().parent.parent / ".cache" / "tier1"
 SENSOR_HALF = 8  # windowed-sinc sensor interpolation half width (16 x 16 taps)
 SNAP_M = 0.25  # bounding box snapped outward to this quantum so the empty-scene cache hits across designs
-BLEND_CELLS = 5  # 2nd-order stencil within r + BLEND_CELLS*dx of a post centre (cosine taper over 3 more cells)
 H = 4  # halo width of the padded field arrays
 FD8 = (1225 / 1024, -245 / 3072, 49 / 5120, -5 / 7168)  # 8th-order staggered first-derivative coefficients
-ENGINE_VERSION = "fd8-2"
+ENGINE_VERSION = "fd8-3"  # fd8-3: per-point stencil order (widest stencil reading no solid point)
 # Effective-area calibration of sub-cell posts, {r/dx: area factor}, linearly interpolated, 1 outside the
 # table's range above it. Values are measured and validated in stages/validate.py (check 1); see DECISIONS.md.
-AREA_CAL: dict = {1.0625: 0.912, 2.125: 1.0}  # r/dx -> area factor; measured at ppw 9 (1 cm, 2 cm at 4 kHz)
+AREA_CAL: dict = {0.01 / 0.0085714285714: 0.908, 0.02 / 0.0085714285714: 1.0}  # r/dx -> area factor (fd8-3, ppw 10)
 
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -183,24 +182,6 @@ def stable_cfl_factor(ks, bx, by):
     return float(np.sqrt(max(1.0, float(np.max(ks * b)))))
 
 
-def near_post_mask(grid: Grid, posts):
-    """Stencil blend weight: 1 within r + BLEND_CELLS*dx of a post centre, cosine taper to 0 over 3 cells."""
-    w = np.zeros((grid.nx, grid.ny), dtype=np.float32)
-    d = grid.dx
-    xg, yg = grid.x, grid.y
-    for x, y, r in np.asarray(posts, dtype=float).reshape(-1, 3):
-        R0 = r + BLEND_CELLS * d
-        R1 = R0 + 3 * d
-        i = np.where(np.abs(xg - x) <= R1)[0]
-        j = np.where(np.abs(yg - y) <= R1)[0]
-        if len(i) == 0 or len(j) == 0:
-            continue
-        dist = np.hypot(xg[i][:, None] - x, yg[j][None, :] - y)
-        v = 0.5 + 0.5 * np.cos(np.pi * np.clip((dist - R0) / (R1 - R0), 0, 1))
-        w[np.ix_(i, j)] = np.maximum(w[np.ix_(i, j)], v)
-    return w
-
-
 def _pml_profile(n, npml, dx, dt, c, alpha, shift):
     """k-Wave style PML factor exp(-a dt/2), a = alpha (c/dx) (depth/npml)^4, at node positions i + shift."""
     i = np.arange(n) + shift
@@ -250,46 +231,71 @@ def band_mask(f, f_lo, f_hi, trans_hz=None):
 
 
 @njit(parallel=True, fastmath=True, cache=True)
-def _step_u(P, UX, UY, Bx, By, pxs, pys, blend, c1, c2, c3, c4, inv):
+def _step_u(P, UX, UY, Bx, By, pxs, pys, ox, oy, T, inv):
     nx = P.shape[0] - 2 * H
     ny = P.shape[1] - 2 * H
     for i in prange(nx):
         ip = i + H
         for j in range(ny):
             jp = j + H
-            w = blend[i, j]
-            a = P[ip + 1, jp] - P[ip, jp]
-            d8 = (c1 * a + c2 * (P[ip + 2, jp] - P[ip - 1, jp]) + c3 * (P[ip + 3, jp] - P[ip - 2, jp])
-                  + c4 * (P[ip + 4, jp] - P[ip - 3, jp]))
-            UX[ip, jp] = pxs[i] * (pxs[i] * UX[ip, jp] - Bx[i, j] * (d8 + w * (a - d8)) * inv)
-            a = P[ip, jp + 1] - P[ip, jp]
-            d8 = (c1 * a + c2 * (P[ip, jp + 2] - P[ip, jp - 1]) + c3 * (P[ip, jp + 3] - P[ip, jp - 2])
-                  + c4 * (P[ip, jp + 4] - P[ip, jp - 3]))
-            UY[ip, jp] = pys[j] * (pys[j] * UY[ip, jp] - By[i, j] * (d8 + w * (a - d8)) * inv)
+            o = ox[i, j]
+            d = (T[o, 0] * (P[ip + 1, jp] - P[ip, jp]) + T[o, 1] * (P[ip + 2, jp] - P[ip - 1, jp])
+                 + T[o, 2] * (P[ip + 3, jp] - P[ip - 2, jp]) + T[o, 3] * (P[ip + 4, jp] - P[ip - 3, jp]))
+            UX[ip, jp] = pxs[i] * (pxs[i] * UX[ip, jp] - Bx[i, j] * d * inv)
+            o = oy[i, j]
+            d = (T[o, 0] * (P[ip, jp + 1] - P[ip, jp]) + T[o, 1] * (P[ip, jp + 2] - P[ip, jp - 1])
+                 + T[o, 2] * (P[ip, jp + 3] - P[ip, jp - 2]) + T[o, 3] * (P[ip, jp + 4] - P[ip, jp - 3]))
+            UY[ip, jp] = pys[j] * (pys[j] * UY[ip, jp] - By[i, j] * d * inv)
 
 
 @njit(parallel=True, fastmath=True, cache=True)
-def _step_p(P, UX, UY, PX, PY, K, px_, py_, blend, c1, c2, c3, c4, inv):
+def _step_p(P, UX, UY, PX, PY, K, px_, py_, ox, oy, T, inv):
     nx = P.shape[0] - 2 * H
     ny = P.shape[1] - 2 * H
     for i in prange(nx):
         ip = i + H
         for j in range(ny):
             jp = j + H
-            w = blend[i, j]
-            a = UX[ip, jp] - UX[ip - 1, jp]
-            d8 = (c1 * a + c2 * (UX[ip + 1, jp] - UX[ip - 2, jp]) + c3 * (UX[ip + 2, jp] - UX[ip - 3, jp])
-                  + c4 * (UX[ip + 3, jp] - UX[ip - 4, jp]))
-            gx = (d8 + w * (a - d8)) * inv
-            a = UY[ip, jp] - UY[ip, jp - 1]
-            d8 = (c1 * a + c2 * (UY[ip, jp + 1] - UY[ip, jp - 2]) + c3 * (UY[ip, jp + 2] - UY[ip, jp - 3])
-                  + c4 * (UY[ip, jp + 3] - UY[ip, jp - 4]))
-            gy = (d8 + w * (a - d8)) * inv
+            o = ox[i, j]
+            gx = (T[o, 0] * (UX[ip, jp] - UX[ip - 1, jp]) + T[o, 1] * (UX[ip + 1, jp] - UX[ip - 2, jp])
+                  + T[o, 2] * (UX[ip + 2, jp] - UX[ip - 3, jp]) + T[o, 3] * (UX[ip + 3, jp] - UX[ip - 4, jp])) * inv
+            o = oy[i, j]
+            gy = (T[o, 0] * (UY[ip, jp] - UY[ip, jp - 1]) + T[o, 1] * (UY[ip, jp + 1] - UY[ip, jp - 2])
+                  + T[o, 2] * (UY[ip, jp + 2] - UY[ip, jp - 3]) + T[o, 3] * (UY[ip, jp + 3] - UY[ip, jp - 4])) * inv
             vx = px_[i] * (px_[i] * PX[i, j] - K[i, j] * gx)
             vy = py_[j] * (py_[j] * PY[i, j] - K[i, j] * gy)
             PX[i, j] = vx
             PY[i, j] = vy
             P[ip, jp] = vx + vy
+
+
+# staggered first-derivative coefficients by order index o (stencil half-width o+1): 2nd, 4th, 6th, 8th
+STENCILS = np.array([[1.0, 0, 0, 0], [9 / 8, -1 / 24, 0, 0], [75 / 64, -25 / 384, 3 / 640, 0], list(FD8)])
+
+
+def stencil_orders(solid, closed_x, closed_y):
+    """Per-point order index (0..3 = 2nd..8th) of the four derivatives: the widest staggered stencil that reads
+    no solid node (velocity updates) or closed face (divergence). Returns (oux, ouy, opx, opy) int64 [nx, ny]."""
+    def order(bad, axis, faces_from_nodes):
+        n = bad.shape[axis]
+        o = np.full(bad.shape, 3, dtype=np.int64)
+        hit = np.zeros(bad.shape, dtype=bool)
+        for m in range(1, 5):
+            # stencil half-width m: velocity face i reads nodes i-m+1 .. i+m; node i reads faces i-m .. i+m-1
+            lo_off, hi_off = (-(m - 1), m) if faces_from_nodes else (-m, m - 1)
+            for off in (lo_off, hi_off):
+                sh = np.zeros_like(bad)
+                src = [slice(None)] * 2
+                dst = [slice(None)] * 2
+                if off >= 0:
+                    src[axis], dst[axis] = slice(off, n), slice(0, n - off)
+                else:
+                    src[axis], dst[axis] = slice(0, n + off), slice(-off, n)
+                sh[tuple(dst)] = bad[tuple(src)]
+                hit |= sh
+            o = np.where(hit & (o > m - 2), max(m - 2, 0), o)
+        return o
+    return (order(solid, 0, True), order(solid, 1, True), order(closed_x, 0, False), order(closed_y, 1, False))
 
 
 def simulate(grid: Grid, c, dt, n_steps, src_xy, src_signal, sensors_xy, posts=None, kmax=K_MAX, pml_alpha=2.0,
@@ -306,11 +312,12 @@ def simulate(grid: Grid, c, dt, n_steps, src_xy, src_signal, sensors_xy, posts=N
     posts = np.zeros((0, 3)) if posts is None else np.asarray(posts, float).reshape(-1, 3)
     if len(posts):
         ks, bx, by = medium(posts, grid, kmax)
-        blend = near_post_mask(grid, posts)
+        oux, ouy, opx, opy = stencil_orders(ks == 0, bx == 0, by == 0)
     else:
         ks = np.ones((nx, ny), f32)
         bx = by = ks
-        blend = np.zeros((nx, ny), f32)
+        oux = ouy = opx = opy = np.full((nx, ny), 3, dtype=np.int64)
+    TAB = STENCILS.astype(f32)
     Kd = (ks * (dt * K0)).astype(f32)
     Bx = (bx * (dt / RHO0)).astype(f32)
     By = (by * (dt / RHO0)).astype(f32)
@@ -319,7 +326,6 @@ def simulate(grid: Grid, c, dt, n_steps, src_xy, src_signal, sensors_xy, posts=N
     pml_xs = _pml_profile(nx, npml, d, dt, c, pml_alpha, 0.5)
     pml_y = _pml_profile(ny, npml, d, dt, c, pml_alpha, 0.0)
     pml_ys = _pml_profile(ny, npml, d, dt, c, pml_alpha, 0.5)
-    cs = [f32(v) for v in FD8]
     inv = f32(1.0 / d)
 
     si = int(round((src_xy[0] - grid.x0) / d))
@@ -344,13 +350,18 @@ def simulate(grid: Grid, c, dt, n_steps, src_xy, src_signal, sensors_xy, posts=N
     PX = np.zeros((nx, ny), f32)
     PY = np.zeros((nx, ny), f32)
     Pf = P.ravel()
-    frames = [] if record_every else None
+    frames = None
+    if record_every:
+        a, b = nx - 2 * npml, ny - 2 * npml
+        s_ = max(1, field_stride)
+        frames = np.zeros((n_steps // record_every, b // s_, a // s_), dtype=np.float16)  # preallocated, bounded
+    n_fr = 0
     lo = npml
     t_setup = time.time() - t_setup
     t0 = time.time()
     for n in range(n_steps):
-        _step_u(P, UX, UY, Bx, By, pml_xs, pml_ys, blend, cs[0], cs[1], cs[2], cs[3], inv)
-        _step_p(P, UX, UY, PX, PY, Kd, pml_x, pml_y, blend, cs[0], cs[1], cs[2], cs[3], inv)
+        _step_u(P, UX, UY, Bx, By, pml_xs, pml_ys, oux, ouy, TAB, inv)
+        _step_p(P, UX, UY, PX, PY, Kd, pml_x, pml_y, opx, opy, TAB, inv)
         if n < len(src) and src[n] != 0:
             PX[si, sj] += src[n]
             PY[si, sj] += src[n]
@@ -363,7 +374,9 @@ def simulate(grid: Grid, c, dt, n_steps, src_xy, src_signal, sensors_xy, posts=N
                 s = field_stride
                 a, b = fr.shape[0] // s * s, fr.shape[1] // s * s
                 fr = fr[:a, :b].reshape(a // s, s, b // s, s).mean(axis=(1, 3))
-            frames.append(np.ascontiguousarray(fr[:, ::-1].T).astype(np.float16))  # row 0 = ymax
+            if n_fr < len(frames):
+                frames[n_fr] = fr[:, ::-1].T  # row 0 = ymax
+                n_fr += 1
         if progress and n % 2000 == 0:
             progress(n, n_steps, time.time() - t0)
     return rec, frames, {"setup_s": t_setup, "loop_s": time.time() - t0}
@@ -434,7 +447,10 @@ def plan(scene, f_max, t_end, listeners=None, c=C0, f_lo=300.0, ppw=None, margin
                           enumerate([(a, b) for a in off for b in off])]
         probe = np.array(probe)
         pg = make_grid(Scene(source=[0, 0], listener=[0, 0], posts=probe), np.zeros((1, 2)), dx, npml=1)
-        cfl = cfl / stable_cfl_factor(*medium(probe, pg, kmax))
+        fac = stable_cfl_factor(*medium(probe, pg, kmax))
+        # the real scene's own bound, in case some rasterization is worse than every probe offset
+        fac = max(fac, stable_cfl_factor(*medium(scene.posts[scene.posts[:, 2] < 2 * dx], grid, kmax)))
+        cfl = cfl / fac
     m = max(1, math.ceil(c / (cfl * dx * FS)))  # dt = 1/(m FS): exact resampling to FS
     dt = 1.0 / (m * FS)
     t_src0 = 3.0 / f_lo + 2.0 / f_max  # source pulse centre = emission time inside the simulation
@@ -442,6 +458,11 @@ def plan(scene, f_max, t_end, listeners=None, c=C0, f_lo=300.0, ppw=None, margin
     n_steps = (int(math.ceil((t_src0 + t_end) * FS)) + int(0.004 * FS)) * m
     return {"ppw": ppw, "dx": dx, "m": m, "dt": dt, "grid": grid, "t_src0": t_src0, "n_out": n_out,
             "n_steps": n_steps, "listeners": listeners, "cfl": c * dt / dx}
+
+
+def _source_hash() -> str:
+    """Hash of this module's source: any solver change invalidates cached empty-scene runs."""
+    return hashlib.sha1(Path(__file__).read_bytes()).hexdigest()[:12]
 
 
 def _cache_key(d: dict) -> str:
@@ -475,7 +496,7 @@ def run_tier1(scene: Scene, f_max, t_end, listeners=None, c=C0, f_lo=300.0, reco
         if (n_steps // record_every) * hh * ww * 2 > field_max_bytes:  # bounded memory on long runs
             record_every = math.ceil(n_steps * hh * ww * 2 / field_max_bytes)
 
-    key = _cache_key({"v": ENGINE_VERSION, "c": c, "dx": dx, "dt": dt, "npml": npml,
+    key = _cache_key({"v": ENGINE_VERSION, "src_hash": _source_hash(), "c": c, "dx": dx, "dt": dt, "npml": npml,
                       "grid": [grid.nx, grid.ny, round(grid.x0, 9), round(grid.y0, 9)],
                       "src": [float(v) for v in scene.source], "sens": listeners.round(9).tolist(),
                       "n": n_steps, "f": [f_lo, f_max], "t_src0": t_src0})
@@ -496,22 +517,25 @@ def run_tier1(scene: Scene, f_max, t_end, listeners=None, c=C0, f_lo=300.0, reco
     rec_s, frames, tim = simulate(grid, c, dt, n_steps, scene.source, sig, listeners, posts=scene.posts, kmax=kmax,
                                   record_every=record_every, field_stride=stride, threads=threads, progress=log)
     t_scene = time.time() - ts
+    r_lo = min(AREA_CAL) if AREA_CAL else 0.0  # smallest validated r/dx (area_scale clamps below it)
+    unval = sorted({float(r) for r in np.unique(scene.posts[:, 2]) if r / dx < r_lo - 1e-9}) if len(scene.posts) else []
     ir = _impulse_response(rec_s, rec_e, fs_sim, m, f_lo, f_max, pl["n_out"], scene.source, listeners, c, dt, dx)
 
     fld = None
-    if record_field and frames:
+    if record_field and frames is not None and len(frames):
         ext = grid.interior_extent()
         hh, ww = frames[0].shape
         ext = [ext[0], ext[0] + ww * stride * dx, ext[3] - hh * stride * dx, ext[3]]
         # frame i is p after step (i+1)*record_every - 1, i.e. sim time (i+1)*record_every*dt
-        fld = {"frames": np.stack(frames), "t0": record_every * dt - t_src0, "dt_frame": record_every * dt,
+        fld = {"frames": frames, "t0": record_every * dt - t_src0, "dt_frame": record_every * dt,
                "extent": [float(v) for v in ext]}
     return Tier1Result(fs=FS, ir=ir, listeners=listeners, dx=dx, dt=dt, grid=(grid.nx, grid.ny), f_lo=f_lo,
                        f_max=f_max, ppw=pl["ppw"], wall_s=time.time() - T0, solver="fdtd", device="cpu", c=c,
                        field=fld,
                        extra={"source": np.asarray(scene.source, float), "rec_scene": rec_s, "rec_empty": rec_e, "fs_sim": fs_sim, "t_src0": t_src0,
                               "grid": grid, "t_scene_s": t_scene, "t_empty_s": t_empty, "empty_cached": cached,
-                              "n_steps": n_steps, "cfl": pl["cfl"], "setup_s": tim["setup_s"]})
+                              "n_steps": n_steps, "cfl": pl["cfl"], "setup_s": tim["setup_s"],
+                              "unvalidated_radii": unval, "engine": ENGINE_VERSION})
 
 
 def absorb(ir, fs=FS, c=C0, d_direct=0.3, block_s=0.004):

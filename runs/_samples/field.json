@@ -5,11 +5,22 @@
  "t0_s": -0.01025,
  "sim_seconds_per_frame": 0.00025,
  "extent_m": [
-  -0.5109374999999999,
-  14.001562499999999,
-  -3.2578125000000004,
-  3.0046874999999997
+  -0.51,
+  14.02714285714286,
+  -3.2700000000000005,
+  3.004285714285714
  ],
- "width": 774,
- "height": 334
+ "width": 848,
+ "height": 366,
+ "colour": {
+  "limit": 0.00041591625491661294,
+  "percentile": 99.97,
+  "direct_excluded_halfwidth_m": 1.2,
+  "compress": "asinh",
+  "compress_k": 2.0,
+  "level_decay_exponent": -1.7646948384252448,
+  "time_gain_exponent": 1.0,
+  "t_ref_s": 0.042874999999999996,
+  "zero_rgb": "#0e1620"
+ }
 }

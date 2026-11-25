@@ -66,24 +66,47 @@ def band_errors_db(ir, Ha_fun, f_max, nfft=16384, f_lo_band=500.0):
     return edges, out
 
 
-def check_cylinder(f_max, offsets, radii=RADII, rng_x=3.0):
+EXTRA_LISTENERS = {"forward": (6.0, 0.0), "bistatic_90": (3.0, 3.0)}  # scattering angle 0 and 90 deg
+
+
+def check_cylinder(f_max, offsets, radii=RADII, rng_x=3.0, extra_angles_for=(0.01, 0.02)):
+    """Backscatter for every radius and offset. For radii in extra_angles_for (at offset 0) also forward scatter
+    (listener behind the post) and a 90-degree bistatic angle, as extra sensors of the same run."""
     rows = []
     for a in radii:
-        for ox, oy in offsets:
+        for k, (ox, oy) in enumerate(offsets):
             post = [rng_x + ox, oy, a]
-            r = t1.run_tier1(Scene(posts=np.array([post])), f_max, 2 * rng_x / C0 + 0.02)
-            edges, err = band_errors_db(r.ir[0], lambda f: analytic_cylinder_ir_spectrum(f, post), f_max)
-            rows.append({"radius_m": a, "offset_m": [ox, oy], "dx": r.dx, "r_over_dx": a / r.dx,
-                         "area_scale": t1.area_scale(a, r.dx), "band_edges_hz": [round(e, 1) for e in edges],
-                         "err_db": [round(e, 3) for e in err], "max_abs_err_db": round(max(map(abs, err)), 3),
-                         "wall_s": round(r.wall_s, 1)})
-            print(f"  cyl f_max={f_max} a={a} off={ox:.4f},{oy:.4f}: max |err| {rows[-1]['max_abs_err_db']} dB",
-                  flush=True)
+            names = ["back"]
+            lst = [(0.0, 0.3)]
+            if a in extra_angles_for and k == 0:
+                names += list(EXTRA_LISTENERS)
+                lst += list(EXTRA_LISTENERS.values())
+            tend = 2 * rng_x / C0 + 0.02
+            r = t1.run_tier1(Scene(posts=np.array([post])), f_max, tend, listeners=np.array(lst))
+            for li, (nm, L) in enumerate(zip(names, lst)):
+                edges, err = band_errors_db(r.ir[li], lambda f: analytic_cylinder_ir_spectrum(f, post, listener=L),
+                                            f_max)
+                rows.append({"radius_m": a, "offset_m": [ox, oy], "angle": nm, "listener": list(L), "dx": r.dx,
+                             "r_over_dx": a / r.dx, "area_scale": t1.area_scale(a, r.dx),
+                             "band_edges_hz": [round(e, 1) for e in edges], "err_db": [round(e, 3) for e in err],
+                             "max_abs_err_db": round(max(map(abs, err)), 3), "wall_s": round(r.wall_s, 1)})
+                print(f"  cyl f_max={f_max} a={a} off={ox:.4f},{oy:.4f} {nm}: max |err| "
+                      f"{rows[-1]['max_abs_err_db']} dB", flush=True)
     per_radius = {}
     for a in radii:
         mx = max(rw["max_abs_err_db"] for rw in rows if rw["radius_m"] == a)
         per_radius[str(a)] = {"max_abs_err_db": mx, "pass": mx <= 1.0}
     return rows, per_radius
+
+
+def check_heldout(f_max=4000.0, radius=0.01, n=10, seed=123):
+    """Backscatter of one post at n random sub-cell offsets that were not used to fit AREA_CAL."""
+    dx = t1.plan(Scene(posts=np.array([[3.0, 0.0, radius]])), f_max, 0.04)["dx"]
+    offs = np.random.default_rng(seed).uniform(0, dx, (n, 2))
+    rows, pr = check_cylinder(f_max, [tuple(o) for o in offs], radii=(radius,), extra_angles_for=())
+    return {"radius_m": radius, "f_max": f_max, "offsets_m": offs.round(5).tolist(),
+            "max_abs_err_db": [r["max_abs_err_db"] for r in rows], "err_db": [r["err_db"] for r in rows],
+            "pass": pr[str(radius)]["pass"]}
 
 
 def sparse_design():
@@ -94,34 +117,140 @@ def sparse_design():
     return np.c_[xy, [0.01, 0.02] * 4]
 
 
-def echo_levels(E, delays, half_w=0.002):
-    """Energy level (dB) of each echo window [K, n_posts] and of the whole echo [K]."""
-    t = np.arange(E.shape[1]) / FS
-    win = [(t >= d - half_w) & (t < d + half_w + 0.008) for d in delays]
+def echo_windows(delays, n, pre=0.0005, max_len=0.008):
+    """Boolean masks [d - pre, d + min(max_len, gap to the next echo - pre)) per post, at FS, length n."""
+    t = np.arange(n) / FS
+    d = np.asarray(delays, float)
+    order = np.argsort(d)
+    nxt = np.full(len(d), np.inf)
+    nxt[order[:-1]] = d[order[1:]]
+    return [(t >= di - pre) & (t < di + min(max_len, ni - di - pre)) for di, ni in zip(d, nxt)]
+
+
+def echo_levels(E, delays):
+    """Energy level (dB) of each post's own echo window [K, n_posts] and of the whole echo [K]."""
+    win = echo_windows(delays, E.shape[1])
     per = np.array([[10 * np.log10(np.sum(e[w] ** 2) + 1e-30) for w in win] for e in E])
     tot = 10 * np.log10(np.sum(E ** 2, axis=1) + 1e-30)
     return per, tot
 
 
-def check_convergence(claps):
-    posts = sparse_design()[:3]
-    scene = Scene(posts=posts)
-    t_end = 2 * 7.0 / C0
+def xcorr_lag(a, b, up=32):
+    """Lag (s) of a relative to b (positive: a later), parabolic peak of the band-limited cross-correlation."""
+    n = len(a) + len(b)
+    nfft = 1 << int(np.ceil(np.log2(n)))
+    X = np.fft.rfft(a, nfft) * np.conj(np.fft.rfft(b, nfft))
+    cc = np.fft.irfft(X, nfft * up)
+    k = int(np.argmax(cc))
+    y0, y1, y2 = cc[k - 1], cc[k], cc[(k + 1) % len(cc)]
+    den = y0 - 2 * y1 + y2
+    frac = 0.5 * (y0 - y2) / den if den != 0 else 0.0
+    lag = (k + frac) / (FS * up)
+    if lag > nfft / (2 * FS):
+        lag -= nfft / FS
+    return lag
+
+
+def timing_metrics(Ea, Eb, t_lo, t_hi, win_s=0.004):
+    """Compare echo a with reference b: lags of sliding windows vs window time (a linear fit's slope is the
+    time-scale error, i.e. the pitch error of anything the layout encodes), band-wise group delay of the late
+    half, and the energy-weighted instantaneous-frequency ratio in 2-4 kHz."""
+    from scipy.signal import hilbert
+
+    from echo.clap import band_limit
+    n = Ea.shape[-1]
+    t = np.arange(n) / FS
+    lags, tcs, wts = [], [], []
+    for t0 in np.arange(t_lo, t_hi - win_s, win_s / 2):
+        w = (t >= t0) & (t < t0 + win_s)
+        for a, b in zip(Ea, Eb):
+            e = np.sum(b[w] ** 2)
+            if e <= 0:
+                continue
+            lags.append(xcorr_lag(a[w], b[w]))
+            tcs.append(t0 + win_s / 2)
+            wts.append(e)
+    lags, tcs, wts = map(np.asarray, (lags, tcs, wts))
+    A = np.c_[tcs, np.ones_like(tcs)] * np.sqrt(wts)[:, None]
+    slope, icpt = np.linalg.lstsq(A, lags * np.sqrt(wts), rcond=None)[0]
+    late = (t >= 0.5 * (t_lo + t_hi)) & (t < t_hi)
+    gd = {}
+    for lo, hi in ((500, 1000), (1000, 2000), (2000, 4000)):
+        la = band_limit(Ea * late, lo, hi)
+        lb = band_limit(Eb * late, lo, hi)
+        gd[f"{lo}-{hi}"] = float(np.mean([xcorr_lag(x, y) for x, y in zip(la, lb)]))
+    tmid = float(np.average(tcs, weights=wts))
+    ifr = []
+    for a, b in zip(Ea, Eb):
+        za, zb = hilbert(band_limit(a, 2000, 4000)), hilbert(band_limit(b, 2000, 4000))
+        fa = np.diff(np.unwrap(np.angle(za))) * FS / (2 * np.pi)
+        fb = np.diff(np.unwrap(np.angle(zb))) * FS / (2 * np.pi)
+        wa, wb = np.abs(za[1:]) ** 2, np.abs(zb[1:]) ** 2
+        ifr.append(np.average(fa, weights=wa) / np.average(fb, weights=wb) - 1)
+    return {"time_scale_error_pct": float(100 * slope), "lag_at_mid_ms": float(1e3 * (icpt + slope * tmid)),
+            "t_mid_s": tmid, "lag_over_delay_pct": float(100 * (icpt + slope * tmid) / tmid),
+            "group_delay_late_ms": {k: 1e3 * v for k, v in gd.items()},
+            "group_delay_late_pct_of_delay": {k: 100 * v / (0.75 * t_hi + 0.25 * t_lo) for k, v in gd.items()},
+            "inst_freq_ratio_2_4khz_pct": float(100 * np.mean(ifr))}
+
+
+def _pair_runs(scene, t_end, claps, ppws, label):
     res = {}
-    for ppw in (t1.PPW_DEFAULT, 2 * t1.PPW_DEFAULT):
+    for ppw in ppws:
         r = t1.run_tier1(scene, 4000.0, t_end, ppw=ppw)
-        E = t1.echoes(r, claps)
-        per, tot = echo_levels(E, 2 * np.array([0.5 * (np.hypot(*p[:2]) + np.hypot(p[0], p[1] - 0.3))
-                                                for p in posts]) / C0)
-        res[ppw] = {"dx": r.dx, "per": per, "tot": tot, "wall_s": r.wall_s}
-        print(f"  convergence ppw={ppw} dx={r.dx:.4f} wall={r.wall_s:.0f}s", flush=True)
-    a, b = res[t1.PPW_DEFAULT], res[2 * t1.PPW_DEFAULT]
-    d_tot = (a["tot"] - b["tot"]).tolist()
-    d_per = (a["per"] - b["per"]).tolist()
-    worst = float(max(np.max(np.abs(d_tot)), np.max(np.abs(d_per))))
-    return {"posts": posts.tolist(), "dx": [a["dx"], b["dx"]], "wall_s": [a["wall_s"], b["wall_s"]],
-            "delta_total_db_per_clap": d_tot, "delta_per_post_db": d_per, "max_abs_delta_db": worst,
-            "pass": worst < 1.0}
+        res[ppw] = {"r": r, "E": t1.echoes(r, claps)}
+        print(f"  {label} ppw={ppw} dx={r.dx:.4f} grid={r.grid} wall={r.wall_s:.0f}s", flush=True)
+    return res
+
+
+def check_convergence(claps):
+    """(i) three isolated posts: per-post and total echo level; (ii) dense patch of the stage-1 design."""
+    out = {}
+    posts = sparse_design()[:3]
+    rho = 0.5 * (np.hypot(posts[:, 0], posts[:, 1]) + np.hypot(posts[:, 0], posts[:, 1] - 0.3))
+    pp = (t1.PPW_DEFAULT, 2 * t1.PPW_DEFAULT)
+    res = _pair_runs(Scene(posts=posts), 2 * 7.0 / C0, claps, pp, "sparse")
+    a, b = res[pp[0]], res[pp[1]]
+    pa, ta = echo_levels(a["E"], 2 * rho / C0)
+    pb, tb = echo_levels(b["E"], 2 * rho / C0)
+    worst = float(max(np.max(np.abs(ta - tb)), np.max(np.abs(pa - pb))))
+    out["sparse"] = {"posts": posts.tolist(), "dx": [a["r"].dx, b["r"].dx],
+                     "wall_s": [a["r"].wall_s, b["r"].wall_s], "delta_total_db_per_clap": (ta - tb).tolist(),
+                     "delta_per_post_db": (pa - pb).tolist(), "max_abs_delta_db": worst, "pass": worst < 1.0}
+    out["dense"] = check_dense(claps)
+    out["max_abs_delta_db"] = max(worst, out["dense"]["max_abs_level_delta_db"])
+    out["pass"] = out["sparse"]["pass"] and out["dense"]["pass"]
+    return out
+
+
+def dense_patch(lo=6.0, hi=8.5):
+    """Posts of the stage-1 design (latest runs/s1_bird/*/scene.json) with bistatic range in [lo, hi)."""
+    from echo.scene import bistatic_range, from_json
+    path = sorted((Path(__file__).resolve().parent.parent / "runs" / "s1_bird").glob("*/scene.json"))[-1]
+    sc = from_json(path)
+    rho = bistatic_range(sc.posts[:, :2])
+    return sc.posts[(rho >= lo) & (rho < hi)], str(path.relative_to(path.parents[3])), (lo, hi)
+
+
+def check_dense(claps):
+    posts, src, (lo, hi) = dense_patch()
+    pp = (t1.PPW_DEFAULT, 2 * t1.PPW_DEFAULT)
+    res = _pair_runs(Scene(posts=posts), 2 * hi / C0 + 0.012, claps, pp, "dense")
+    a, b = res[pp[0]], res[pp[1]]
+    la = 10 * np.log10(np.sum(a["E"] ** 2, axis=1))
+    lb = 10 * np.log10(np.sum(b["E"] ** 2, axis=1))
+    tm = timing_metrics(a["E"], b["E"], 2 * lo / C0, 2 * hi / C0 + 0.006)
+    worst_t = max(abs(tm["time_scale_error_pct"]), abs(tm["lag_over_delay_pct"]),
+                  abs(tm["inst_freq_ratio_2_4khz_pct"]))
+    return {"source_scene": src, "rho_range_m": [lo, hi], "n_posts": int(len(posts)),
+            "radii": sorted(set(posts[:, 2].tolist())), "dx": [a["r"].dx, b["r"].dx],
+            "grid": [list(a["r"].grid), list(b["r"].grid)], "wall_s": [a["r"].wall_s, b["r"].wall_s],
+            "level_delta_db_per_clap": (la - lb).round(3).tolist(),
+            "max_abs_level_delta_db": float(np.max(np.abs(la - lb))), "timing": tm,
+            "max_abs_timing_pitch_error_pct": float(worst_t), "timing_target_pct": 0.2,
+            "timing_meets_target": bool(worst_t <= 0.2),
+            "pass": bool(np.max(np.abs(la - lb)) < 1.0),
+            "note": "pass = spec level rule (< 1 dB); timing/pitch error reported against the 0.2 % target"}
 
 
 def check_empty(claps, f_max=4000.0):
@@ -161,6 +290,24 @@ def check_empty(claps, f_max=4000.0):
             "pass": bool(lvl.max() < -60.0)}
 
 
+def far_post_diagnostic(rng_m=13.0, radius=0.01, f_max=4000.0):
+    """One post at 13 m on axis: Tier 1 and Tier 0 each against the analytic series (mean dB over 500-4000 Hz)."""
+    import torch
+
+    from echo.tier0 import post_transfer
+    post = [rng_m, 0.0, radius]
+    scene = Scene(posts=np.array([post]))
+    r = t1.run_tier1(scene, f_max, 2 * rng_m / C0 + 0.02)
+    _, e1 = band_errors_db(r.ir[0], lambda f: analytic_cylinder_ir_spectrum(f, post), f_max)
+    nfft = 16384
+    H0 = post_transfer(torch.as_tensor(np.array([post])), scene, mode="2d", n_fft=nfft, band=(F_LO, f_max),
+                       absorption=False).numpy()
+    _, e0 = band_errors_db(np.fft.irfft(H0, nfft), lambda f: analytic_cylinder_ir_spectrum(f, post), f_max)
+    return {"post": post, "tier1_vs_analytic_db": np.round(e1, 3).tolist(), "tier0_vs_analytic_db":
+            np.round(e0, 3).tolist(), "tier1_mean_db": round(float(np.mean(e1)), 3),
+            "tier0_mean_db": round(float(np.mean(e0)), 3)}
+
+
 def check_tier0(claps, sample=True):
     import torch
 
@@ -178,12 +325,17 @@ def check_tier0(claps, sample=True):
     p1, tot1 = echo_levels(E1, 2 * rho / C0)
     p0, tot0 = echo_levels(E0, 2 * rho / C0)
     d = p1 - p0
+    win = echo_windows(2 * rho / C0, n)
+    lag_ms = [[1e3 * xcorr_lag(e1[w], e0[w]) for w in win] for e1, e0 in zip(E1, E0)]
     out = {"posts": posts.tolist(), "wall_s": round(r.wall_s, 1), "dx": r.dx, "grid": list(r.grid),
+           "window": "[d - 0.5 ms, d + min(8 ms, next delay - d - 0.5 ms))",
+           "tier1_minus_tier0_lag_ms_per_post": np.round(np.mean(lag_ms, 0), 4).tolist(),
            "tier1_minus_tier0_per_post_db": np.round(d, 3).tolist(),
            "mean_per_post_db": np.round(d.mean(0), 3).tolist(),
            "total_delta_db_per_clap": np.round(tot1 - tot0, 3).tolist(),
            "max_abs_delta_db": round(float(np.max(np.abs(d))), 3), "threshold_db": 2.0,
            "pass": bool(np.max(np.abs(d)) <= 2.0)}
+    out["far_post_diagnostic"] = far_post_diagnostic()
     if sample and r.field is not None:
         SAMPLES.mkdir(parents=True, exist_ok=True)
         fld = r.field
@@ -209,10 +361,14 @@ def main(argv=None):
     offs = [(0.0, 0.0), (0.0035, 0.0053), (0.0053, 0.0021)]
     rows4, pr4 = check_cylinder(4000.0, offs)
     rows2, pr2 = check_cylinder(2000.0, offs)
+    held = check_heldout()
+    pr4["0.01"]["pass"] = pr4["0.01"]["pass"] and held["pass"]
+    pr4["0.01"]["heldout_max_abs_err_db"] = max(held["max_abs_err_db"])
     validated = [float(a) for a in RADII if pr4[str(a)]["pass"]]
     m["checks"]["cylinder"] = {"threshold_db": 1.0, "band_hz": [500, 4000], "stage1_grid": {"f_max": 4000,
                                "per_radius": pr4, "rows": rows4},
                                "stage3_grid": {"f_max": 2000, "per_radius": pr2, "rows": rows2},
+                               "heldout_1cm_4khz": held,
                                "validated_radii_stage1": validated,
                                "validated_radii_stage3": [float(a) for a in RADII if pr2[str(a)]["pass"]],
                                "pass": all(pr4[str(a)]["pass"] for a in (0.01, 0.02)),

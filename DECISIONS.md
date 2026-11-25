@@ -90,3 +90,8 @@ Format: `- [task N] <choice> — <reason>`. Append only (`cat >> DECISIONS.md`);
 - [task 9 fix] Formant judge (supersedes the task-9 formant line): analyse at 8 kHz (Nyquist = band top), LPC order 10 (p = fs_kHz + 2), pre-emphasis 0.97, 25 ms Hamming / 5 ms hop; F1 = lowest root in 250-1000 Hz, F2 = lowest root above F1 in 800-2500 Hz, both bandwidth < 400 Hz (fixed ranges, never referencing the target); median over steady frames. Fixed before any stage-4 design result; not to be revisited after design results exist. The old 10 kHz order-10 "two lowest roots" rule mislabelled the target's F2 as F1 on clap-coloured echoes.
 - [task 9 fix] Informational order sensitivity at 8 kHz (worst F1/F2 error of the perfect echo, claps 0-4; mean; "om" negative): p10 5.7/15.9/7.1/10.3/12.6, mean 10.3, om 20.0 (chosen, by rule); p11 mean 10.1, om 20.0; p12 mean 19.3, om 11.4 (target F2 drops to 1040 Hz); p13 mean 19.9, om 10.3; p14 mean 13.6, om 16.8.
 - [task 9 fix] Closed-set judge aligns the echo to each candidate separately before DTW, so the distance vector does not depend on the label (was: aligned to the own target only).
+- [task 3 fix] Validation finding (fd8-3, ppw 10): check 1 FAILS for 1 cm and 2 cm at non-backscatter angles. The one area factor scales monopole and dipole together.
+  - 1 cm (r/dx 1.17): backscatter is within 0.35 dB on 10 held-out offsets, but the 90-degree bistatic angle (pure monopole) reads -1.4 dB and forward scatter +1.0 dB.
+  - 2 cm (uncalibrated): forward +1.3 to +1.5 dB.
+  - The dense-field check passes (level -0.2 to -0.36 dB, time-scale error -0.005 %).
+  - Next fix: separate monopole (K-node coverage) and dipole (face coverage) calibrations, fitted on the backscatter and 90-degree angles.

@@ -40,17 +40,29 @@ def test_free_field_matches_2d_greens_function():
     assert np.max(np.abs(dphi - dphi.mean())) < 0.05  # rad: no residual delay between the two paths
 
 
-@pytest.mark.parametrize("radius", [pytest.param(0.01, marks=slow), 0.02])
-def test_cylinder_backscatter_within_1db_fast(radius):
-    """Check 1 (fast): one post at 3 m, f_max 2 kHz, ppw 9 (dx 1.9 cm). Analytic: exact Hankel series."""
-    post = [3.0, 0.0, radius]
-    r = t1.run_tier1(Scene(posts=np.array([post])), 2000.0, 2 * 3.0 / C0 + 0.02, cache=False)
-    _, err = band_errors_db(r.ir[0], lambda f: analytic_cylinder_ir_spectrum(f, post), 2000.0)
-    if radius == 0.01:
-        # r/dx = 0.53 at this grid is below the validated sub-cell range: only require the right order of magnitude
-        assert max(map(abs, err)) < 3.0
-    else:
-        assert max(map(abs, err)) < 1.0
+def _cyl_err(radius, f_max, offset=(0.0, 0.0)):
+    post = [3.0 + offset[0], offset[1], radius]
+    r = t1.run_tier1(Scene(posts=np.array([post])), f_max, 2 * 3.0 / C0 + 0.02, cache=False)
+    _, err = band_errors_db(r.ir[0], lambda f: analytic_cylinder_ir_spectrum(f, post), f_max)
+    return max(map(abs, err)), r
+
+
+def test_cylinder_2cm_within_1db_at_2khz():
+    """Check 1 (fast): 2 cm post at 3 m, f_max 2 kHz (dx 1.67 cm, r/dx 1.2, calibrated). Analytic: exact series."""
+    assert _cyl_err(0.02, 2000.0)[0] < 1.0
+
+
+def test_cylinder_1cm_within_1db_at_4khz():
+    """Check 1 (fast): 1 cm post at 3 m at the stage-1 grid (f_max 4 kHz, dx 8.6 mm, r/dx 1.17, calibrated)."""
+    assert _cyl_err(0.01, 4000.0, (0.002, 0.004))[0] < 1.0
+
+
+@slow
+@pytest.mark.xfail(strict=True, reason="1 cm at f_max 2 kHz is r/dx 0.6: below the validated sub-cell range")
+def test_cylinder_1cm_at_2khz_known_failure():
+    err, r = _cyl_err(0.01, 2000.0)
+    assert 0.01 in r.extra["unvalidated_radii"]
+    assert err < 1.0
 
 
 def test_empty_scene_reflections_below_60db_fast():
