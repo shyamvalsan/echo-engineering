@@ -1,0 +1,1071 @@
+{
+ "target": "hello",
+ "judge_stage": "s4c_word",
+ "band_hz": [
+  500.0,
+  4000.0
+ ],
+ "steps": 500,
+ "lr": 0.05,
+ "inits": [
+  "wiener"
+ ],
+ "radii_extra_m": [],
+ "model": "E_k = irfft(C_k * W * profile_transfer(profile)) (2D, Tier 0 profile model, on-axis)",
+ "ablations": {
+  "flat_clap": "ideal flat-spectrum clap: band-limited delta 500-4000 Hz, peak 1 (one shape, all 5 rows identical)",
+  "signed": "signed reflectivity allowed (identity parameterization instead of softplus)",
+  "flat_scatter": "frequency-flat scatterers: transfer divided by |T_1cm(f)| / |T_1cm(2.5 kHz)|"
+ },
+ "selection": "per combination: lower final EchoLoss (500-4000 Hz) of two inits; judges informational only",
+ "rows": [
+  {
+   "combo": "baseline (all constraints)",
+   "flat_clap": false,
+   "signed": false,
+   "flat_scatter": false,
+   "a_ref_m": 0.01,
+   "loss": 2.424858570098877,
+   "loss_solver_best": 2.4803035259246826,
+   "init_picked": "wiener",
+   "loss_by_init": {
+    "wiener": 2.4803035259246826
+   },
+   "loss_clap_band_info": 2.196737051010132,
+   "loss_shot_noise": 5.295768578847249,
+   "shot_noise_posts": 3988.125,
+   "level_db_2d_per_1000_posts": -78.24539447348135,
+   "low_band_500_1000_db_re_target": -7.765282653458087,
+   "negative_mass_fraction": 0.0,
+   "history": [
+    [
+     0,
+     4.228095054626465
+    ],
+    [
+     50,
+     3.0546083450317383
+    ],
+    [
+     100,
+     2.8028738498687744
+    ],
+    [
+     150,
+     2.6902785301208496
+    ],
+    [
+     200,
+     2.6051621437072754
+    ],
+    [
+     250,
+     2.561790943145752
+    ],
+    [
+     300,
+     2.7160661220550537
+    ],
+    [
+     350,
+     2.498927116394043
+    ],
+    [
+     400,
+     2.6276636123657227
+    ],
+    [
+     450,
+     2.540699005126953
+    ],
+    [
+     500,
+     2.5850045680999756
+    ]
+   ],
+   "info_only_judges": {
+    "mean": {
+     "hello_hit": 1.0,
+     "estoi": 0.7098073782753789
+    },
+    "per_clap": [
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.7037543836534063
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.7114394259997339
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.710458046017649
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.7243001802105922
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.6990848554955131
+     }
+    ],
+    "recognized_text": [
+     {
+      "clap": 0,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 1,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 2,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 3,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 4,
+      "transcript": "Hello.",
+      "hit": true
+     }
+    ],
+    "hello_count": 5
+   },
+   "wall_s": 355.386492729187
+  },
+  {
+   "combo": "removed: flat_clap",
+   "flat_clap": true,
+   "signed": false,
+   "flat_scatter": false,
+   "a_ref_m": 0.01,
+   "loss": 0.9685876369476318,
+   "loss_solver_best": 0.9729024767875671,
+   "init_picked": "wiener",
+   "loss_by_init": {
+    "wiener": 0.9729024767875671
+   },
+   "loss_clap_band_info": 1.0298715829849243,
+   "loss_shot_noise": 4.783218065897624,
+   "shot_noise_posts": 3988.125,
+   "level_db_2d_per_1000_posts": -75.6139816215757,
+   "low_band_500_1000_db_re_target": -0.5692219628369664,
+   "negative_mass_fraction": 0.0,
+   "history": [
+    [
+     0,
+     2.4346797466278076
+    ],
+    [
+     50,
+     1.355798363685608
+    ],
+    [
+     100,
+     1.1694117784500122
+    ],
+    [
+     150,
+     1.0615906715393066
+    ],
+    [
+     200,
+     1.061453104019165
+    ],
+    [
+     250,
+     1.1059536933898926
+    ],
+    [
+     300,
+     1.2881361246109009
+    ],
+    [
+     350,
+     1.0434376001358032
+    ],
+    [
+     400,
+     1.32183837890625
+    ],
+    [
+     450,
+     1.1352863311767578
+    ],
+    [
+     500,
+     1.4191336631774902
+    ]
+   ],
+   "info_only_judges": {
+    "mean": {
+     "hello_hit": 1.0,
+     "estoi": 0.8910652546436664
+    },
+    "per_clap": [
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.8910652546437753
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.8910652546436255
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.8910652546436237
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.8910652546436667
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.8910652546436404
+     }
+    ],
+    "recognized_text": [
+     {
+      "clap": 0,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 1,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 2,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 3,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 4,
+      "transcript": "Hello.",
+      "hit": true
+     }
+    ],
+    "hello_count": 5
+   },
+   "wall_s": 398.26207518577576
+  },
+  {
+   "combo": "removed: signed",
+   "flat_clap": false,
+   "signed": true,
+   "flat_scatter": false,
+   "a_ref_m": 0.01,
+   "loss": 1.8032128810882568,
+   "loss_solver_best": 1.7708171606063843,
+   "init_picked": "wiener",
+   "loss_by_init": {
+    "wiener": 1.7708171606063843
+   },
+   "loss_clap_band_info": 1.7153345346450806,
+   "loss_shot_noise": 5.024029731750488,
+   "shot_noise_posts": 3988.125,
+   "level_db_2d_per_1000_posts": -82.47902957056938,
+   "low_band_500_1000_db_re_target": -2.37644908519892,
+   "negative_mass_fraction": 0.49991731008988766,
+   "history": [
+    [
+     0,
+     1.7708171606063843
+    ],
+    [
+     50,
+     4.240147113800049
+    ],
+    [
+     100,
+     3.8027639389038086
+    ],
+    [
+     150,
+     3.5496578216552734
+    ],
+    [
+     200,
+     3.3677878379821777
+    ],
+    [
+     250,
+     3.203890800476074
+    ],
+    [
+     300,
+     3.136896848678589
+    ],
+    [
+     350,
+     3.030771493911743
+    ],
+    [
+     400,
+     2.989853620529175
+    ],
+    [
+     450,
+     2.9566526412963867
+    ],
+    [
+     500,
+     2.8823657035827637
+    ]
+   ],
+   "info_only_judges": {
+    "mean": {
+     "hello_hit": 1.0,
+     "estoi": 0.7641492595654705
+    },
+    "per_clap": [
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.745686628719354
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.7614007643585682
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.7871043623788739
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.7516025863959029
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.7749519559746537
+     }
+    ],
+    "recognized_text": [
+     {
+      "clap": 0,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 1,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 2,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 3,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 4,
+      "transcript": "Hello.",
+      "hit": true
+     }
+    ],
+    "hello_count": 5
+   },
+   "wall_s": 373.93946599960327
+  },
+  {
+   "combo": "removed: flat_scatter",
+   "flat_clap": false,
+   "signed": false,
+   "flat_scatter": true,
+   "a_ref_m": 0.01,
+   "loss": 1.4472525119781494,
+   "loss_solver_best": 1.3751335144042969,
+   "init_picked": "wiener",
+   "loss_by_init": {
+    "wiener": 1.3751335144042969
+   },
+   "loss_clap_band_info": 1.6710790395736694,
+   "loss_shot_noise": 4.5894796053568525,
+   "shot_noise_posts": 3988.125,
+   "level_db_2d_per_1000_posts": -69.69752467651183,
+   "low_band_500_1000_db_re_target": -0.4560406246768608,
+   "negative_mass_fraction": 0.0,
+   "history": [
+    [
+     0,
+     2.9492437839508057
+    ],
+    [
+     50,
+     1.656440258026123
+    ],
+    [
+     100,
+     1.7564836740493774
+    ],
+    [
+     150,
+     1.4959324598312378
+    ],
+    [
+     200,
+     1.4681426286697388
+    ],
+    [
+     250,
+     1.4996452331542969
+    ],
+    [
+     300,
+     1.44313645362854
+    ],
+    [
+     350,
+     1.4324116706848145
+    ],
+    [
+     400,
+     1.5166964530944824
+    ],
+    [
+     450,
+     1.390486240386963
+    ],
+    [
+     500,
+     1.5026109218597412
+    ]
+   ],
+   "info_only_judges": {
+    "mean": {
+     "hello_hit": 1.0,
+     "estoi": 0.8975417119139426
+    },
+    "per_clap": [
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.8859923787504903
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.9047080425126909
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.9105251250987817
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.8917838669563307
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.8946991462514192
+     }
+    ],
+    "recognized_text": [
+     {
+      "clap": 0,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 1,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 2,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 3,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 4,
+      "transcript": "Hello.",
+      "hit": true
+     }
+    ],
+    "hello_count": 5
+   },
+   "wall_s": 436.258150100708
+  },
+  {
+   "combo": "removed: flat_clap+signed",
+   "flat_clap": true,
+   "signed": true,
+   "flat_scatter": false,
+   "a_ref_m": 0.01,
+   "loss": 0.49039530754089355,
+   "loss_solver_best": 0.39078962802886963,
+   "init_picked": "wiener",
+   "loss_by_init": {
+    "wiener": 0.39078962802886963
+   },
+   "loss_clap_band_info": 0.4976292550563812,
+   "loss_shot_noise": 4.2425643603007,
+   "shot_noise_posts": 3988.125,
+   "level_db_2d_per_1000_posts": -71.03796851178144,
+   "low_band_500_1000_db_re_target": -0.1179211994953473,
+   "negative_mass_fraction": 0.5000582121671454,
+   "history": [
+    [
+     0,
+     0.39078962802886963
+    ],
+    [
+     50,
+     2.5022454261779785
+    ],
+    [
+     100,
+     2.2757632732391357
+    ],
+    [
+     150,
+     2.138826847076416
+    ],
+    [
+     200,
+     2.0376763343811035
+    ],
+    [
+     250,
+     1.9311027526855469
+    ],
+    [
+     300,
+     1.8625813722610474
+    ],
+    [
+     350,
+     1.8200953006744385
+    ],
+    [
+     400,
+     1.7559731006622314
+    ],
+    [
+     450,
+     1.8590844869613647
+    ],
+    [
+     500,
+     1.71018385887146
+    ]
+   ],
+   "info_only_judges": {
+    "mean": {
+     "hello_hit": 1.0,
+     "estoi": 0.9310413681009437
+    },
+    "per_clap": [
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.931041368101179
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.9310413681009665
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.9310413681008385
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.9310413681007916
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.9310413681009437
+     }
+    ],
+    "recognized_text": [
+     {
+      "clap": 0,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 1,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 2,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 3,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 4,
+      "transcript": "Hello.",
+      "hit": true
+     }
+    ],
+    "hello_count": 5
+   },
+   "wall_s": 455.8153326511383
+  },
+  {
+   "combo": "removed: flat_clap+flat_scatter",
+   "flat_clap": true,
+   "signed": false,
+   "flat_scatter": true,
+   "a_ref_m": 0.01,
+   "loss": 0.5745684504508972,
+   "loss_solver_best": 0.3994084596633911,
+   "init_picked": "wiener",
+   "loss_by_init": {
+    "wiener": 0.3994084596633911
+   },
+   "loss_clap_band_info": 0.5452101826667786,
+   "loss_shot_noise": 3.742544492085775,
+   "shot_noise_posts": 3988.125,
+   "level_db_2d_per_1000_posts": -57.61046309619566,
+   "low_band_500_1000_db_re_target": -0.1538556328938956,
+   "negative_mass_fraction": 0.0,
+   "history": [
+    [
+     0,
+     1.5275084972381592
+    ],
+    [
+     50,
+     0.6382033228874207
+    ],
+    [
+     100,
+     0.5769933462142944
+    ],
+    [
+     150,
+     0.5449886322021484
+    ],
+    [
+     200,
+     0.4755685329437256
+    ],
+    [
+     250,
+     0.6000571250915527
+    ],
+    [
+     300,
+     0.47331055998802185
+    ],
+    [
+     350,
+     0.43112558126449585
+    ],
+    [
+     400,
+     0.46604037284851074
+    ],
+    [
+     450,
+     0.42281416058540344
+    ],
+    [
+     500,
+     0.4291480779647827
+    ]
+   ],
+   "info_only_judges": {
+    "mean": {
+     "hello_hit": 1.0,
+     "estoi": 0.91821464920589
+    },
+    "per_clap": [
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.9182146492058664
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.9182146492059189
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.9182146492058967
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.9182146492058996
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.9182146492058687
+     }
+    ],
+    "recognized_text": [
+     {
+      "clap": 0,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 1,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 2,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 3,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 4,
+      "transcript": "Hello.",
+      "hit": true
+     }
+    ],
+    "hello_count": 5
+   },
+   "wall_s": 517.0085964202881
+  },
+  {
+   "combo": "removed: signed+flat_scatter",
+   "flat_clap": false,
+   "signed": true,
+   "flat_scatter": true,
+   "a_ref_m": 0.01,
+   "loss": 1.3271633386611938,
+   "loss_solver_best": 1.2486581802368164,
+   "init_picked": "wiener",
+   "loss_by_init": {
+    "wiener": 1.2486581802368164
+   },
+   "loss_clap_band_info": 1.5503572225570679,
+   "loss_shot_noise": 4.060895760854085,
+   "shot_noise_posts": 3988.125,
+   "level_db_2d_per_1000_posts": -65.86372425571025,
+   "low_band_500_1000_db_re_target": 0.08661616466134552,
+   "negative_mass_fraction": 0.4998776297621036,
+   "history": [
+    [
+     0,
+     1.2486581802368164
+    ],
+    [
+     50,
+     2.4614691734313965
+    ],
+    [
+     100,
+     2.075887680053711
+    ],
+    [
+     150,
+     1.835201621055603
+    ],
+    [
+     200,
+     1.631192684173584
+    ],
+    [
+     250,
+     1.671212911605835
+    ],
+    [
+     300,
+     1.6066076755523682
+    ],
+    [
+     350,
+     1.5847638845443726
+    ],
+    [
+     400,
+     1.5282119512557983
+    ],
+    [
+     450,
+     1.541886329650879
+    ],
+    [
+     500,
+     1.5214625597000122
+    ]
+   ],
+   "info_only_judges": {
+    "mean": {
+     "hello_hit": 1.0,
+     "estoi": 0.9019585701249861
+    },
+    "per_clap": [
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.8881920742871279
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.908676321015939
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.9196894846591478
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.8830360279858852
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.9101989426768304
+     }
+    ],
+    "recognized_text": [
+     {
+      "clap": 0,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 1,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 2,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 3,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 4,
+      "transcript": "Hello.",
+      "hit": true
+     }
+    ],
+    "hello_count": 5
+   },
+   "wall_s": 466.5206434726715
+  },
+  {
+   "combo": "ceiling (none)",
+   "flat_clap": true,
+   "signed": true,
+   "flat_scatter": true,
+   "a_ref_m": 0.01,
+   "loss": 0.4110088348388672,
+   "loss_solver_best": 0.2967582941055298,
+   "init_picked": "wiener",
+   "loss_by_init": {
+    "wiener": 0.2967582941055298
+   },
+   "loss_clap_band_info": 0.4099716246128082,
+   "loss_shot_noise": 2.477924029032389,
+   "shot_noise_posts": 3988.125,
+   "level_db_2d_per_1000_posts": -51.108514188998356,
+   "low_band_500_1000_db_re_target": -0.0942917615240968,
+   "negative_mass_fraction": 0.5000436109905262,
+   "history": [
+    [
+     0,
+     0.2967582941055298
+    ],
+    [
+     50,
+     0.911538302898407
+    ],
+    [
+     100,
+     0.6700043678283691
+    ],
+    [
+     150,
+     0.5996595025062561
+    ],
+    [
+     200,
+     0.5933589339256287
+    ],
+    [
+     250,
+     0.500491738319397
+    ],
+    [
+     300,
+     0.8668049573898315
+    ],
+    [
+     350,
+     0.7029982209205627
+    ],
+    [
+     400,
+     0.5352361798286438
+    ],
+    [
+     450,
+     0.5758424997329712
+    ],
+    [
+     500,
+     0.5200002193450928
+    ]
+   ],
+   "info_only_judges": {
+    "mean": {
+     "hello_hit": 1.0,
+     "estoi": 0.9401342646480669
+    },
+    "per_clap": [
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.9401342646480625
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.9401342646480669
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.9401342646480649
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.9401342646480738
+     },
+     {
+      "hello_hit": 1.0,
+      "estoi": 0.9401342646480668
+     }
+    ],
+    "recognized_text": [
+     {
+      "clap": 0,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 1,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 2,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 3,
+      "transcript": "Hello.",
+      "hit": true
+     },
+     {
+      "clap": 4,
+      "transcript": "Hello.",
+      "hit": true
+     }
+    ],
+    "hello_count": 5
+   },
+   "wall_s": 389.49949193000793
+  }
+ ],
+ "attribution": {
+  "baseline_loss": 2.424858570098877,
+  "ceiling_loss": 0.4110088348388672,
+  "metric_columns": {
+   "loss": {
+    "clap spectrum": {
+     "gain_when_removed_alone": 1.4562709331512451,
+     "cost_when_restored_alone_on_ceiling": 0.9161545038223267
+    },
+    "positivity": {
+     "gain_when_removed_alone": 0.6216456890106201,
+     "cost_when_restored_alone_on_ceiling": 0.16355961561203003
+    },
+    "small-post scattering": {
+     "gain_when_removed_alone": 0.9776060581207275,
+     "cost_when_restored_alone_on_ceiling": 0.07938647270202637
+    }
+   },
+   "loss_shot_noise": {
+    "clap spectrum": {
+     "gain_when_removed_alone": 0.5125505129496251,
+     "cost_when_restored_alone_on_ceiling": 1.5829717318216958
+    },
+    "positivity": {
+     "gain_when_removed_alone": 0.27173884709676077,
+     "cost_when_restored_alone_on_ceiling": 1.2646204630533857
+    },
+    "small-post scattering": {
+     "gain_when_removed_alone": 0.7062889734903965,
+     "cost_when_restored_alone_on_ceiling": 1.764640331268311
+    }
+   },
+   "low_band_500_1000_db_re_target": {
+    "clap spectrum": {
+     "gain_when_removed_alone": -7.19606069062112,
+     "cost_when_restored_alone_on_ceiling": 0.18090792618544232
+    },
+    "positivity": {
+     "gain_when_removed_alone": -5.388833568259167,
+     "cost_when_restored_alone_on_ceiling": -0.05956387136979879
+    },
+    "small-post scattering": {
+     "gain_when_removed_alone": -7.309242028781226,
+     "cost_when_restored_alone_on_ceiling": -0.0236294379712505
+    }
+   }
+  },
+  "info_only_judge_means_by_combo": {
+   "hello_hit": {
+    "baseline (all constraints)": 1.0,
+    "removed: flat_clap": 1.0,
+    "removed: signed": 1.0,
+    "removed: flat_scatter": 1.0,
+    "removed: flat_clap+signed": 1.0,
+    "removed: flat_clap+flat_scatter": 1.0,
+    "removed: signed+flat_scatter": 1.0,
+    "ceiling (none)": 1.0
+   },
+   "estoi": {
+    "baseline (all constraints)": 0.7098073782753789,
+    "removed: flat_clap": 0.8910652546436664,
+    "removed: signed": 0.7641492595654705,
+    "removed: flat_scatter": 0.8975417119139426,
+    "removed: flat_clap+signed": 0.9310413681009437,
+    "removed: flat_clap+flat_scatter": 0.91821464920589,
+    "removed: signed+flat_scatter": 0.9019585701249861,
+    "ceiling (none)": 0.9401342646480669
+   }
+  },
+  "largest_single_cost_by_loss": "clap spectrum"
+ },
+ "wall_s": 3392.7066254615784
+}

@@ -1,0 +1,8 @@
+[ah] a=0.01 profile loss 2.364
+[ah] a=0.01 N=1500 (drop 0) fill 0.0029 loss 5.280 L3d -52.4 [info formant_err_pct nan f1_err_pct nan f2_err_pct 4.84]
+[ah] a=0.01 N=4975 (drop 25) fill 0.0095 loss 4.475 L3d -49.1 [info formant_err_pct nan f1_err_pct nan f2_err_pct 3.54]
+[ah] a=0.01 N=11742 (drop 3258) fill 0.0225 loss 5.382 L3d -39.3 [info formant_err_pct nan f1_err_pct nan f2_err_pct 30.20]
+[ah] a=0.04 profile loss 1.650
+[ah] a=0.04 N=1497 (drop 3) fill 0.0461 loss 4.441 L3d -44.8 [info formant_err_pct 37.61 f1_err_pct 25.90 f2_err_pct 28.59]
+[ah] a=0.04 N=3705 (drop 1295) fill 0.1135 loss 4.615 L3d -39.9 [info formant_err_pct nan f1_err_pct nan f2_err_pct 7.67]
+[ah] a=0.04 N=6240 (drop 8760) fill 0.1908 loss 4.973 L3d -35.0 [info formant_err_pct nan f1_err_pct nan f2_err_pct 11.24]

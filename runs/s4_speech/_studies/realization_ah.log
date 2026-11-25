@@ -1,0 +1,6 @@
+[ah] profile solve loss 4.808 -> 2.422 (274 s)
+[ah] profile echo loss 2.364 [info formant_err_pct 20.45 f1_err_pct 20.45 f2_err_pct 2.23]
+[ah] (i) sampling                 N= 1499 loss 5.145 jit1/2mm 5.108/5.215 L3d -54.1 [info formant_err_pct nan f1_err_pct nan f2_err_pct 4.24]
+[ah] (ii) phase-locked K=1        N= 1499 loss 5.903 jit1/2mm 5.902/5.895 L3d -38.9 [info formant_err_pct nan f1_err_pct nan f2_err_pct 41.63]
+[ah] (ii-b) half-wave lobes       N= 1498 loss 5.994 jit1/2mm 5.992/5.985 L3d -37.7 [info formant_err_pct nan f1_err_pct nan f2_err_pct 44.37]
+[ah] (iii) quantile (deterministic) N= 1499 loss 5.276 jit1/2mm 5.288/5.340 L3d -52.7 [info formant_err_pct nan f1_err_pct nan f2_err_pct 5.22]

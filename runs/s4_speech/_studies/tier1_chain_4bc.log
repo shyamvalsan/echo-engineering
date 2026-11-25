@@ -1,0 +1,11 @@
+=== Wed Nov 25 11:42:43 EET 2026 start 4b
+[4b ma] half-angle 20.0 deg, f_max 2500.0, fill 0.0009 (~1500 posts), plan {'half_angle_deg': 20.0, 'f_max': 2500.0, 'dx_m': 0.013636363636363636, 'dt_s': 1.25e-05, 'grid': [3239, 1187], 'n_steps': 21985, 'cell_steps': 84525575605.0, 'est_wall_s_idle_8_threads': 399.57544831454544}
+step    0 loss 4.6641 (stft 2.6147 mel 2.0494) 62.4s
+step   25 loss 3.6129 (stft 2.0707 mel 1.5423) 154.9s
+step   50 loss 3.0738 (stft 1.7368 mel 1.3370) 218.6s
+step   75 loss 2.8858 (stft 1.6014 mel 1.2844) 277.2s
+step  100 loss 2.8249 (stft 1.5634 mel 1.2615) 337.1s
+step  125 loss 2.7493 (stft 1.5244 mel 1.2249) 399.3s
+step  150 loss 2.7669 (stft 1.5534 mel 1.2135) 451.8s
+step  175 loss 2.6636 (stft 1.4596 mel 1.2040) 493.8s
+step  200 loss 2.8573 (stft 1.6515 mel 1.2057) 539.3s

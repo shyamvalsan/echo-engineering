@@ -1,0 +1,8 @@
+[ba] baseline (all constraints)           a=0.01 loss 2.476 (init wiener; wiener 2.565) shot 5.877 L2d/1000 -75.2 dB lowband -4.8 dB [info closed_set_correct 1.00 closed_set_margin 16.47 estoi 0.64] 189 s
+[ba] removed: flat_clap                   a=0.01 loss 0.921 (init wiener; wiener 0.954) shot 5.131 L2d/1000 -65.3 dB lowband -0.1 dB [info closed_set_correct 1.00 closed_set_margin 18.95 estoi 0.79] 303 s
+[ba] removed: signed                      a=0.01 loss 2.025 (init wiener; wiener 2.046) shot 5.398 L2d/1000 -73.5 dB lowband -2.2 dB [info closed_set_correct 1.00 closed_set_margin 19.41 estoi 0.48] 280 s
+[ba] removed: flat_scatter                a=0.01 loss 1.548 (init wiener; wiener 1.530) shot 4.956 L2d/1000 -60.3 dB lowband -0.5 dB [info closed_set_correct 1.00 closed_set_margin 20.89 estoi 0.76] 297 s
+[ba] removed: flat_clap+signed            a=0.01 loss 0.538 (init wiener; wiener 0.554) shot 4.095 L2d/1000 -59.8 dB lowband +0.1 dB [info closed_set_correct 1.00 closed_set_margin 24.52 estoi 0.85] 289 s
+[ba] removed: flat_clap+flat_scatter      a=0.01 loss 0.501 (init wiener; wiener 0.428) shot 3.502 L2d/1000 -47.8 dB lowband +0.0 dB [info closed_set_correct 1.00 closed_set_margin 23.92 estoi 0.87] 267 s
+[ba] removed: signed+flat_scatter         a=0.01 loss 1.498 (init wiener; wiener 1.464) shot 4.086 L2d/1000 -56.1 dB lowband +0.1 dB [info closed_set_correct 1.00 closed_set_margin 21.19 estoi 0.69] 385 s
+[ba] ceiling (none)                       a=0.01 loss 0.407 (init wiener; wiener 0.374) shot 2.139 L2d/1000 -42.2 dB lowband +0.1 dB [info closed_set_correct 1.00 closed_set_margin 26.08 estoi 0.88] 462 s

@@ -1,0 +1,10 @@
+[ah] baseline (all constraints)           a=0.01 loss 2.380 (init wiener; physics 2.572, wiener 2.448) shot 5.801 L2d/1000 -68.8 dB lowband -4.4 dB [info formant_err_pct 9.50 f1_err_pct 9.50 f2_err_pct 1.32] 254 s
+[ah] removed: flat_clap                   a=0.01 loss 0.908 (init wiener; physics 1.143, wiener 0.928) shot 4.759 L2d/1000 -58.4 dB lowband -0.1 dB [info formant_err_pct 0.54 f1_err_pct 0.54 f2_err_pct 0.00] 179 s
+[ah] removed: signed                      a=0.01 loss 2.188 (init wiener; physics 2.837, wiener 2.208) shot 5.579 L2d/1000 -66.4 dB lowband -2.3 dB [info formant_err_pct 5.22 f1_err_pct 5.22 f2_err_pct 1.29] 364 s
+[ah] removed: flat_scatter                a=0.01 loss 1.523 (init wiener; physics 1.543, wiener 1.494) shot 4.665 L2d/1000 -53.7 dB lowband -0.4 dB [info formant_err_pct 1.35 f1_err_pct 0.57 f2_err_pct 1.35] 334 s
+[ah] removed: flat_clap+signed            a=0.01 loss 0.636 (init wiener; physics 1.694, wiener 0.646) shot 4.172 L2d/1000 -53.1 dB lowband +0.1 dB [info formant_err_pct 0.11 f1_err_pct 0.11 f2_err_pct 0.00] 278 s
+[ah] removed: flat_clap+flat_scatter      a=0.01 loss 0.414 (init wiener; physics 0.423, wiener 0.325) shot 3.035 L2d/1000 -41.1 dB lowband +0.0 dB [info formant_err_pct 0.08 f1_err_pct 0.08 f2_err_pct 0.01] 352 s
+[ah] removed: signed+flat_scatter         a=0.01 loss 1.540 (init wiener; physics 1.732, wiener 1.512) shot 4.209 L2d/1000 -47.4 dB lowband -0.6 dB [info formant_err_pct 1.45 f1_err_pct 0.66 f2_err_pct 1.29] 331 s
+[ah] ceiling (none)                       a=0.01 loss 0.479 (init wiener; physics 0.606, wiener 0.432) shot 2.266 L2d/1000 -35.7 dB lowband +0.0 dB [info formant_err_pct 0.04 f1_err_pct 0.04 f2_err_pct 0.00] 463 s
+[ah] baseline (all constraints)           a=0.02 loss 1.986 (init wiener; physics 2.341, wiener 2.014) shot 5.420 L2d/1000 -60.1 dB lowband -1.8 dB [info formant_err_pct 2.74 f1_err_pct 2.74 f2_err_pct 1.36] 334 s
+[ah] baseline (all constraints)           a=0.04 loss 1.667 (init wiener; physics 1.808, wiener 1.666) shot 4.981 L2d/1000 -50.8 dB lowband -1.1 dB [info formant_err_pct 1.57 f1_err_pct 1.12 f2_err_pct 1.30] 380 s

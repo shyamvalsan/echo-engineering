@@ -1,0 +1,8 @@
+[hello] baseline (all constraints)           a=0.01 loss 2.425 (init wiener; wiener 2.480) shot 5.296 L2d/1000 -78.2 dB lowband -7.8 dB [info estoi 0.71 hello_hit 1.00 hello 5/5] 355 s
+[hello] removed: flat_clap                   a=0.01 loss 0.969 (init wiener; wiener 0.973) shot 4.783 L2d/1000 -75.6 dB lowband -0.6 dB [info estoi 0.89 hello_hit 1.00 hello 5/5] 398 s
+[hello] removed: signed                      a=0.01 loss 1.803 (init wiener; wiener 1.771) shot 5.024 L2d/1000 -82.5 dB lowband -2.4 dB [info estoi 0.76 hello_hit 1.00 hello 5/5] 374 s
+[hello] removed: flat_scatter                a=0.01 loss 1.447 (init wiener; wiener 1.375) shot 4.589 L2d/1000 -69.7 dB lowband -0.5 dB [info estoi 0.90 hello_hit 1.00 hello 5/5] 436 s
+[hello] removed: flat_clap+signed            a=0.01 loss 0.490 (init wiener; wiener 0.391) shot 4.243 L2d/1000 -71.0 dB lowband -0.1 dB [info estoi 0.93 hello_hit 1.00 hello 5/5] 456 s
+[hello] removed: flat_clap+flat_scatter      a=0.01 loss 0.575 (init wiener; wiener 0.399) shot 3.743 L2d/1000 -57.6 dB lowband -0.2 dB [info estoi 0.92 hello_hit 1.00 hello 5/5] 517 s
+[hello] removed: signed+flat_scatter         a=0.01 loss 1.327 (init wiener; wiener 1.249) shot 4.061 L2d/1000 -65.9 dB lowband +0.1 dB [info estoi 0.90 hello_hit 1.00 hello 5/5] 467 s
+[hello] ceiling (none)                       a=0.01 loss 0.411 (init wiener; wiener 0.297) shot 2.478 L2d/1000 -51.1 dB lowband -0.1 dB [info estoi 0.94 hello_hit 1.00 hello 5/5] 389 s

@@ -73,7 +73,13 @@ TIER1_BUDGET_S = 12 * 60.0
 # syllables; 2.5 kHz (dx 13.7 mm) for the word, whose 4 kHz run would need a wedge narrower than the listener anchors
 # allow within 12 min. Half-angles are the widest that keep the planned run under TIER1_BUDGET_S on an idle machine
 # (computed by `wedge_for_budget`, logged in each run's metrics.tier1_plan).
-TIER1 = {"4a": {"f_max": 4000.0}, "4b": {"f_max": 4000.0}, "4c": {"f_max": 2500.0}}
+TIER1 = {"4a": {"f_max": 4000.0}, "4b": {"f_max": 2500.0}, "4c": {"f_max": 2500.0}}
+# 4b/4c (after the 4a run; coordinator evidence from stages 1-2: extinction in narrow dense fields): +-20 deg wedge
+# clipped to a constant-width strip (StageConfig.max_half_width_m), 2.5 kHz grid so the strip can be wide, post counts
+# chosen so the predicted two-way extinction at the far end (Tier 0 cylinder model, `predicted_extinction`, uniform
+# estimate 8.686 N sigma / (2 hw)) stays at ~5-8 dB at 2.5 kHz: ma/ba/om 1,500 posts in +-7 m (5.4 dB; est. 400-474 s),
+# hello 1,500 posts in +-5 m (7.6 dB; est. 833 s). At 4 kHz a strip wide enough for low extinction does not fit 12 min.
+STRIP = {"ma": (7.0, 1500), "ba": (7.0, 1500), "om": (7.0, 1500), "hello": (5.0, 1500)}
 # widest half-angle (0.5 deg steps) with a planned run <= 12 min on an idle machine (wedge_for_budget, 2026-11-25):
 # ah 11.5 (704 s), ma 3.5 (689 s), ba 3.0 (713 s), om 2.5 (639 s), hello at 2.5 kHz 3.0 (628 s); hello at 4 kHz does
 # not fit at any half-angle >= 1 deg (the listener anchors fix the domain width; 20 deg would take ~13,900 s).
@@ -94,7 +100,7 @@ def make_config(sub, name, **kw) -> StageConfig:
     spec = SUBSTAGES[sub]
     t1 = TIER1[sub]
     tgt = target_of(name)
-    n_posts = int(round(POSTS_PER_100MS * len(tgt.audio) / FS / 0.1))
+    n_posts = STRIP[name][1] if name in STRIP else int(round(POSTS_PER_100MS * len(tgt.audio) / FS / 0.1))
     cfg = StageConfig(
         stage=spec["judge"],  # score key (THRESHOLDS); the folder is moved to runs/s4_speech afterwards
         title=f"Speech {sub}: \"{name}\" ({len(tgt.audio) / FS * 1e3:.0f} ms)",
@@ -109,7 +115,8 @@ def make_config(sub, name, **kw) -> StageConfig:
         f_max=t1["f_max"],
         band_min_hz=BAND[0],
         band_max_hz=t1["f_max"],
-        half_angle_deg=HALF_ANGLE[name],
+        half_angle_deg=20.0 if name in STRIP else HALF_ANGLE[name],
+        max_half_width_m=STRIP[name][0] if name in STRIP else None,
         # Tier 0 realization study (_studies/realization_ah.json, chosen by loss under 1-2 mm jitter only): sampling
         # 5.16 < quantile 5.31 < phase-locked 5.90 < half-wave 5.99 (1,500 posts, 1 cm)
         realization="sampling",
@@ -121,6 +128,8 @@ def make_config(sub, name, **kw) -> StageConfig:
     )
     cfg.target_fill = None  # set from n_posts by `fill_for_posts` once the half-angle is known
     cfg._n_posts = n_posts  # type: ignore[attr-defined]
+    if os.environ.get("S4_STEPS"):  # time-box override of the driver's profile-solve steps (logged in the config)
+        cfg.steps = int(os.environ["S4_STEPS"])
     for k, v in kw.items():
         setattr(cfg, k, v)
     if cfg.target_fill is None:
@@ -131,7 +140,11 @@ def make_config(sub, name, **kw) -> StageConfig:
 def fill_for_posts(cfg, target, n_posts):
     from echo.realize import wedge_area
 
-    area = wedge_area(stage_scene(cfg).r_min, cfg.r0 + C0 * len(target.audio) / FS / 2.0, cfg.half_angle_deg)
+    r_hi = cfg.r0 + C0 * len(target.audio) / FS / 2.0
+    area = wedge_area(stage_scene(cfg).r_min, r_hi, cfg.half_angle_deg)
+    hw = getattr(cfg, "max_half_width_m", None)
+    if hw is not None:  # strip clipped to the wedge (same rule as stages.common for the stretch prior)
+        area = min(area, 2.0 * hw * (r_hi - stage_scene(cfg).r_min))
     return float(n_posts * math.pi * cfg.a_ref ** 2 / area)
 
 
@@ -144,8 +157,10 @@ def tier1_plan(cfg, target, half_angle_deg=None):
     c = replace(cfg, half_angle_deg=half_angle_deg or cfg.half_angle_deg)
     r_hi = c.r0 + C0 * len(target.audio) / FS / 2.0
     th = math.radians(c.half_angle_deg)
-    corners = np.array([[3.0 * math.cos(th), s * 3.0 * math.sin(th), 0.01] for s in (-1, 1)]
-                       + [[r_hi * math.cos(th), s * r_hi * math.sin(th), 0.01] for s in (-1, 1)] + [[r_hi, 0, 0.01]])
+    hw = getattr(c, "max_half_width_m", None) or np.inf
+    corners = np.array([[3.0 * math.cos(th), s * min(hw, 3.0 * math.sin(th)), 0.01] for s in (-1, 1)]
+                       + [[r_hi * math.cos(th), s * min(hw, r_hi * math.sin(th)), 0.01] for s in (-1, 1)]
+                       + [[r_hi, 0, 0.01]])
     sc = Scene(posts=corners, half_angle_deg=c.half_angle_deg)
     pl = tier1.plan(sc, c.f_max, c.duration_s, listeners=stage_listeners(c, target))
     cells = pl["grid"].nx * pl["grid"].ny
@@ -605,6 +620,64 @@ def count_sweep(name, sub, counts=(1500, 5000, 15000), radii=(0.01, 0.04), log=p
             "high fill rows are optimistic (stage 1: 4 cm at 2.3 % fill had nothing in common with Tier 1)"}
 
 
+def scattering_width(a, f, c=C0):
+    """Total scattering width (m) of a rigid cylinder, plane wave: sigma = (4/k) sum_n eps_n |A_n|^2, from the
+    partial-wave series of echo.tier0. Thin limit (hand check in tests): 3 pi^2 k^3 a^4 / 4."""
+    from echo.tier0 import _n_terms, _partial_wave_coeffs
+
+    k = 2 * np.pi * np.asarray(f, float) / c
+    ka = k * a
+    cn = _partial_wave_coeffs(ka, _n_terms(float(np.max(ka))))  # eps_n A_n
+    eps = np.where(np.arange(cn.shape[-1]) == 0, 1.0, 2.0)
+    return 4.0 / k * np.sum(np.abs(cn) ** 2 / eps, axis=-1)
+
+
+def predicted_extinction(posts, scene_half_angle_deg=None, freqs=(1000.0, 2000.0, 4000.0), max_half_width_m=None,
+                         drho=0.5, source=(0.0, 0.0), listener=(0.0, 0.3)):
+    """Two-way coherent extinction along range from Tier 0's cylinder model (single-scattering estimate):
+    tau(rho, f) = 2 int_0^rho n_A sigma(f) drho', n_A = posts per metre of range / lateral width of the field at that
+    range (wedge arc 2 rho tan(half-angle), or the strip width if clipped); loss in dB = 4.343 tau (intensity).
+    Returns {freqs_hz, rho_m[], extinction_db[f][], far_end_db{f}}."""
+    from echo.scene import bistatic_range
+
+    P = np.asarray(posts, float)
+    rho = bistatic_range(P[:, :2], np.asarray(source), np.asarray(listener))
+    edges = np.arange(np.floor(rho.min()), rho.max() + drho, drho)
+    cnt, _ = np.histogram(rho, edges)
+    rc = 0.5 * (edges[1:] + edges[:-1])
+    if max_half_width_m is None:
+        # lateral extent actually occupied by the posts in each range bin (at least 2 x 5 cm)
+        width = np.array([max(0.1, np.ptp(P[(rho >= lo) & (rho < hi), 1]) if np.sum((rho >= lo) & (rho < hi)) > 1
+                              else 0.1) for lo, hi in zip(edges[:-1], edges[1:])])
+    else:
+        width = np.minimum(2 * max_half_width_m, 2 * rc * np.tan(np.radians(scene_half_angle_deg or 20.0)))
+    nA = cnt / drho / width
+    out = {"freqs_hz": list(freqs), "rho_m": rc.tolist(), "extinction_db": {}, "far_end_db": {},
+           "lateral_width_m": width.tolist(), "radius_m": float(np.median(P[:, 2])),
+           "model": "4.343 x 2 int n_A sigma drho; sigma = total scattering width (partial waves); lateral width = "
+                    "occupied post extent per 0.5 m range bin; single-scattering estimate"}
+    for f in freqs:
+        sig = scattering_width(float(np.median(P[:, 2])), f)
+        tau = 2 * np.cumsum(nA * sig * drho)
+        out["extinction_db"][str(int(f))] = (4.343 * tau).tolist()
+        out["far_end_db"][str(int(f))] = float(4.343 * tau[-1])
+    return out
+
+
+def measured_extinction(e1, e0, t_echo0, win_s=0.02, fs=FS):
+    """Tier 1 / Tier 0 level ratio per window along the echo (same posts): the measured tier gap vs echo time."""
+    n0, w = int(t_echo0 * fs), int(win_s * fs)
+    e1, e0 = np.atleast_2d(e1), np.atleast_2d(e0)
+    rows = []
+    i = n0
+    while i + w <= e0.shape[-1]:
+        a, b = np.sum(e1[:, i:i + w] ** 2), np.sum(e0[:, i:i + w] ** 2)
+        if b > 1e-3 * np.max(np.sum(e0[:, n0:].reshape(e0.shape[0], -1) ** 2) / max(1, (e0.shape[-1] - n0) // w)):
+            rows.append({"t_s": (i + w / 2) / fs, "rho_m": C0 * (i + w / 2) / fs / 2, "gap_db": float(10 * np.log10(a / b))})
+        i += w
+    return rows
+
+
 # ----------------------------------------------------------------------------------------------- Tier 1 / driver
 def _write_json(path, obj):
     path = Path(path)
@@ -728,6 +801,12 @@ def run_one(sub, name, tier0_only=False, log=print, runs_root=None, half_angle=N
             met["tier0_full_band_info"] = {"band_hz": list(BAND), "judges": judge_info(cfg.stage, e_full, target,
                                                                                          t_echo0),
                                            "loss": window_loss(e_full, target.audio, BAND, cfg.r0, C0, 128)}
+    ext = {"predicted": predicted_extinction(des.posts, cfg.half_angle_deg,
+                                             max_half_width_m=getattr(cfg, "max_half_width_m", None))}
+    if des.echo_t1_2d is not None:
+        ext["measured_tier1_over_tier0_db"] = measured_extinction(des.echo_t1_2d, des.echo_t0_2d, t_echo0)
+    met["design_study"] = {"extinction": ext, "full_wedge_level": full_wedge_level(cfg, des, claps, band,
+                                                                                    met["headline"])}
     # per-clap echoes (Tier 1 if run, else Tier 0) for the 4b 3x3 closed-set table and the report
     sdir = Path(runs_root) / STAGE / "_studies" if runs_root else STUDY_DIR
     sdir.mkdir(parents=True, exist_ok=True)
@@ -746,6 +825,33 @@ def run_one(sub, name, tier0_only=False, log=print, runs_root=None, half_angle=N
     export.update_index(runs_root or export.RUNS)
     log(f"[{sub} {name}] wrote {dest}: passed {met['passed']} verified {met['verified']}")
     return dest, met, des, res
+
+
+def full_wedge_level(cfg, des, claps, band, headline, n_groups=12):
+    """Unverified single-scattering estimate: Tier 0 3D level if every range band's posts were scaled to the full
+    +-20 deg wedge at the same areal density (amplitude weight = wedge arc / occupied width, per range group)."""
+    from echo.scene import bistatic_range
+
+    hw = getattr(cfg, "max_half_width_m", None)
+    P = np.asarray(des.posts)
+    rho = bistatic_range(P[:, :2], des.scene.source, des.scene.listener)
+    edges = np.quantile(rho, np.linspace(0, 1, n_groups + 1))
+    n_out = int(round(cfg.duration_s * FS))
+    tot = 0.0
+    for i in range(n_groups):
+        m = (rho >= edges[i]) & ((rho < edges[i + 1]) if i < n_groups - 1 else (rho <= edges[i + 1]))
+        if not m.any():
+            continue
+        rc = float(np.mean(rho[m]))
+        width = min(2 * hw, 2 * rc * math.tan(math.radians(cfg.half_angle_deg))) if hw else \
+            2 * rc * math.tan(math.radians(cfg.half_angle_deg))
+        wgt = 2 * rc * math.tan(math.radians(20.0)) / width
+        tot = tot + wgt * post_echo(P[m], torch.as_tensor(claps), des.scene, mode="3d", n_out=n_out, band=band).numpy()
+    raw = float(np.mean(echo_level_db(tot)))
+    return {"echo_level_db_re_direct_3d_full_wedge_tier0": raw,
+            "echo_level_db_re_direct_3d_as_simulated_tier0": headline.get("echo_level_db_re_direct_raw3d"),
+            "label": "unverified single-scattering estimate (Tier 0, no extinction); ring populations scaled to the "
+                     "full +-20 deg wedge at the same areal density"}
 
 
 def _gating(met):
@@ -845,9 +951,30 @@ def attach_studies(runs_root=None):
         if name != "ah" and load_study("realization", name) is None:
             met["realization_study_note"] = "realization chosen on the 4a study (realization_ah.json), applied here"
         met["count_sweep"] = load_study("count_sweep", "ah")
+        if not (met.get("design_study") or {}).get("extinction"):
+            met.setdefault("design_study", {})["extinction"] = extinction_from_folder(d)
         met["failure_cause"] = failure_cause(met, met["ablations"]) if not met.get("passed") else None
         export.write_json(d / "metrics.json", met, indent=1)
         print("attached studies to", d)
+
+
+def extinction_from_folder(d):
+    """Predicted (Tier 0 cylinder model on the run's posts) and measured (Tier 1 / Tier 0 level per 20 ms window of
+    the exported clap-0 echoes, wav gains undone) extinction for a finished run folder."""
+    import soundfile as sf
+
+    d = Path(d)
+    sc = json.loads((d / "scene.json").read_text())
+    man = json.loads((d / "manifest.json").read_text())
+    posts = np.asarray(sc["posts"], float)
+    out = {"predicted": predicted_extinction(posts, sc["wedge"]["half_angle_deg"])}
+    g = man["audio"]["echo_gain_db"]
+    if g.get("tier1") is not None:
+        e1 = sf.read(d / "echo_tier1.wav")[0] / 10 ** (g["tier1"] / 20)
+        e0 = sf.read(d / "echo_tier0.wav")[0] / 10 ** (g["tier0"] / 20)
+        out["measured_tier1_over_tier0_db"] = measured_extinction(e1, e0, 2 * R0_PROFILE / C0)
+        out["measured_note"] = "clap variant 0 only (exported wavs)"
+    return out
 
 
 def attach_closed_set_table(dests):

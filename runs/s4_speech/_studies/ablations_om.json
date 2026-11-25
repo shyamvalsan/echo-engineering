@@ -1,0 +1,905 @@
+{
+ "target": "om",
+ "judge_stage": "s4b_syllables",
+ "band_hz": [
+  500.0,
+  4000.0
+ ],
+ "steps": 500,
+ "lr": 0.05,
+ "inits": [
+  "wiener"
+ ],
+ "radii_extra_m": [],
+ "model": "E_k = irfft(C_k * W * profile_transfer(profile)) (2D, Tier 0 profile model, on-axis)",
+ "ablations": {
+  "flat_clap": "ideal flat-spectrum clap: band-limited delta 500-4000 Hz, peak 1 (one shape, all 5 rows identical)",
+  "signed": "signed reflectivity allowed (identity parameterization instead of softplus)",
+  "flat_scatter": "frequency-flat scatterers: transfer divided by |T_1cm(f)| / |T_1cm(2.5 kHz)|"
+ },
+ "selection": "per combination: lower final EchoLoss (500-4000 Hz) of two inits; judges informational only",
+ "rows": [
+  {
+   "combo": "baseline (all constraints)",
+   "flat_clap": false,
+   "signed": false,
+   "flat_scatter": false,
+   "a_ref_m": 0.01,
+   "loss": 2.3030505180358887,
+   "loss_solver_best": 2.3333961963653564,
+   "init_picked": "wiener",
+   "loss_by_init": {
+    "wiener": 2.3333961963653564
+   },
+   "loss_clap_band_info": 2.033423662185669,
+   "loss_shot_noise": 5.3767876625061035,
+   "shot_noise_posts": 2465.625,
+   "level_db_2d_per_1000_posts": -68.46395339592956,
+   "low_band_500_1000_db_re_target": -4.971083050664497,
+   "negative_mass_fraction": 0.0,
+   "history": [
+    [
+     0,
+     4.113070011138916
+    ],
+    [
+     50,
+     2.950817346572876
+    ],
+    [
+     100,
+     2.6699814796447754
+    ],
+    [
+     150,
+     2.617779016494751
+    ],
+    [
+     200,
+     2.5263636112213135
+    ],
+    [
+     250,
+     2.913684844970703
+    ],
+    [
+     300,
+     2.5675461292266846
+    ],
+    [
+     350,
+     2.5328004360198975
+    ],
+    [
+     400,
+     2.3805551528930664
+    ],
+    [
+     450,
+     2.4984130859375
+    ],
+    [
+     500,
+     2.3681163787841797
+    ]
+   ],
+   "info_only_judges": {
+    "mean": {
+     "closed_set_correct": 1.0,
+     "closed_set_margin": 21.59833699348642,
+     "estoi": 0.7260244306931245
+    },
+    "per_clap": [
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 21.862715718554103,
+      "estoi": 0.7029341774984771
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 21.326709341685177,
+      "estoi": 0.735476792702305
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 21.027808170301025,
+      "estoi": 0.7612115471848411
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 22.249113120212122,
+      "estoi": 0.7417608328819194
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 21.52533861667968,
+      "estoi": 0.6887388031980803
+     }
+    ]
+   },
+   "wall_s": 224.96805357933044
+  },
+  {
+   "combo": "removed: flat_clap",
+   "flat_clap": true,
+   "signed": false,
+   "flat_scatter": false,
+   "a_ref_m": 0.01,
+   "loss": 0.7138202786445618,
+   "loss_solver_best": 0.7398030757904053,
+   "init_picked": "wiener",
+   "loss_by_init": {
+    "wiener": 0.7398030757904053
+   },
+   "loss_clap_band_info": 0.8375164270401001,
+   "loss_shot_noise": 4.71253236134847,
+   "shot_noise_posts": 2465.625,
+   "level_db_2d_per_1000_posts": -61.43689626359439,
+   "low_band_500_1000_db_re_target": -0.09869820491955905,
+   "negative_mass_fraction": 0.0,
+   "history": [
+    [
+     0,
+     2.1912851333618164
+    ],
+    [
+     50,
+     1.231932520866394
+    ],
+    [
+     100,
+     1.115787148475647
+    ],
+    [
+     150,
+     1.2092617750167847
+    ],
+    [
+     200,
+     0.8918356895446777
+    ],
+    [
+     250,
+     0.7924756407737732
+    ],
+    [
+     300,
+     0.9057179093360901
+    ],
+    [
+     350,
+     0.7688313126564026
+    ],
+    [
+     400,
+     0.8098441362380981
+    ],
+    [
+     450,
+     0.8878272771835327
+    ],
+    [
+     500,
+     1.092631220817566
+    ]
+   ],
+   "info_only_judges": {
+    "mean": {
+     "closed_set_correct": 1.0,
+     "closed_set_margin": 28.885309560050608,
+     "estoi": 0.8484703657611596
+    },
+    "per_clap": [
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 28.885309560050608,
+      "estoi": 0.8484703657611953
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 28.885309560050608,
+      "estoi": 0.8484703657611012
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 28.885309560050608,
+      "estoi": 0.8484703657611709
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 28.885309560050608,
+      "estoi": 0.8484703657611964
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 28.885309560050608,
+      "estoi": 0.8484703657611344
+     }
+    ]
+   },
+   "wall_s": 303.1509554386139
+  },
+  {
+   "combo": "removed: signed",
+   "flat_clap": false,
+   "signed": true,
+   "flat_scatter": false,
+   "a_ref_m": 0.01,
+   "loss": 1.7381911277770996,
+   "loss_solver_best": 1.7266489267349243,
+   "init_picked": "wiener",
+   "loss_by_init": {
+    "wiener": 1.7266489267349243
+   },
+   "loss_clap_band_info": 1.59959077835083,
+   "loss_shot_noise": 5.1613508860270185,
+   "shot_noise_posts": 2465.625,
+   "level_db_2d_per_1000_posts": -68.75047047595793,
+   "low_band_500_1000_db_re_target": -2.41383718311256,
+   "negative_mass_fraction": 0.500152102239828,
+   "history": [
+    [
+     0,
+     1.7266489267349243
+    ],
+    [
+     50,
+     3.8820934295654297
+    ],
+    [
+     100,
+     3.5341579914093018
+    ],
+    [
+     150,
+     3.2203595638275146
+    ],
+    [
+     200,
+     3.0170137882232666
+    ],
+    [
+     250,
+     2.8303306102752686
+    ],
+    [
+     300,
+     2.845388889312744
+    ],
+    [
+     350,
+     2.7722880840301514
+    ],
+    [
+     400,
+     2.6321218013763428
+    ],
+    [
+     450,
+     2.4847514629364014
+    ],
+    [
+     500,
+     3.229550361633301
+    ]
+   ],
+   "info_only_judges": {
+    "mean": {
+     "closed_set_correct": 1.0,
+     "closed_set_margin": 23.462577907195563,
+     "estoi": 0.7921070296061833
+    },
+    "per_clap": [
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 22.826762243248158,
+      "estoi": 0.7750877174236326
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 22.571030767430933,
+      "estoi": 0.7974324035176642
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 23.393003932080237,
+      "estoi": 0.8058439400529015
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 25.672547951766816,
+      "estoi": 0.8145514896401809
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 22.849544641451672,
+      "estoi": 0.7676195973965373
+     }
+    ]
+   },
+   "wall_s": 293.652526140213
+  },
+  {
+   "combo": "removed: flat_scatter",
+   "flat_clap": false,
+   "signed": false,
+   "flat_scatter": true,
+   "a_ref_m": 0.01,
+   "loss": 1.1931612491607666,
+   "loss_solver_best": 1.1544294357299805,
+   "init_picked": "wiener",
+   "loss_by_init": {
+    "wiener": 1.1544294357299805
+   },
+   "loss_clap_band_info": 1.405064344406128,
+   "loss_shot_noise": 4.543498516082764,
+   "shot_noise_posts": 2465.625,
+   "level_db_2d_per_1000_posts": -55.34440278819566,
+   "low_band_500_1000_db_re_target": -0.17807882929149654,
+   "negative_mass_fraction": 0.0,
+   "history": [
+    [
+     0,
+     2.7790980339050293
+    ],
+    [
+     50,
+     1.384460687637329
+    ],
+    [
+     100,
+     1.3887405395507812
+    ],
+    [
+     150,
+     1.3169450759887695
+    ],
+    [
+     200,
+     1.2798421382904053
+    ],
+    [
+     250,
+     1.3235161304473877
+    ],
+    [
+     300,
+     1.185649037361145
+    ],
+    [
+     350,
+     1.3339118957519531
+    ],
+    [
+     400,
+     1.2297133207321167
+    ],
+    [
+     450,
+     1.286034345626831
+    ],
+    [
+     500,
+     1.176031470298767
+    ]
+   ],
+   "info_only_judges": {
+    "mean": {
+     "closed_set_correct": 1.0,
+     "closed_set_margin": 28.65280234466178,
+     "estoi": 0.8051703621641447
+    },
+    "per_clap": [
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 28.73186824230384,
+      "estoi": 0.7833884402852505
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 28.19020458143236,
+      "estoi": 0.8125523439532357
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 28.145229621518364,
+      "estoi": 0.8180378034312752
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 30.393493054380173,
+      "estoi": 0.8243066876268417
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 27.803216223674166,
+      "estoi": 0.7875665355241204
+     }
+    ]
+   },
+   "wall_s": 262.8684914112091
+  },
+  {
+   "combo": "removed: flat_clap+signed",
+   "flat_clap": true,
+   "signed": true,
+   "flat_scatter": false,
+   "a_ref_m": 0.01,
+   "loss": 0.40139928460121155,
+   "loss_solver_best": 0.37075889110565186,
+   "init_picked": "wiener",
+   "loss_by_init": {
+    "wiener": 0.37075889110565186
+   },
+   "loss_clap_band_info": 0.43948766589164734,
+   "loss_shot_noise": 4.265950997670491,
+   "shot_noise_posts": 2465.625,
+   "level_db_2d_per_1000_posts": -56.59820784489018,
+   "low_band_500_1000_db_re_target": 0.00996007298651036,
+   "negative_mass_fraction": 0.49991767982764285,
+   "history": [
+    [
+     0,
+     0.37075889110565186
+    ],
+    [
+     50,
+     1.3291072845458984
+    ],
+    [
+     100,
+     1.0213130712509155
+    ],
+    [
+     150,
+     1.4504412412643433
+    ],
+    [
+     200,
+     1.194885015487671
+    ],
+    [
+     250,
+     0.9255235195159912
+    ],
+    [
+     300,
+     1.2702882289886475
+    ],
+    [
+     350,
+     1.303588628768921
+    ],
+    [
+     400,
+     1.0293769836425781
+    ],
+    [
+     450,
+     1.0491222143173218
+    ],
+    [
+     500,
+     1.8199318647384644
+    ]
+   ],
+   "info_only_judges": {
+    "mean": {
+     "closed_set_correct": 1.0,
+     "closed_set_margin": 33.9028232234752,
+     "estoi": 0.9205651281004957
+    },
+    "per_clap": [
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 33.9028232234752,
+      "estoi": 0.9205651281004784
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 33.9028232234752,
+      "estoi": 0.9205651281004938
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 33.9028232234752,
+      "estoi": 0.9205651281005124
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 33.9028232234752,
+      "estoi": 0.9205651281005045
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 33.9028232234752,
+      "estoi": 0.9205651281004898
+     }
+    ]
+   },
+   "wall_s": 304.2594063282013
+  },
+  {
+   "combo": "removed: flat_clap+flat_scatter",
+   "flat_clap": true,
+   "signed": false,
+   "flat_scatter": true,
+   "a_ref_m": 0.01,
+   "loss": 0.33186429738998413,
+   "loss_solver_best": 0.2441156804561615,
+   "init_picked": "wiener",
+   "loss_by_init": {
+    "wiener": 0.2441156804561615
+   },
+   "loss_clap_band_info": 0.3249282240867615,
+   "loss_shot_noise": 3.4078316688537598,
+   "shot_noise_posts": 2465.625,
+   "level_db_2d_per_1000_posts": -42.612613341341905,
+   "low_band_500_1000_db_re_target": -1.0892054045363864e-05,
+   "negative_mass_fraction": 0.0,
+   "history": [
+    [
+     0,
+     1.3844799995422363
+    ],
+    [
+     50,
+     0.4434869885444641
+    ],
+    [
+     100,
+     0.3390536308288574
+    ],
+    [
+     150,
+     0.34294164180755615
+    ],
+    [
+     200,
+     0.2760195732116699
+    ],
+    [
+     250,
+     0.2911492586135864
+    ],
+    [
+     300,
+     0.2907474637031555
+    ],
+    [
+     350,
+     0.31783318519592285
+    ],
+    [
+     400,
+     0.266735702753067
+    ],
+    [
+     450,
+     0.29693323373794556
+    ],
+    [
+     500,
+     0.39816218614578247
+    ]
+   ],
+   "info_only_judges": {
+    "mean": {
+     "closed_set_correct": 1.0,
+     "closed_set_margin": 33.12835863869365,
+     "estoi": 0.9294384156151209
+    },
+    "per_clap": [
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 33.12835863869365,
+      "estoi": 0.9294384156151155
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 33.12835863869365,
+      "estoi": 0.9294384156151249
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 33.12835863869365,
+      "estoi": 0.929438415615118
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 33.12835863869365,
+      "estoi": 0.9294384156151284
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 33.12835863869365,
+      "estoi": 0.9294384156151176
+     }
+    ]
+   },
+   "wall_s": 232.638188123703
+  },
+  {
+   "combo": "removed: signed+flat_scatter",
+   "flat_clap": false,
+   "signed": true,
+   "flat_scatter": true,
+   "a_ref_m": 0.01,
+   "loss": 1.1352734565734863,
+   "loss_solver_best": 1.0655429363250732,
+   "init_picked": "wiener",
+   "loss_by_init": {
+    "wiener": 1.0655429363250732
+   },
+   "loss_clap_band_info": 1.3135693073272705,
+   "loss_shot_noise": 4.175412495930989,
+   "shot_noise_posts": 2465.625,
+   "level_db_2d_per_1000_posts": -51.03431678045924,
+   "low_band_500_1000_db_re_target": -0.0762263578487465,
+   "negative_mass_fraction": 0.50012720930577,
+   "history": [
+    [
+     0,
+     1.0655429363250732
+    ],
+    [
+     50,
+     1.8728833198547363
+    ],
+    [
+     100,
+     1.563605546951294
+    ],
+    [
+     150,
+     1.4819576740264893
+    ],
+    [
+     200,
+     1.4800341129302979
+    ],
+    [
+     250,
+     1.3074876070022583
+    ],
+    [
+     300,
+     1.2912383079528809
+    ],
+    [
+     350,
+     1.3695347309112549
+    ],
+    [
+     400,
+     1.5542330741882324
+    ],
+    [
+     450,
+     1.2857571840286255
+    ],
+    [
+     500,
+     1.4949172735214233
+    ]
+   ],
+   "info_only_judges": {
+    "mean": {
+     "closed_set_correct": 1.0,
+     "closed_set_margin": 29.98578297935585,
+     "estoi": 0.8907644715771147
+    },
+    "per_clap": [
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 28.84245689806542,
+      "estoi": 0.8795576539788571
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 30.077553953985245,
+      "estoi": 0.8931725120226559
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 30.041842059461764,
+      "estoi": 0.9013187458019792
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 31.99077096620252,
+      "estoi": 0.8965788212612633
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 28.9762910190643,
+      "estoi": 0.8831946248208179
+     }
+    ]
+   },
+   "wall_s": 395.2979791164398
+  },
+  {
+   "combo": "ceiling (none)",
+   "flat_clap": true,
+   "signed": true,
+   "flat_scatter": true,
+   "a_ref_m": 0.01,
+   "loss": 0.3184107840061188,
+   "loss_solver_best": 0.24380727112293243,
+   "init_picked": "wiener",
+   "loss_by_init": {
+    "wiener": 0.24380727112293243
+   },
+   "loss_clap_band_info": 0.3381112813949585,
+   "loss_shot_noise": 2.480165958404541,
+   "shot_noise_posts": 2465.625,
+   "level_db_2d_per_1000_posts": -37.6756810685228,
+   "low_band_500_1000_db_re_target": -0.0016868046631679512,
+   "negative_mass_fraction": 0.499166187860081,
+   "history": [
+    [
+     0,
+     0.2600005269050598
+    ],
+    [
+     50,
+     0.39654192328453064
+    ],
+    [
+     100,
+     0.29106903076171875
+    ],
+    [
+     150,
+     0.3071208596229553
+    ],
+    [
+     200,
+     0.3337435722351074
+    ],
+    [
+     250,
+     0.2875725030899048
+    ],
+    [
+     300,
+     0.2502477169036865
+    ],
+    [
+     350,
+     0.4396916627883911
+    ],
+    [
+     400,
+     0.3452104926109314
+    ],
+    [
+     450,
+     0.40671759843826294
+    ],
+    [
+     500,
+     0.33604931831359863
+    ]
+   ],
+   "info_only_judges": {
+    "mean": {
+     "closed_set_correct": 1.0,
+     "closed_set_margin": 34.44729083822254,
+     "estoi": 0.9380460007556322
+    },
+    "per_clap": [
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 34.44729083822254,
+      "estoi": 0.9380460007556307
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 34.44729083822254,
+      "estoi": 0.9380460007556319
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 34.44729083822254,
+      "estoi": 0.938046000755631
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 34.44729083822254,
+      "estoi": 0.938046000755635
+     },
+     {
+      "closed_set_correct": 1.0,
+      "closed_set_margin": 34.44729083822254,
+      "estoi": 0.9380460007556318
+     }
+    ]
+   },
+   "wall_s": 446.92023491859436
+  }
+ ],
+ "attribution": {
+  "baseline_loss": 2.3030505180358887,
+  "ceiling_loss": 0.3184107840061188,
+  "metric_columns": {
+   "loss": {
+    "clap spectrum": {
+     "gain_when_removed_alone": 1.589230239391327,
+     "cost_when_restored_alone_on_ceiling": 0.8168626725673676
+    },
+    "positivity": {
+     "gain_when_removed_alone": 0.5648593902587891,
+     "cost_when_restored_alone_on_ceiling": 0.013453513383865356
+    },
+    "small-post scattering": {
+     "gain_when_removed_alone": 1.109889268875122,
+     "cost_when_restored_alone_on_ceiling": 0.08298850059509277
+    }
+   },
+   "loss_shot_noise": {
+    "clap spectrum": {
+     "gain_when_removed_alone": 0.6642553011576338,
+     "cost_when_restored_alone_on_ceiling": 1.6952465375264483
+    },
+    "positivity": {
+     "gain_when_removed_alone": 0.215436776479085,
+     "cost_when_restored_alone_on_ceiling": 0.9276657104492188
+    },
+    "small-post scattering": {
+     "gain_when_removed_alone": 0.8332891464233398,
+     "cost_when_restored_alone_on_ceiling": 1.7857850392659502
+    }
+   },
+   "low_band_500_1000_db_re_target": {
+    "clap spectrum": {
+     "gain_when_removed_alone": -4.8723848457449375,
+     "cost_when_restored_alone_on_ceiling": -0.07453955318557855
+    },
+    "positivity": {
+     "gain_when_removed_alone": -2.557245867551937,
+     "cost_when_restored_alone_on_ceiling": 0.0016759126091225873
+    },
+    "small-post scattering": {
+     "gain_when_removed_alone": -4.793004221373,
+     "cost_when_restored_alone_on_ceiling": 0.011646877649678311
+    }
+   }
+  },
+  "info_only_judge_means_by_combo": {
+   "closed_set_correct": {
+    "baseline (all constraints)": 1.0,
+    "removed: flat_clap": 1.0,
+    "removed: signed": 1.0,
+    "removed: flat_scatter": 1.0,
+    "removed: flat_clap+signed": 1.0,
+    "removed: flat_clap+flat_scatter": 1.0,
+    "removed: signed+flat_scatter": 1.0,
+    "ceiling (none)": 1.0
+   },
+   "closed_set_margin": {
+    "baseline (all constraints)": 21.59833699348642,
+    "removed: flat_clap": 28.885309560050608,
+    "removed: signed": 23.462577907195563,
+    "removed: flat_scatter": 28.65280234466178,
+    "removed: flat_clap+signed": 33.9028232234752,
+    "removed: flat_clap+flat_scatter": 33.12835863869365,
+    "removed: signed+flat_scatter": 29.98578297935585,
+    "ceiling (none)": 34.44729083822254
+   },
+   "estoi": {
+    "baseline (all constraints)": 0.7260244306931245,
+    "removed: flat_clap": 0.8484703657611596,
+    "removed: signed": 0.7921070296061833,
+    "removed: flat_scatter": 0.8051703621641447,
+    "removed: flat_clap+signed": 0.9205651281004957,
+    "removed: flat_clap+flat_scatter": 0.9294384156151209,
+    "removed: signed+flat_scatter": 0.8907644715771147,
+    "ceiling (none)": 0.9380460007556322
+   }
+  },
+  "largest_single_cost_by_loss": "clap spectrum"
+ },
+ "wall_s": 2463.7703092098236
+}
