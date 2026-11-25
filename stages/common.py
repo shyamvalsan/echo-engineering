@@ -75,6 +75,7 @@ class StageConfig:
     realization: str = "sampling"  # "sampling" (inverse-CDF + range polish) or "phase_locked" (posts on carrier rings)
     posts_per_period: int = 1  # phase_locked: K rings per carrier period at raised-cosine quantiles (1 = pure comb)
     design_study_files: tuple = ()  # JSON files (relative to runs/<stage>/) copied into metrics.design_study
+    band_max_hz: float | None = None  # cap the stage band (solve, echoes, comparisons) e.g. at a Tier 1 f_max < 4 kHz
 
 
 @dataclass
@@ -305,9 +306,15 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
     claps = clap_family(cfg.n_claps, seed=cfg.seed)
     n_out = int(round(cfg.duration_s * FS))
     t = time.time()
+    band_cap = None
+    if cfg.band_max_hz is not None:
+        from echo.inverse import clap_band
+
+        b = clap_band(claps)
+        band_cap = (b[0], min(b[1], float(cfg.band_max_hz)))
     prof_n, res = solve_profile(target, claps, stage_scene(cfg), r0=cfg.r0, dr=cfg.dr, a_ref=cfg.a_ref,
                                 steps=cfg.steps, lr=cfg.lr, w_mel=cfg.w_mel, n_out=n_out, verbose=verbose,
-                                log_every=25)
+                                log_every=25, band=band_cap)
     wall["profile_solve_s"] = time.time() - t
     band = res.band
     profile = scale_profile(prof_n, cfg.target_fill, cfg.r0, cfg.dr, cfg.a_ref, half_angle_deg=cfg.half_angle_deg)
