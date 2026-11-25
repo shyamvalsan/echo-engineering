@@ -96,6 +96,9 @@ def test_deterministic(tonal):
 def test_threshold_rule_and_single_home():
     assert V.calibrate_pitch([10.0, 14.0], [68.0, 80.0]) == (40.0, 14.0, 68.0)
     assert V.calibrate_pitch([70.0], [68.0])[0] is None
+    assert V.calibrate_pitch([30.0], [60.0])[0] is None  # midpoint 45 is only 15 c from each side
+    assert V.calibrate_pitch([225.0, 5.0], [260.0, 300.0])[0] is None  # the r1 stage-2 case: above half a semitone
+    assert V.calibrate_pitch([225.0, 5.0], [96.0, 260.0])[0] is None  # perfect-echo mistunings included
     assert V.majority_value([5, 1, 4, 2, 3]) == 3.0
     assert set(V.THRESHOLDS_V2) == {"s1_bird", "s2_motif", "s3_melody_100ms", "s3_melody_60ms", "s4a_ah", "s4b_ma",
                                     "s4b_ba", "s4b_om", "s4c_hello"}
@@ -142,3 +145,37 @@ def test_rescore_temp_copy_adds_two_keys_only(tmp_path):
     rescore.write_run_blocks(blocks)  # idempotent
     assert json.loads((dst / "metrics.json").read_text()) == after
 
+
+def test_frozen_thresholds_and_c1_path():
+    """The frozen THRESHOLDS_V2 are what clap_passes uses by default; c1: False (4c) ignores identification."""
+    v = {"id_correct": True, "id_margin": 1.0, "nearest": "s1_bird", "pitch_cents": 39.0}
+    t1 = V.THRESHOLDS_V2["s1_bird"]["pitch_cents"]
+    assert t1 is not None and t1 < V.MAX_PITCH_T_CENTS
+    assert V.clap_passes("s1_bird", dict(v, pitch_cents=t1)) and not V.clap_passes("s1_bird", dict(v, pitch_cents=t1 + 1))
+    assert not V.clap_passes("s1_bird", dict(v, id_correct=False))
+    assert V.THRESHOLDS_V2["s4c_hello"].get("c1") is False
+    h = {"id_correct": False, "id_margin": -5.0, "nearest": "s1_bird", "hello_hit": True}
+    assert V.clap_passes("s4c_hello", h) and not V.clap_passes("s4c_hello", dict(h, hello_hit=False))
+    assert V.clap_passes("s4c_hello", h, thr={}) is False  # with C1 used it would fail
+    assert "spec_v1 recognizer" in V.rests_on("s4c_hello")
+    assert set(V.ACCEPTED_RUNS) == set(V.THRESHOLDS_V2)
+
+
+@pytest.mark.parametrize("test", ["s1_bird", "s2_motif", "s3_melody_60ms", "s3_melody_100ms"])
+def test_near_miss_negatives_fail(test):
+    """At least one near-miss negative per tonal test (perfect echo of an altered target) fails under the frozen
+    criterion; for multi-note targets the per-note C2 rejects a single wrong note by itself."""
+    from echo.targets import melody
+
+    t = {"s1_bird": bird_note(), "s2_motif": motif(), "s3_melody_60ms": melody(60),
+         "s3_melody_100ms": melody(100)}[test]
+    others = {"s1_bird": bird_note().audio, "s2_motif": motif().audio}
+    others[test] = t.audio
+    cands = V.distractors(test, t, others)
+    nm = V.near_miss_targets(test, t)
+    name = "rising_glide" if test == "s1_bird" else "wrong_note2_+100c"
+    segs = np.stack([V.perfect_echo(nm[name], c, BAND) for c in CLAPS[:3]])
+    pc = V.clap_values(test, segs, t, cands)
+    assert not any(V.clap_passes(test, x) for x in pc)
+    if test in V.MULTI_NOTE:
+        assert all(x["pitch_cents"] > 60.0 for x in pc)  # the wrong note is seen by the per-note pitch

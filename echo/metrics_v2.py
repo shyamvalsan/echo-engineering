@@ -17,23 +17,33 @@ The criterion family (fixed before any run was scored; the same rule for every t
      own target's length. No threshold: "nearest" is the threshold.
   C2 pitch (tonal tests: s1, s2, s3). Median over interior frames (more than 12 ms from every note boundary) of
      |cents| between the pyin track (search range 400-4200 Hz, the v1 note judge's range) and the target's intended
-     pitch. Median, not worst frame. Threshold by rule (below).
+     pitch. Median, not worst frame. For multi-note targets (review fix r2) the median is taken per note and the value
+     is the WORST note: every note's median pitch must be within T of its own target note, in its own time slot, so
+     a wrong or misplaced note fails. Threshold by rule (below).
   C3 recognizer (4c only). The spec's recognizer, unchanged: transcript contains "hello".
 
   Clap family: a clap variant passes when it passes every criterion of its test; the echo passes when at least
   MAJORITY of the 5 clap variants pass (explicit majority rule, not a mean).
 
-Threshold rule (C2, the only numeric threshold): T = midway between the worst positive and the best mistuning
-control, rounded to 5 cents. Values are majority values (the 3rd-best clap, i.e. the median over the 5 claps, the
-value that decides a 3-of-5 vote). Worst positive = the worse of the owner-accepted echo and the perfect echo
-(target * clap, band-limited). Mistuning controls = the accepted echo resampled by -2, -1, +1, +2 semitones, which is
-what C2 exists to reject; every other control has to be rejected by the conjunction and is checked, never used for
-calibration. If worst positive >= best control no threshold exists and the test is recorded null.
+Threshold rule (C2, the only numeric threshold; r2): T = midway between the worst positive and the best mistuning
+control, rounded to 5 cents. Values are majority values (the 3rd-best clap, the value that decides a 3-of-5 vote).
+Worst positive = the worse of the owner-accepted echo and the perfect echo (target * clap, band-limited). Mistuning
+controls = the accepted echo AND the perfect echo, each resampled by -2, -1, +1, +2 semitones. A threshold exists only
+if it sits at least MIN_MARGIN_CENTS from both sides and below MAX_PITCH_T_CENTS (half a semitone: a tolerance of a
+semitone or more would accept a wrong note). Otherwise no threshold exists and the test is null. Every other control
+(including the near-miss negatives, which are NOT in the C1 distractor set) must be rejected by the conjunction; they
+are checked, never used for calibration.
 
-Judge-validity rule (added after the first scoring, because C1 rejected the perfect "hello" echo on 3 of 5 claps; it
-looks only at perfect echoes, never at the accepted echo): a criterion that rejects the physically perfect echo
-(target * clap, band-limited) by majority is not valid for that test and is not used there ("c1": False below). If no
-valid criterion remains, the test is null.
+Judge-validity rule (POST HOC: added after the first scoring, because C1 rejected the perfect "hello" echo on 3 of 5
+claps; it looks only at perfect echoes, never at the accepted echo). Stated once, applied to every criterion (C1, C2,
+C3) of every test: a criterion that rejects the perfect echo (target * clap, band-limited) by majority is invalid for
+that test and is not used there. A C2 with no threshold is not "invalid", it is "not separable": the test is null. If
+no valid criterion remains, the test is null. Outcome: it drops only C1 for 4c (C2 and C3 accept every perfect echo),
+so 4c's owner_v2 rests on the spec_v1 recognizer with the spec's 3-of-5 rule plus its rejected controls; it is not an
+independent confirmation. Each test's block says what its pass rests on (`rests_on`).
+
+On an accepted (calibration) run owner_v2 can only return PASS or null ("not established"): it cannot fail the echo it
+was calibrated on, so null is not a soft pass and the tally is "N of 9 confirmed automatically".
 
 Verdict: owner_v2.passed = true/false only when the criterion is established for that test (the accepted echo and
 the perfect echo pass AND every control fails); otherwise null with the numbers shown ("accepted by ear; no automated
@@ -57,13 +67,31 @@ PITCH_RANGE = (400.0, 4200.0)  # = echo.metrics.JUDGE_F_RANGE
 PITCH_EDGE_S = 0.012
 SHIFTS_SEMI = (-2.0, -1.0, 1.0, 2.0)
 SWAP = (2, 3)  # 0-based: notes 3 and 4
+MIN_MARGIN_CENTS = 20.0  # T must sit at least this far from the worst positive and from the best mistuning control
+MAX_PITCH_T_CENTS = 50.0  # T must be below half a semitone
 NULL_NOTE = "accepted by ear; no automated criterion separates this echo from the negative controls"
+
+# The runs the owner listened to on 2026-11-25 (statement at about 14:55: the newest final run of each test in the
+# index at that time). Stage 2: 20261125-145628-s2v2 was written at 14:57:45 (committed 14:58), after the statement,
+# so the stage-2 run the owner judged is 20261125-122003-s2. These are the owner_v2 calibration positives and the only
+# runs that carry a listening_verdict. Never follow "newest": a later run gets no verdict until the owner listens.
+ACCEPTED_RUNS = {
+    "s1_bird": "20261125-104529-s1",
+    "s2_motif": "20261125-122003-s2",
+    "s3_melody_100ms": "20261125-131152-s3",
+    "s3_melody_60ms": "20261125-133244-s3_60ms",
+    "s4a_ah": "20261125-142346-s4_4a_ah",
+    "s4b_ma": "20261125-132102-s4_4b_ma",
+    "s4b_ba": "20261125-134325-s4_4b_ba",
+    "s4b_om": "20261125-135718-s4_4b_om",
+    "s4c_hello": "20261125-124137-s4_4c_hello",
+}
 
 # Calibrated by stages/rescore.py with the rule above (its output is frozen here and re-checked on every rescore).
 # None: no C2 for this test (speech) or no threshold exists (see the test's margin block).
 THRESHOLDS_V2 = {
     "s1_bird": {"pitch_cents": 40.0},  # worst positive 14 c, best mistuning control 69 c
-    "s2_motif": {"pitch_cents": 240.0},  # worst positive 225 c, best mistuning control 260 c: a lax C2 (see report)
+    "s2_motif": {"pitch_cents": None},  # r2: no threshold (accepted 20261125-122003-s2 worst note ~1144 c); r1's 240 c withdrawn
     "s3_melody_100ms": {"pitch_cents": None},  # no threshold exists: worst positive >= best mistuning control
     "s3_melody_60ms": {"pitch_cents": None},  # idem
     "s4a_ah": {},
@@ -138,7 +166,14 @@ def pitch_cents(seg, target, fs=FS):
 
     t, f0, _ = pitch_track(seg, fs, fmin=PITCH_RANGE[0], fmax=PITCH_RANGE[1])
     f, m = intended_pitch(target, t)
-    return float(np.median(np.abs(1200.0 * np.log2(np.maximum(f0[m], 1.0) / f[m]))))
+    dev = np.abs(1200.0 * np.log2(np.maximum(f0, 1.0) / f))
+    if not target.notes or len(target.notes) < 2:
+        return float(np.median(dev[m]))
+    per = []  # multi-note: median per note (its interior frames), value = worst note
+    for (_, on, off) in target.notes:
+        mm = m & (t > on) & (t < off)
+        per.append(float(np.median(dev[mm])) if mm.any() else 1200.0)
+    return float(max(per))
 
 
 # -------------------------------------------------------------------------------------------- control builders
@@ -201,6 +236,48 @@ def perfect_echo(target_audio, clap, band, fs=FS):
     return band_limit(np.convolve(target_audio, clap)[: len(target_audio)], band[0], band[1], fs=fs)
 
 
+def near_miss_targets(test, target, seed=0, fs=FS):
+    """Near-miss negatives (review r2), NOT in the C1 distractor set: altered versions of the target sound, to be
+    played through each clap like a perfect echo. Tonal tests only."""
+    from echo.clap import band_limit
+    from echo.targets import _fade, bird_note, note_sequence
+
+    n = len(target.audio)
+    rng = np.random.default_rng(seed)
+    out = {}
+    env = np.sqrt(np.convolve(target.audio ** 2, np.ones(80) / 80, "same"))
+    out["envelope_noise"] = band_limit(rng.standard_normal(n) * env, 500.0, 4000.0, fs=fs)
+    if test == "s1_bird":
+        d = target.duration_s
+        gm = float(np.sqrt(3500.0 * 2000.0))
+        out["steady_tone_mean_pitch"] = np.sin(2 * np.pi * gm * np.arange(n) / fs) * _fade(n, fs)
+        out["rising_glide"] = bird_note(d, 2000.0, 3500.0, fs).audio
+        out["partial_glide_upper"] = bird_note(d, 3500.0, gm, fs).audio
+        out["partial_glide_lower"] = bird_note(d, gm, 2000.0, fs).audio
+        out["time_compressed_glide"] = fit(bird_note(d / 2, 3500.0, 2000.0, fs).audio, n)
+        return {k: fit(v / (np.max(np.abs(v)) or 1.0), n) for k, v in out.items()}
+    freqs = [nt[0] for nt in target.notes]
+    note_s = target.notes[0][2] - target.notes[0][1]
+    i = next(k for k in range(len(freqs) - 1) if freqs[k] != freqs[k + 1])  # first adjacent distinct pair
+    for c in (100, 300):
+        f2 = list(freqs)
+        f2[1] = f2[1] * 2 ** (c / 1200)
+        out[f"wrong_note2_+{c}c"] = note_sequence(f2, note_s, "x", fs).audio
+    f2 = list(freqs)
+    f2[i], f2[i + 1] = f2[i + 1], f2[i]
+    out[f"notes_{i + 1}_{i + 2}_swapped"] = note_sequence(f2, note_s, "x", fs).audio
+    gm = float(np.exp(np.mean(np.log(freqs))))
+    out["steady_tone_mean_pitch"] = note_sequence([gm], n / fs, "x", fs).audio
+    lo, hi = 12 * np.log2(min(freqs) / 440.0) + 69, 12 * np.log2(max(freqs) / 440.0) + 69
+    while True:
+        midi = rng.integers(int(round(lo)) - 2, int(round(hi)) + 3, len(freqs))
+        fr = [float(440.0 * 2 ** ((m - 69) / 12)) for m in midi]
+        if any(abs(1200 * np.log2(a / b)) > 50 for a, b in zip(fr, freqs)):
+            break
+    out["random_sequence"] = note_sequence(fr, note_s, "x", fs).audio
+    return {k: fit(v / (np.max(np.abs(v)) or 1.0), n) for k, v in out.items()}
+
+
 def distractors(test, own_target, other_targets: dict):
     """C1 candidate set: {own name: own, other tests' targets..., own transforms...}, all at the own length."""
     n = len(own_target.audio)
@@ -244,6 +321,20 @@ def majority_value(vals):
     return float(np.sort(np.asarray(vals, float))[MAJORITY - 1])
 
 
+def rests_on(test, thr=None):
+    """Plain statement of what an owner_v2 pass of this test rests on."""
+    thr = THRESHOLDS_V2[test] if thr is None else thr
+    parts = []
+    if thr.get("c1", True):
+        parts.append("C1 closed-set identification")
+    if test in TONAL:
+        parts.append(f"C2 pitch within {thr.get('pitch_cents')} c" + (" per note" if test in MULTI_NOTE else ""))
+    if test == "s4c_hello":
+        parts.append("C3 = the spec_v1 recognizer with the spec's 3-of-5 rule (same judge as spec_v1; owner_v2 adds "
+                     "only the rejected controls, not an independent confirmation)")
+    return "; ".join(parts) + f" (each on >= {MAJORITY} of 5 claps)"
+
+
 def clap_passes(test, v, thr=None):
     thr = THRESHOLDS_V2[test] if thr is None else thr
     ok = bool(v["id_correct"]) if thr.get("c1", True) else True
@@ -267,13 +358,15 @@ def verdict(test, per_clap, thr=None):
     return vals, bool(n_pass >= MAJORITY)
 
 
-def calibrate_pitch(pos_values, mistuning_values, step=5.0):
+def calibrate_pitch(pos_values, mistuning_values, step=5.0, min_margin=MIN_MARGIN_CENTS, cap=MAX_PITCH_T_CENTS):
     """Threshold rule for C2: midway between the worst positive and the best mistuning control (majority values),
-    rounded to `step` cents. Returns (threshold or None, worst_positive, best_control)."""
+    rounded to `step` cents; None unless it is >= min_margin from both sides and < cap.
+    Returns (threshold or None, worst_positive, best_control)."""
     worst, best = float(max(pos_values)), float(min(mistuning_values))
-    if worst >= best:
+    t = float(step * round((worst + best) / 2.0 / step))
+    if t - worst < min_margin or best - t < min_margin or t >= cap:
         return None, worst, best
-    return float(step * round((worst + best) / 2.0 / step)), worst, best
+    return t, worst, best
 
 
 def metric_entries(test, per_clap, thr=None):
@@ -288,7 +381,7 @@ def metric_entries(test, per_clap, thr=None):
     if test in TONAL:
         t = thr.get("pitch_cents")
         val = majority_value([v["pitch_cents"] for v in pc])
-        ents.append({"id": "pitch_cents", "label": "C2: median pitch deviation along the notes (3rd-best clap)",
+        ents.append({"id": "pitch_cents", "label": "C2: median pitch deviation (worst note for multi-note), 3rd-best clap",
                      "value": val, "unit": "cents", "threshold": t, "comparator": "<=",
                      "pass": None if t is None else bool(val <= t),
                      "per_clap": [v["pitch_cents"] for v in pc]})
@@ -317,7 +410,7 @@ def score_v2(test, per_clap, controls, established, margin, note=None, thr=None)
     _, ok = verdict(test, per_clap, thr)
     all_fail = not any(c["pass"] for c in ctrl)
     passed = ok if established else None
-    return {"label": LABEL, "passed": passed, "metrics": metric_entries(test, per_clap, thr), "controls": ctrl,
+    return {"label": LABEL, "passed": passed, "rests_on": rests_on(test, thr), "metrics": metric_entries(test, per_clap, thr), "controls": ctrl,
             "controls_all_fail": bool(all_fail), "margin": margin,
             "note": note if note is not None else (None if established else NULL_NOTE)}
 

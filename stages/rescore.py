@@ -54,7 +54,6 @@ def regen_control_words(out=CONTROL_NPZ, log=print):
     return arrs
 
 
-
 # ------------------------------------------------------------------------------------------------- runs and tests
 TEST_ORDER = ("s1_bird", "s2_motif", "s3_melody_100ms", "s3_melody_60ms", "s4a_ah", "s4b_ma", "s4b_ba", "s4b_om",
               "s4c_hello")
@@ -68,7 +67,9 @@ LISTENING = {"by": "owner", "date": "2026-11-25", "verdict": "pass",
              "blind": False,
              "note": "A human judgment, recorded as such; not an automated pass. Not a blind test: the listener knew "
                      "each target, and knowing the target helps a listener hear it. A blind check is prepared in "
-                     "runs/_criteria/blind_test/."}
+                     "runs/_criteria/blind_test/. Written only on the runs the owner heard (metrics_v2.ACCEPTED_RUNS, "
+                     "pinned: the newest final run per test at the time of the statement, about 14:55; for stage 2 "
+                     "that is 20261125-122003-s2, since 20261125-145628-s2v2 was written at 14:57:45)."}
 DECONV_EPS = 1e-5  # Tikhonov term re max |C0|^2; validated on the saved stage-4 per-clap echoes (<= 2.3 % error)
 
 
@@ -210,6 +211,10 @@ def build_controls(test, acc, others, claps, words=None):
         if test in V.MULTI_NOTE:
             C.append({"name": "perfect_notes_3_4_swapped", "kind": "e notes swapped (perfect echo)",
                       "segs": V.notes_swapped(per, acc["target"].notes)})
+    if test in V.TONAL:  # near-miss negatives (review r2): altered targets through each clap, outside the C1 set
+        for name, a in V.near_miss_targets(test, acc["target"]).items():
+            C.append({"name": f"near_miss:{name}", "kind": "g near miss (altered target * clap)",
+                      "segs": np.stack([V.perfect_echo(a, c, band) for c in claps])})
     if test == "s4c_hello" and words:
         for w, s in words.items():
             C.append({"name": f"other_word:{w}", "kind": "f other word (4c pipeline, Tier 0)", "segs": V.fit(s, n)})
@@ -225,19 +230,21 @@ def load_words():
 
 
 # ------------------------------------------------------------------------------------------------- main study
-def study(runs_root=None, log=print, tests=None):
+def study(runs_root=None, log=print, tests=None, calibrate=False):
     """Score every final run under owner_v2. Returns (per-run blocks, per-test study)."""
     import echo.metrics_v2 as V
     from echo.clap import clap_family
 
     claps = clap_family(5)
     runs = [load_run(r, claps) for r in final_runs(runs_root)]
-    newest = {}
-    for r in runs:  # index is newest first
-        newest.setdefault(r["test"], r)
+    newest = {}  # the pinned accepted run of each test (V.ACCEPTED_RUNS), never "the newest"
+    for r in runs:
+        if V.ACCEPTED_RUNS.get(r["test"]) == r["run_id"]:
+            newest[r["test"]] = r
     other_t = {t: newest[t]["target"].audio for t in newest}
     words = load_words()
     blocks, tests_out = {}, {}
+    problems = []
     for test in [t for t in TEST_ORDER if t in newest and (tests is None or t in tests)]:
         acc = newest[test]
         cands = V.distractors(test, acc["target"], other_t)
@@ -255,16 +262,25 @@ def study(runs_root=None, log=print, tests=None):
         thr = dict(V.THRESHOLDS_V2[test])
         calib = None
         if test in V.TONAL:
-            mist = [V.majority_value([v["pitch_cents"] for v in c["per_clap"]]) for c in ctrls if c["kind"] == "e mistuned"]
+            mist = [V.majority_value([v["pitch_cents"] for v in c["per_clap"]]) for c in ctrls
+                    if c["kind"] in ("e mistuned", "e mistuned perfect echo")]
             posv = [V.majority_value([v["pitch_cents"] for v in pc]) for pc in (pos, perfect)]
             t_rule, worst, best = V.calibrate_pitch(posv, mist)
-            calib = {"rule": "midway between worst positive and best mistuning control (3rd-best clap), 5-cent rounding",
+            if t_rule != thr.get("pitch_cents"):
+                problems.append(f"{test}: derived C2 threshold {t_rule} != frozen {thr.get('pitch_cents')}")
+            calib = {"rule": "midway between worst positive and best mistuning control (accepted and perfect echo "
+                             "+-1, +-2 semitones; 3rd-best clap), 5-cent rounding, >= "
+                             f"{V.MIN_MARGIN_CENTS:g} c from both sides, below {V.MAX_PITCH_T_CENTS:g} c",
                      "derived_threshold": t_rule, "frozen_threshold": thr.get("pitch_cents"),
                      "matches_frozen": t_rule == thr.get("pitch_cents"), "worst_positive": worst,
                      "best_mistuning_control": best,
                      "margin_positive": None if t_rule is None else t_rule - worst,
                      "margin_control": None if t_rule is None else best - t_rule}
         c1_valid = sum(bool(v["id_correct"]) for v in perfect) >= V.MAJORITY  # judge-validity rule
+        if c1_valid != bool(thr.get("c1", True)):
+            problems.append(f"{test}: C1 validity on the perfect echo {c1_valid} != frozen {thr.get('c1', True)}")
+        if test == "s4c_hello" and sum(bool(v["hello_hit"]) for v in perfect) < V.MAJORITY:
+            problems.append("s4c_hello: C3 rejects the perfect echo")
         acc_v, acc_ok = V.verdict(test, pos, thr)
         per_v, per_ok = V.verdict(test, perfect, thr)
         ctrl_res = [(c, V.verdict(test, c["per_clap"], thr)) for c in ctrls]
@@ -285,7 +301,34 @@ def study(runs_root=None, log=print, tests=None):
                          "accepted_id_claps": acc_v["id_claps"],
                          "strongest_control": best_ctrl[0]["name"], "strongest_control_values": best_ctrl[1][0]},
                   "pitch": calib}
-        note = None if established else V.NULL_NOTE + " (" + "; ".join(why) + ")"
+        if not established and acc_ok is False and per_ok and n_rej == len(ctrls) and \
+                (test not in V.TONAL or thr.get("pitch_cents") is not None):
+            near = sorted({v["nearest"] for v in pos if not v["id_correct"]})
+            note = ("accepted by ear; the criterion accepts a perfect echo and rejects every control, and it also "
+                    f"rejects the accepted echo ({acc_v['claps_pass']}/5 claps pass; nearest distractor on the "
+                    f"failing claps: {', '.join(near) or '-'}"
+                    + ("; for speech echoes this is often a short tonal target padded with silence, a construction "
+                       "effect of the closed set" if test.startswith("s4") else "") + ")")
+        elif not established and calib is not None and calib["derived_threshold"] is None:
+            note = (V.NULL_NOTE + f" (no C2 pitch threshold exists: worst positive {calib['worst_positive']:.0f} c "
+                    f"(the accepted echo, 3rd-best clap, worst note) against best mistuned control "
+                    f"{calib['best_mistuning_control']:.0f} c, so no automated criterion establishes the pass)")
+        elif not established:
+            note = V.NULL_NOTE + " (" + "; ".join(why) + ")"
+        else:
+            note = None
+        if test == "s4c_hello" and words:
+            from echo import metrics_speech as MS
+
+            z = np.load(CONTROL_NPZ)
+            own = {w: int(sum(MS.recognize(s)[0] for s in z[f"echo_{w}"])) for w in words}
+            tests_out_extra = {"other_words_hello_claps_own_length": own,
+                               "other_words_hello_claps_hello_length": {
+                                   c["name"].split(":")[1]: v["hello_claps"] for c, (v, _) in ctrl_res
+                                   if c["name"].startswith("other_word:")},
+                               "other_words_stored_study": {"yellow": 1, "mellow": 2, "halo": 0}}
+        else:
+            tests_out_extra = {}
         tests_out[test] = {"title": TEST_TITLE[test], "accepted_run": acc["run_id"], "band_hz": list(acc["band"]),
                            "distractors": list(cands), "accepted": {"values": acc_v, "pass": acc_ok},
                            "perfect_echo": {"values": per_v, "pass": per_ok,
@@ -293,14 +336,20 @@ def study(runs_root=None, log=print, tests=None):
                            "controls": [{"name": c["name"], "kind": c["kind"], "values": v, "pass": ok}
                                         for c, (v, ok) in ctrl_res],
                            "controls_rejected": n_rej, "controls_total": len(ctrls), "established": established,
-                           "margin": margin, "note": note}
+                           "margin": margin, "note": note, "rests_on": V.rests_on(test, thr), **tests_out_extra}
         for r in [r for r in runs if r["test"] == test]:
             pc = pos if r is acc else values(r["segs"])
             b = V.score_v2(test, pc, ctrls, established, margin, note=note, thr=thr)
             b.update(test=test, accepted_run=acc["run_id"], echo_source=r["route"],
                      perfect_echo={"values": per_v, "pass": per_ok})
-            blocks[r["run_id"]] = {"run": r, "owner_v2": b, "newest": r is acc}
+            blocks[r["run_id"]] = {"run": r, "owner_v2": b, "accepted": r is acc}
             log(f"  {r['run_id']}: owner_v2 {b['passed']} ({V.verdict(test, pc, thr)[0]})")
+    if problems and not calibrate:
+        raise RuntimeError("frozen owner_v2 calibration differs from the re-derivation (thresholds must not re-fit "
+                           "silently; update THRESHOLDS_V2 only deliberately, with a DECISIONS line):\n  "
+                           + "\n  ".join(problems))
+    for p_ in problems:
+        log("[calibrate] " + p_)
     return blocks, tests_out
 
 
@@ -311,7 +360,7 @@ def write_run_blocks(blocks):
         p = b["run"]["dir"] / "metrics.json"
         m = json.loads(p.read_text())
         m["criteria"] = {"spec_v1": V.spec_v1_block(m), "owner_v2": b["owner_v2"]}
-        m["listening_verdict"] = dict(LISTENING) if b["newest"] else None
+        m["listening_verdict"] = dict(LISTENING, run_id=rid) if b["accepted"] else None
         export.write_json(p, m, indent=1)
 
 
@@ -327,21 +376,30 @@ def write_summary(blocks, tests_out, out_dir=CRIT_DIR):
         r = b["run"]
         m = json.loads((r["dir"] / "metrics.json").read_text())
         o = b["owner_v2"]
-        rows.append({"test": r["test"], "run_id": rid, "newest": b["newest"], "spec_v1": bool(m["passed"]),
-                     "owner_v2": o["passed"], "listening": "pass (owner, not blind)" if b["newest"] else None,
+        rows.append({"test": r["test"], "run_id": rid, "accepted": b["accepted"], "spec_v1": bool(m["passed"]),
+                     "owner_v2": o["passed"], "listening": "pass (owner, not blind)" if b["accepted"] else None,
                      "controls_rejected": sum(not c["pass"] for c in o["controls"]), "controls_total": len(o["controls"]),
-                     "echo_source": o["echo_source"]})
-    rows.sort(key=lambda x: (TEST_ORDER.index(x["test"]), not x["newest"], x["run_id"]))
+                     "rests_on": o["rests_on"], "echo_source": o["echo_source"]})
+    rows.sort(key=lambda x: (TEST_ORDER.index(x["test"]), not x["accepted"], x["run_id"]))
+    acc_rows = [r for r in rows if r["accepted"]]
+    n_conf = sum(r["owner_v2"] is True for r in acc_rows)
     summary = {"label_v1": V.SPEC_V1_LABEL, "label_v2": V.LABEL, "thresholds_v2": V.THRESHOLDS_V2,
-               "majority": V.MAJORITY, "listening_verdict": LISTENING, "runs": rows, "tests": tests_out}
+               "accepted_runs": V.ACCEPTED_RUNS, "majority": V.MAJORITY, "listening_verdict": LISTENING,
+               "confirmed_automatically": f"{n_conf} of {len(acc_rows)}", "runs": rows, "tests": tests_out}
     out_dir.mkdir(parents=True, exist_ok=True)
     export.write_json(out_dir / "summary.json", summary, indent=1)
     L = ["# Criteria: spec_v1 vs owner_v2 vs the owner's listening verdict", "",
          "Generated by `uv run python -m stages.rescore`. spec_v1 = the spec's thresholds and judges (unchanged; "
-         "top-level `passed`). owner_v2 = echo/metrics_v2.py (listening-calibrated; null = no automated criterion "
-         "separates the accepted echo from its negative controls). Listening = the owner's verdict by ear on "
-         "echo_tier1.wav, knowing each target (not blind; see blind_test/).", "",
-         "| test | run | spec_v1 | owner_v2 | listening | controls rejected | margin |", "|---|---|---|---|---|---|---|"]
+         "top-level `passed`). owner_v2 = echo/metrics_v2.py, calibrated on the runs the owner listened to "
+         "(`ACCEPTED_RUNS`). Listening = the owner's verdict by ear on echo_tier1.wav, knowing each target (not "
+         "blind; see blind_test/).", "",
+         "**How to read owner_v2.** On an accepted (calibration) run owner_v2 can only return PASS or null (\"not "
+         "established\"): it cannot fail the echo it was calibrated on. Null is therefore not a soft pass: it means "
+         "no automated criterion in the family confirms what the ear accepted. "
+         f"**Confirmed automatically: {n_conf} of {len(acc_rows)} accepted echoes.** Earlier attempts are scored "
+         "with the same frozen criterion and can fail.", "",
+         "| test | run | spec_v1 | owner_v2 | listening | controls rejected | a pass rests on | numbers |",
+         "|---|---|---|---|---|---|---|---|"]
 
     def v(x):
         return "null" if x is None else ("PASS" if x else "fail")
@@ -349,68 +407,101 @@ def write_summary(blocks, tests_out, out_dir=CRIT_DIR):
     for row in rows:
         t = tests_out[row["test"]]
         mg = t["margin"]
-        parts = [f"id margin {mg['id']['accepted_median_margin']:.2f} (accepted, median clap), "
-                 f"{mg['id']['accepted_id_claps']}/5 claps identified"]
+        acc = t["accepted"]["values"]
+        parts = [f"accepted: {acc['claps_pass']}/5 claps pass; C1 {mg['id']['accepted_id_claps']}/5 identified "
+                 f"(median margin {mg['id']['accepted_median_margin']:.2f}; perfect {mg['id']['perfect_median_margin']:.2f})"]
         if not mg["id"]["c1_used"]:
             parts[0] = "C1 not used (rejects the perfect echo); " + parts[0]
         if mg["pitch"]:
             pm = mg["pitch"]
-            lax = " (lax: over a semitone)" if (pm["frozen_threshold"] or 0) > 100 else ""
-            parts.append(f"pitch T {_fmt(pm['frozen_threshold'], 0)} c{lax}: worst positive {pm['worst_positive']:.0f} c, "
-                         f"best mistuned control {pm['best_mistuning_control']:.0f} c")
-        if "hello_claps" in t["accepted"]["values"]:
-            parts.append(f"hello {t['accepted']['values']['hello_claps']}/5 (perfect "
-                         f"{t['perfect_echo']['values']['hello_claps']}/5), best control "
-                         f"{max(c['values']['hello_claps'] for c in t['controls'])}/5")
-        L.append(f"| {TEST_TITLE[row['test']]} | `{row['run_id']}`{' (newest)' if row['newest'] else ''} | "
+            parts.append(f"C2 T {_fmt(pm['frozen_threshold'], 0)} c (worst positive {pm['worst_positive']:.0f} c, "
+                         f"best mistuned control {pm['best_mistuning_control']:.0f} c); accepted {acc['pitch_cents']:.0f} c")
+        if "hello_claps" in acc:
+            parts.append(f"hello {acc['hello_claps']}/5 (perfect {t['perfect_echo']['values']['hello_claps']}/5), "
+                         f"best control {max(c['values']['hello_claps'] for c in t['controls'])}/5")
+        L.append(f"| {TEST_TITLE[row['test']]} | `{row['run_id']}`{' (heard by owner)' if row['accepted'] else ''} | "
                  f"{v(row['spec_v1'])} | {v(row['owner_v2'])} | {row['listening'] or '-'} | "
-                 f"{row['controls_rejected']}/{row['controls_total']} | {'; '.join(parts) if row['newest'] else '(same criterion)'} |")
+                 f"{row['controls_rejected']}/{row['controls_total']} | {row['rests_on'] if row['owner_v2'] else '-'} | "
+                 f"{'; '.join(parts) if row['accepted'] else '(same frozen criterion)'} |")
     L += ["", "## Per test", ""]
     for test, t in tests_out.items():
         L.append(f"### {t['title']}  (accepted: `{t['accepted_run']}`)")
         L.append(f"- criterion established: {t['established']}" + (f" — {t['note']}" if t["note"] else ""))
+        L.append(f"- a pass rests on: {t['rests_on']}")
         L.append(f"- accepted echo: {t['accepted']['values']}; perfect echo: {t['perfect_echo']['values']}")
+        if "other_words_hello_claps_own_length" in t:
+            L.append(f"- other words, claps heard as \"hello\": at the hello window length "
+                     f"{t['other_words_hello_claps_hello_length']}; at each word's own length "
+                     f"{t['other_words_hello_claps_own_length']}; stored study (own length, same pipeline) "
+                     f"{t['other_words_stored_study']}")
         passing = [c["name"] for c in t["controls"] if c["pass"]]
         L.append(f"- controls rejected {t['controls_rejected']}/{t['controls_total']}"
                  + (f"; passing: {', '.join(passing)}" if passing else ""))
         for c in t["controls"]:
             L.append(f"  - {c['name']} ({c['kind']}): {'PASS' if c['pass'] else 'fail'} {c['values']}")
         L.append("")
-    (out_dir / "summary.md").write_text("\n".join(L) + "\n")
+    (out_dir / "summary.md").write_text("\n".join(L).rstrip("\n") + "\n")
     return summary
 
 
-def make_blind_test(runs, out_dir=CRIT_DIR / "blind_test", seed=20261125):
-    """Echo-only files of the newest final runs under shuffled neutral names, a separate key, and a protocol."""
-    newest = {}
-    for r in runs:
-        newest.setdefault(r["test"], r)
-    tests = [t for t in TEST_ORDER if t in newest]
+def _trim_silence(x, rel=1e-3):
+    a = np.abs(x)
+    idx = np.nonzero(a > rel * (a.max() or 1.0))[0]
+    return x[idx[0]: idx[-1] + 1] if len(idx) else x
+
+
+def make_blind_test(runs, out_dir=CRIT_DIR / "blind_test", key_dir=CRIT_DIR / "blind_test_key", seed=20261125,
+                    lead_s=0.25):
+    """Echo-only files of the accepted runs under shuffled neutral names, every sample and every reference target
+    padded to one common length with the same lead-in (no duration cue), written fresh as
+    plain 24-bit PCM WAV (fmt + data chunks only, no metadata); the key lives in a separate folder that is not handed to listeners."""
+    import echo.metrics_v2 as V
+    import soundfile as sf
+
+    acc = {r["test"]: r for r in runs if V.ACCEPTED_RUNS.get(r["test"]) == r["run_id"]}
+    tests = [t for t in TEST_ORDER if t in acc]
     order = np.random.default_rng(seed).permutation(len(tests))
-    out_dir.mkdir(parents=True, exist_ok=True)
-    (out_dir / "targets").mkdir(exist_ok=True)
-    key = {"seed": seed, "samples": {}}
+    tag = {t: acc[t]["run_id"].split("-", 2)[2] for t in tests}
+    sig = {}
+    for t in tests:
+        e, fs = sf.read(ROOT / "listen" / f"{tag[t]}_echo_only.wav", dtype="float64")
+        g, _ = sf.read(ROOT / "listen" / f"{tag[t]}_target.wav", dtype="float64")
+        sig[t] = (_trim_silence(e), _trim_silence(g))
+    L = int(round(2 * lead_s * FS)) + max(max(len(a), len(b)) for a, b in sig.values())
+    lead = int(round(lead_s * FS))
+
+    def pad(x):  # same lead-in and length for every file, peak at -1 dBFS
+        y = np.zeros(L)
+        y[lead: lead + len(x)] = x / (np.max(np.abs(x)) or 1.0) * 10 ** (-1 / 20)
+        return y
+
+    if out_dir.exists():
+        shutil.rmtree(out_dir)
+    (out_dir / "targets").mkdir(parents=True)
+    key_dir.mkdir(parents=True, exist_ok=True)
+    key = {"seed": seed, "length_samples": L, "lead_in_s": lead_s, "samples": {}}
     for i, j in enumerate(order):
         t = tests[j]
-        r = newest[t]
-        tag = r["run_id"].split("-", 2)[2]
-        src = ROOT / "listen" / f"{tag}_echo_only.wav"
         name = f"sample_{i + 1:02d}.wav"
-        shutil.copyfile(src, out_dir / name)
-        key["samples"][name] = {"test": t, "title": TEST_TITLE[t], "run_id": r["run_id"],
-                                "source": str(src.relative_to(ROOT))}
+        sf.write(out_dir / name, pad(sig[t][0]), FS, subtype="PCM_24")  # PCM: no PEAK chunk
+        key["samples"][name] = {"test": t, "title": TEST_TITLE[t], "run_id": acc[t]["run_id"],
+                                "source": f"listen/{tag[t]}_echo_only.wav"}
     tnames = []
-    for t in tests:  # target choices under descriptive names, alphabetical (no link to sample numbers)
+    for t in tests:  # target choices under descriptive names (no link to sample numbers)
         nm = TEST_TITLE[t].lower().replace('"', "").replace(",", "").replace(" ", "_") + ".wav"
-        shutil.copyfile(ROOT / "listen" / f"{newest[t]['run_id'].split('-', 2)[2]}_target.wav", out_dir / "targets" / nm)
+        sf.write(out_dir / "targets" / nm, pad(sig[t][1]), FS, subtype="PCM_24")
         tnames.append(nm)
-    export.write_json(out_dir / "key.json", key, indent=1)
+    export.write_json(key_dir / "key.json", key, indent=1)
+    (key_dir / "README.md").write_text("# Blind test answer key\n\nKeep this folder away from listeners until the "
+                                       "tally is done. `key.json` maps each sample to its test and run.\n")
     lines = ["# Blind listening test", "",
              f"{len(tests)} echoes (`sample_01.wav` ... `sample_{len(tests):02d}.wav`), the echo alone at full volume, "
-             f"one per test, shuffled with a fixed seed ({seed}). The answer key is `key.json`: keep it closed until "
-             "the tally is done.", "",
-             "Protocol. Play each sample to someone who has not seen or heard the targets and has not read the key. "
-             "First ask \"what do you hear?\" and write the answer down verbatim. Then play the target sounds in "
+             f"one per test (the runs the owner heard), shuffled with a fixed seed. Every sample and every target is "
+             f"padded to the same length ({L / FS:.2f} s, {lead_s:g} s lead-in) so duration gives nothing away. "
+             "The answer key is NOT in this folder: it is in `../blind_test_key/`. Do not hand that folder to "
+             "listeners.", "",
+             "Protocol. Play each sample to someone who has not seen or heard the targets. First ask \"what do you "
+             "hear?\" and write the answer down verbatim. Then play the target sounds in "
              f"`targets/` ({len(tests)} files, listed alphabetically below) and ask \"which of these {len(tests)} "
              "sounds is it?\" (one choice; \"none\" allowed). Repeat for every sample in a fresh random order, with "
              "no feedback in between. Tally the open answers that name the target and the closed-set choices that "
@@ -424,13 +515,15 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--regen-controls", action="store_true")
     ap.add_argument("--dry-run", action="store_true", help="print the study, write nothing")
+    ap.add_argument("--calibrate", action="store_true", help="tonal tests only: print derived vs frozen, write nothing")
     ap.add_argument("--runs-root", default=None)
     a = ap.parse_args(argv)
     if a.regen_controls:
         regen_control_words()
         return
-    blocks, tests_out = study(a.runs_root)
-    if a.dry_run:
+    blocks, tests_out = study(a.runs_root, calibrate=a.calibrate,
+                              tests=list(__import__("echo.metrics_v2").metrics_v2.TONAL) if a.calibrate else None)
+    if a.dry_run or a.calibrate:
         for t, v in tests_out.items():
             print(t, v["established"], v["accepted"], v["perfect_echo"]["values"], v["margin"]["pitch"],
                   [(c["name"], c["pass"], c["values"]) for c in v["controls"]])
