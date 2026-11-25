@@ -52,7 +52,7 @@ POSTS_PER_PERIOD = 1
 # study outputs (runs/s3_melody/_studies/), copied into metrics.design_study (note_length_sweep is Tier 0 ONLY)
 STUDY_FILES = ("design_study_tier0.json", "note_length_sweep_tier0.json", "strip_density_tier0.json",
                "wedge_density_tier0.json",
-               "design_study_tier0_wedge1deg_2cm.json")  # the last two: the first (abandoned) +-1 deg 2 cm design
+               "design_study_tier0_wedge1deg_2cm.json", "fullwedge_tier0.json")  # the last two: the first (abandoned) +-1 deg 2 cm design
 
 
 def note_s_of(note_ms):
@@ -119,7 +119,7 @@ def sigma_total_m(a, f, c=C0, n_ang=721):
     return float(2.0 / (math.pi * k) * np.mean(np.abs(T) ** 2) * 2 * math.pi)
 
 
-def extinction_estimate_db(posts, scene, f, rho_eval):
+def extinction_estimate_db(posts, scene, f, rho_eval, half_width_m="strip"):
     """Single-scatterer optical-depth estimate of the two-way coherent loss (dB) of the echo from bistatic range
     rho_eval: each post at range r < rho_eval removes sigma / (2 r tan(half-angle)) of the wedge's rays, out and back.
     Rough: ignores forward scattering refill; stage 1 measured ~7 dB fade across its note where this gives ~10 dB."""
@@ -129,8 +129,9 @@ def extinction_estimate_db(posts, scene, f, rho_eval):
     r = np.linalg.norm(posts[:, :2], axis=1)
     m = r < rho_eval
     w = 2 * r[m] * math.tan(math.radians(scene.half_angle_deg))
-    if HALF_WIDTH_M is not None:
-        w = np.minimum(w, 2 * HALF_WIDTH_M)
+    hw = HALF_WIDTH_M if half_width_m == "strip" else half_width_m  # None: the full wedge
+    if hw is not None:
+        w = np.minimum(w, 2 * hw)
     tau = np.sum(s / w)  # one-way intensity optical depth
     return float(8.686 * tau)  # two-way amplitude: exp(-tau/2) each way -> 20 log10 e^{-tau} = 8.686 tau dB
 
@@ -389,6 +390,106 @@ def wedge_study():
     print("wrote wedge study", f"{time.time() - t_all:.0f} s", flush=True)
 
 
+FW_CANDIDATES = ((0.0005, "phase_locked", 1), (0.001, "phase_locked", 1), (0.001, "phase_locked", 2),
+                 (0.001, "phase_locked_uniform", 4), (0.002, "phase_locked", 1))
+
+
+def make_fullwedge_config(note_ms=100, **kw):
+    """Fast-model-only design in the FULL +-20 deg wedge (no strip clip): ring populations grow with range as the
+    2D spreading compensation asks; full clap band (no Tier 1 grid cap). Never verified (Tier 1 cost, see study)."""
+    base = dict(title=f"Melody, full +-20 deg wedge, {note_ms} ms notes, fast model only - NOT verified",
+                tag="s3fw" if note_ms == 100 else f"s3fw_{note_ms}ms", max_half_width_m=None, profile_transform=None,
+                band_max_hz=None, max_posts=60000, robustness=False, field=False, target_fill=FW_FILL,
+                posts_per_period=FW_K[1], realization=FW_K[0],
+                design_study_files=("fullwedge_tier0.json", "note_length_sweep_tier0.json"),
+                notes="Fast model (Tier 0) only, NOT verified: the full-wave cost of the full wedge is prohibitive "
+                      "(fullwedge_tier0.json tier1_cost_full_wedge).")
+    base.update(kw)
+    return make_config(note_ms, **base)
+
+
+FW_FILL = 0.001
+FW_K = ("phase_locked", 1)
+
+
+def fullwedge_study():
+    """Tier 0: candidates in the full +-20 deg wedge, chosen by the FULL-band 2D spectrogram loss under 2 mm radial
+    jitter (seed 11); judges informational. Per note: harmonic and clutter (non-note power) ratios, predicted
+    extinction. Then 1/2/5 mm jitter of the pick and the Tier 1 cost of the full wedge."""
+    from echo import tier1
+    from stages.common import stage_listeners, tier0_equalize
+    from stages.s2_motif import radial_jitter
+
+    torch.set_num_threads(4)
+    t_all = time.time()
+    cfg = make_fullwedge_config(100)
+    target = cfg.make_target()
+    claps = clap_family(cfg.n_claps, seed=cfg.seed)
+    n_out = int(round(cfg.duration_s * FS))
+    bf = clap_band(claps)
+    t0 = 2 * cfg.r0 / C0
+    prof, res = solve_profile(target, claps, stage_scene(cfg), r0=cfg.r0, dr=cfg.dr, a_ref=cfg.a_ref, steps=0,
+                              n_out=n_out, band=bf)
+    prof, _ = tier0_equalize(cfg, prof, target, claps, bf, n_out, res.n0 / FS, cfg.tier0_equalize_rounds)
+    cl = torch.as_tensor(claps)
+
+    def jl(posts, sig, seed):
+        pj = radial_jitter(posts, sig, seed)
+        ej = post_echo(pj, cl, stage_scene(cfg, pj), mode="2d", n_out=n_out, band=bf).numpy()
+        return window_loss(ej, target.audio, bf, cfg.r0, C0, claps.shape[1]), ej
+
+    rows, picks = [], {}
+    for fill, mode, K in FW_CANDIDATES:
+        t = time.time()
+        c = replace(cfg, target_fill=fill, realization=mode, posts_per_period=K)
+        posts, st = _design(c, prof, claps, bf, fill, mode, K, precomp=False)
+        r = {"fill_target": fill, "mode": mode, "posts_per_period": K, "dropped": int(st["dropped"]),
+             "n_rings": st.get("n_rings"), "label": f"full wedge fill={fill * 100:.2f}% {mode} K={K}"}
+        r.update(_evaluate(c, posts, target, claps, bf, bf, t0, n_out))
+        e_full = post_echo(posts, cl, stage_scene(c, posts), mode="2d", n_out=n_out, band=bf).numpy()
+        r["tonal_fraction_db"] = tonal_fraction_db(e_full, t0, target.notes)
+        r["extinction_estimate_db_per_note"] = [extinction_estimate_db(posts, stage_scene(c, posts), f,
+                                                                       cfg.r0 + C0 * (a + b) / 4, None)
+                                                for f, a, b in target.notes]
+        r["loss_full_band_jitter_2mm"], _ = jl(posts, 0.002, 11)
+        r["loss"] = r["loss_full_band_jitter_2mm"]
+        r["wall_s"] = round(time.time() - t, 1)
+        rows.append(r)
+        picks[len(rows) - 1] = posts
+        j = r["info_only_note_judge_full_band"]
+        print(f"{r['label']:44s} N={r['n_posts']:6d} drop={r['dropped']} loss {r['loss_tier0_full_band']:.3f} "
+              f"jit2 {r['loss']:.3f} tonal {[round(x, 1) for x in r['tonal_fraction_db']]} "
+              f"H2 {[round(x, 1) for x in r['harmonic_to_fundamental_db_full_band']]} "
+              f"ext {[round(x, 1) for x in r['extinction_estimate_db_per_note']]} "
+              f"[info: order {j['per_clap_in_order']} n {j['n_notes_detected']}] ({r['wall_s']} s)", flush=True)
+    ib = min(range(len(rows)), key=lambda i: rows[i]["loss"])
+    jit = []
+    for sig in (0.001, 0.002, 0.005):
+        ls, ords = [], []
+        for sd in (11, 12, 13):
+            l, ej = jl(picks[ib], sig, sd)
+            ls.append(l)
+            ords.append(judge_info(ej, target, t0, bf)["notes_in_order"])
+        jit.append({"sigma_m": sig, "loss_mean": float(np.mean(ls)), "info_only_notes_in_order_mean": float(np.mean(ords))})
+        print("jitter", jit[-1], flush=True)
+    # full-wave cost of the full wedge at the 2.5 kHz grid (plan only)
+    tg = target
+    c25 = make_fullwedge_config(100)
+    pl = tier1.plan(stage_scene(c25, np.array([[60.0, 0.0, A_REF]])), 2500.0, c25.duration_s,
+                    stage_listeners(c25, tg), ppw=10.0)
+    g = pl["grid"]
+    cs = float(g.nx * g.ny * pl["n_steps"])
+    cost = {"grid": [g.nx, g.ny], "n_steps": pl["n_steps"], "cell_steps": cs,
+            "est_hours_idle_8_threads": cs / 55e9 * 260 / 3600, "est_hours_incl_empty_scene": 2 * cs / 55e9 * 260 / 3600}
+    print("cost", cost, flush=True)
+    out = {"what": "Tier 0 ONLY (unverified): 100 ms melody in the full +-20 deg wedge, 1 cm posts, full clap band",
+           "selection": "lowest full-band 2D window_loss under 2 mm radial jitter (seed 11); judges informational",
+           "band_hz": list(bf), "rows": rows, "picked": ib, "picked_label": rows[ib]["label"],
+           "jitter_of_pick": jit, "tier1_cost_full_wedge": cost, "wall_s": time.time() - t_all}
+    (STUDY / "fullwedge_tier0.json").write_text(json.dumps(export_clean(out), indent=1))
+    print("wrote fullwedge study; pick", rows[ib]["label"], f"{time.time() - t_all:.0f} s", flush=True)
+
+
 def note_length_sweep():
     """Tier 0 ONLY: the configured realization at each note length (same geometry, fill and seed), judge on the
     band-capped (Tier 1 band) and full-band echo, and the judge on the physically perfect echo (floor)."""
@@ -490,6 +591,9 @@ def postprocess(run_dir, cfg, des):
                          f"SPL = {DIRECT_SPL_DB:.2f} dB + level (100 dB peak at 1 m clap); 35 dB = likely inaudible",
            "notes_hz": [float(f) for f, _, _ in target.notes],
            "tier0_2d_db": p0_2d, "tier0_3d_db": p0_3d, f"tier0_3d_finite_height_{cfg.post_height_m:g}m_db": p0_3dh}
+    lvl["tier0_3d_spl_db"] = [DIRECT_SPL_DB + v for v in p0_3d]
+    lvl[f"tier0_3d_finite_height_{cfg.post_height_m:g}m_spl_db"] = [DIRECT_SPL_DB + v for v in p0_3dh]
+    lvl["tier0_notes_below_35_db_spl"] = [i for i, v in enumerate(p0_3d) if DIRECT_SPL_DB + v < 35.0]
     if des.echo_t1_2d is not None:
         p1 = _peaks_per_note(des.echo_t1_2d, t0, target.notes)
         gap = [a - b for a, b in zip(p1, p0_2d)]
@@ -744,6 +848,35 @@ def diagnose(run_dir):
     return d
 
 
+def fullwedge_extra(run_dir, cfg, des):
+    """Facts of the fast-model full-wedge design: fill along range, predicted extinction per note, jitter (from the
+    study), full-wave cost that prevented verification."""
+    run_dir = Path(run_dir)
+    mp = run_dir / "metrics.json"
+    m = json.loads(mp.read_text())
+    target = cfg.make_target()
+    P = des.posts
+    rho = np.linalg.norm(P[:, :2], axis=1)
+    edges = np.arange(cfg.r0, rho.max() + 10.0, 10.0)
+    cnt, _ = np.histogram(rho, edges)
+    th = math.radians(cfg.half_angle_deg)
+    area = th * (edges[1:] ** 2 - edges[:-1] ** 2)
+    fill = cnt * math.pi * cfg.a_ref ** 2 / area
+    mid = [cfg.r0 + C0 * (a + b) / 4 for _, a, b in target.notes]
+    st = json.loads((STUDY / "fullwedge_tier0.json").read_text()) if (STUDY / "fullwedge_tier0.json").exists() else {}
+    m["fullwedge"] = {
+        "label": "FAST MODEL (Tier 0) ONLY - NOT VERIFIED on the full-wave solver",
+        "post_count": int(len(P)),
+        "fill_along_range": {"range_m": [float(x) for x in edges[:-1]], "posts": [int(x) for x in cnt],
+                             "areal_fill_fraction": [float(x) for x in fill], "band_m": 10.0},
+        "predicted_two_way_extinction_db_per_note": [extinction_estimate_db(P, des.scene, f, r, None)
+                                                     for (f, _, _), r in zip(target.notes, mid)],
+        "jitter_tier0": st.get("jitter_of_pick"), "tier1_cost_full_wedge": st.get("tier1_cost_full_wedge"),
+        "selection": st.get("selection")}
+    mp.write_text(json.dumps(export_clean(m), indent=1))
+    print("fullwedge:", json.dumps({k: m["fullwedge"][k] for k in ("post_count", "predicted_two_way_extinction_db_per_note")}))
+
+
 def export_clean(o):
     """Plain JSON (no NaN / Infinity), as the data contract requires."""
     if isinstance(o, dict):
@@ -766,19 +899,30 @@ def main(argv=None):
         return note_length_sweep()
     if "--wedge-study" in argv:
         return wedge_study()
+    if "--fullwedge-study" in argv:
+        return fullwedge_study()
     if "--diagnose" in argv:
         return [diagnose(d) for d in argv[argv.index("--diagnose") + 1:]]
     if "--attach-studies" in argv:
         return [attach_studies(d) for d in argv[argv.index("--attach-studies") + 1:]]
+    design = None
+    if "--design" in argv:
+        i = argv.index("--design")
+        design = argv[i + 1]
+        del argv[i:i + 2]
+        if design != "fullwedge" or "--tier0-only" not in argv:
+            raise SystemExit("--design fullwedge is a fast-model design: use it with --tier0-only")
     note_ms = 100
     if "--note-ms" in argv:
         i = argv.index("--note-ms")
         note_ms = int(argv[i + 1])
         del argv[i:i + 2]
-    cfg = make_config(note_ms)
+    cfg = make_config(note_ms) if design is None else make_fullwedge_config(note_ms)
     out = stage_main(cfg, argv)
     postprocess(out[0], cfg, out[1])
     attach_studies(out[0])
+    if design == "fullwedge":
+        fullwedge_extra(out[0], cfg, out[1])
     if out[1].echo_t1_2d is not None and not json.loads((Path(out[0]) / "metrics.json").read_text())["passed"]:
         diagnose(out[0])
     return out

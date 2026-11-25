@@ -1,0 +1,10 @@
+full wedge fill=0.05% phase_locked K=1       N= 10924 drop=0 loss 6.052 jit2 6.839 tonal [-12.5, -15.5, -11.3, -4.6, -5.3, -11.3, -15.8, -25.5] H2 [8.7, 14.9, 10.8, 2.9, 3.6, 10.8, 15.5, 24.1] ext [0.2, 0.4, 0.8, 1.4, 1.7, 1.4, 1.5, 1.2] [info: order [0.0, 0.0, 1.0, 0.0, 0.0] n [8, 8, 8, 7, 6]] (31.9 s)
+full wedge fill=0.10% phase_locked K=1       N= 21849 drop=0 loss 6.120 jit2 6.663 tonal [-15.0, -16.7, -12.0, -5.6, -5.4, -11.5, -16.1, -25.7] H2 [14.2, 16.4, 11.7, 4.3, 3.9, 11.2, 15.9, 24.2] ext [0.2, 0.7, 1.3, 2.5, 3.1, 2.7, 2.7, 2.3] [info: order [0.0, 0.0, 0.0, 0.0, 0.0] n [9, 9, 9, 7, 7]] (41.3 s)
+full wedge fill=0.10% phase_locked K=2       N= 21849 drop=0 loss 5.651 jit2 6.853 tonal [-7.1, -5.4, -1.1, -0.2, -0.2, -1.0, -5.3, -21.4] H2 [-8.6, -2.4, -6.4, -14.4, -13.6, -6.4, -1.7, 6.7] ext [0.3, 0.8, 1.5, 2.7, 3.3, 2.9, 2.9, 2.4] [info: order [0.0, 0.0, 1.0, 0.0, 0.0] n [9, 9, 8, 3, 9]] (41.5 s)
+full wedge fill=0.10% phase_locked_uniform K=4 N= 21849 drop=0 loss 6.880 jit2 7.165 tonal [-14.7, -8.5, -1.0, -0.3, -0.2, -0.4, -4.3, -20.4] H2 [-1.1, -8.2, -26.7, -25.0, -27.0, -25.3, -30.0, -13.3] ext [0.2, 0.6, 1.2, 2.3, 2.9, 2.6, 2.6, 2.3] [info: order [0.0, 0.0, 0.0, 0.0, 0.0] n [7, 9, 8, 4, 8]] (39.7 s)
+full wedge fill=0.20% phase_locked K=1       N= 43697 drop=0 loss 6.115 jit2 6.505 tonal [-16.6, -17.4, -12.4, -5.9, -5.7, -11.7, -16.3, -25.8] H2 [16.3, 17.0, 12.2, 4.6, 4.3, 11.4, 16.0, 24.3] ext [0.4, 1.3, 2.5, 4.8, 6.0, 5.3, 5.4, 4.6] [info: order [0.0, 0.0, 1.0, 1.0, 1.0] n [8, 8, 8, 8, 8]] (81.7 s)
+jitter {'sigma_m': 0.001, 'loss_mean': 6.299256324768066, 'info_only_notes_in_order_mean': 0.6}
+jitter {'sigma_m': 0.002, 'loss_mean': 6.499635219573975, 'info_only_notes_in_order_mean': 0.6}
+jitter {'sigma_m': 0.005, 'loss_mean': 6.867404143015544, 'info_only_notes_in_order_mean': 0.4000000000000001}
+cost {'grid': [10499, 7199], 'n_steps': 68025, 'cell_steps': 5141486025525.0, 'est_hours_idle_8_threads': 6.751446296143939, 'est_hours_incl_empty_scene': 13.502892592287878}
+wrote fullwedge study; pick full wedge fill=0.20% phase_locked K=1 435 s
