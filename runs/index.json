@@ -2,6 +2,16 @@
  "runs": [
   {
    "stage": "s1_bird",
+   "run_id": "20261125-095837-s1",
+   "path": "s1_bird/20261125-095837-s1",
+   "title": "Bird note, 3.5 to 2.0 kHz whistle, 80 ms",
+   "created": "2026-11-25T09:59:33+02:00",
+   "status": "final",
+   "passed": false,
+   "verified": true
+  },
+  {
+   "stage": "s1_bird",
    "run_id": "20261125-033940-s1",
    "path": "s1_bird/20261125-033940-s1",
    "title": "Bird note, 3.5 to 2.0 kHz whistle, 80 ms",
@@ -9,16 +19,6 @@
    "status": "final",
    "passed": false,
    "verified": true
-  },
-  {
-   "stage": "s1_bird",
-   "run_id": "20261125-013334-s1",
-   "path": "s1_bird/20261125-013334-s1",
-   "title": "Bird note, 3.5 to 2.0 kHz whistle, 80 ms",
-   "created": "2026-11-25T01:33:34+02:00",
-   "status": "tier0_only",
-   "passed": false,
-   "verified": false
   }
  ]
 }

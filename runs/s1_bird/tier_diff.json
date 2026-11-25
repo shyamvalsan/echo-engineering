@@ -37,6 +37,42 @@
     }
    ],
    "equivalent_radial_jitter_m": 0.0034684398359576883
+  },
+  {
+   "run": "20261125-095837-s1",
+   "n_posts": 1060,
+   "tier1_vs_tier0": {
+    "stretch_eps": -0.0023799999999999997,
+    "offset_s": 4.7999999999999994e-05,
+    "corr_raw": 0.18953398682136233,
+    "corr_stretched": 0.9827858330903513,
+    "residue_db_gain_only": -0.15888337520737983,
+    "residue_db_stretched": -14.668381831722774,
+    "residue_db_stretched_fir33": -16.19206040832632
+   },
+   "tier0_jitter_residue": [
+    {
+     "sigma_m": 0.001,
+     "residue_db_stretched_fir33": -28.00997777910608
+    },
+    {
+     "sigma_m": 0.002,
+     "residue_db_stretched_fir33": -21.868531945264294
+    },
+    {
+     "sigma_m": 0.003,
+     "residue_db_stretched_fir33": -18.206537697668328
+    },
+    {
+     "sigma_m": 0.004,
+     "residue_db_stretched_fir33": -15.548949765424133
+    },
+    {
+     "sigma_m": 0.006,
+     "residue_db_stretched_fir33": -11.659415509778952
+    }
+   ],
+   "equivalent_radial_jitter_m": 0.0037580096466049524
   }
  ]
 }

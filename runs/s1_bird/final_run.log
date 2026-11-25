@@ -1,0 +1,53 @@
+step    0 loss 2.3623 (stft 1.3982 mel 0.9640) 0.3s
+step   25 loss 1.8561 (stft 1.2172 mel 0.6389) 0.8s
+step   50 loss 1.7296 (stft 1.1656 mel 0.5640) 1.2s
+step   75 loss 1.6374 (stft 1.1309 mel 0.5065) 1.7s
+step  100 loss 1.6207 (stft 1.1230 mel 0.4977) 2.2s
+step  125 loss 1.5471 (stft 1.0976 mel 0.4495) 2.7s
+step  150 loss 1.5159 (stft 1.0859 mel 0.4300) 3.1s
+step  175 loss 1.4824 (stft 1.0736 mel 0.4088) 3.4s
+step  200 loss 1.5488 (stft 1.0864 mel 0.4624) 4.0s
+step  225 loss 1.5110 (stft 1.0734 mel 0.4376) 4.5s
+step  250 loss 1.5006 (stft 1.0762 mel 0.4244) 4.8s
+step  275 loss 1.4971 (stft 1.0726 mel 0.4245) 5.2s
+step  300 loss 1.5050 (stft 1.0678 mel 0.4372) 5.6s
+  realized 1060 posts (0 s)
+  tier1 239 s (empty cached: True)
+  density sweep fill 0.0035: 1060 posts, Tier 1 loss 4.6722
+  realized 1999 posts (1 s)
+  tier1 243 s (empty cached: True)
+  density sweep fill 0.0066: 1999 posts, Tier 1 loss 4.7730
+  realized 3029 posts (1 s)
+  tier1 244 s (empty cached: True)
+  density sweep fill 0.01: 3029 posts, Tier 1 loss 4.8609
+correction round 0: loss 4.6722 score -0.1008 gains [0.58, 0.74, 0.87, 1.0, 1.11, 1.19, 1.29, 1.28, 1.0] (1 s)
+  realized 1060 posts (0 s)
+  tier1 239 s (empty cached: True)
+correction round 1: loss 4.7213 score -0.2401 gains [0.96, 0.91, 0.95, 1.01, 0.98, 1.02, 1.09, 1.03, 1.0] (239 s)
+robustness c=331: {'pitch_err_pct': 3.963190185800058, 'pitch_err_mean_pct': 2.1741176907362982, 'pitch_err_median_pct': 2.179435388121169, 'spec_corr': 0.7025785553059148} pass False (270 s)
+robustness c=349: {'pitch_err_pct': 4.315674326217036, 'pitch_err_mean_pct': 1.9068138578489822, 'pitch_err_median_pct': 1.6954836118177496, 'spec_corr': 0.709484457099489} pass False (244 s)
+robustness jitter: {'pitch_err_pct': 3.963944646090012, 'pitch_err_mean_pct': 1.2699360418952044, 'pitch_err_median_pct': 0.9463697567169028, 'spec_corr': 0.6907549723293159} pass False (305 s)
+
+=== s1_bird  FAILED  verified=True  fragile=False ===
+run: /home/shyam/projects/echo/runs/s1_bird/20261125-095837-s1
+  [tier1*] pitch_err_pct          3.302500643529645      thr <=3.0  pass False
+  [tier1 ] pitch_err_mean_pct     1.081880459812711      thr None  pass None
+  [tier1 ] pitch_err_median_pct   0.7959752676563014     thr None  pass None
+  [tier1*] spec_corr              0.7201796933959198     thr >=0.8  pass False
+  [tier0 ] pitch_err_pct          2.562699803888362      thr <=3.0  pass True
+  [tier0 ] spec_corr              0.8974690127888556     thr >=0.8  pass True
+  judge floor (perfect echo): {'pitch_err_pct': 2.531, 'pitch_err_mean_pct': 0.972, 'pitch_err_median_pct': 0.851, 'spec_corr': 0.976}
+  echo level -49.1 dB re direct (raw 3D -46.0, 2.0 m posts -48.3), SPL 61.3 dB, tier gap -3.144165516173674, depth 13.35 m, 1060 posts, fill 0.0035
+  robust nominal            pass False pitch_err_pct=3.3 spec_corr=0.72
+  robust listener_side_1m   pass False pitch_err_pct=47.5 spec_corr=0.353
+  robust listener_back_1m   pass False pitch_err_pct=21.1 spec_corr=0.555
+  robust c_331              pass False pitch_err_pct=3.96 spec_corr=0.703
+  robust c_349              pass False pitch_err_pct=4.32 spec_corr=0.709
+  robust jitter             pass False pitch_err_pct=3.96 spec_corr=0.691
+  robust clap_0             pass False pitch_err_pct=2.45 spec_corr=0.728
+  robust clap_1             pass False pitch_err_pct=3.68 spec_corr=0.742
+  robust clap_2             pass False pitch_err_pct=2 spec_corr=0.725
+  robust clap_3             pass False pitch_err_pct=5.32 spec_corr=0.72
+  robust clap_4             pass False pitch_err_pct=3.06 spec_corr=0.686
+  failure cause: Tier 1 pitch error along the note, worst frame = 3.3% misses <= 3.0% (judge floor on a perfect echo: 2.53%); Tier 1 spectrogram correlation, log-mel = 0.72 misses >= 0.8 (judge floor on a perfect echo: 0.976)
+  wall: {'profile_solve_s': 6.9, 'realize_s': 2.2, 'tier1_loop_s': 964.8, 'density_sweep_s': 729.0, 'correction_loop_s': 969.0, 'tier1_field_run_s': 257.0, 'robustness_s': 823.5, 'field_video_s': 55.5, 'total_s': 2112.9}
