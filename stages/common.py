@@ -72,6 +72,9 @@ class StageConfig:
     fill_candidates: tuple | None = None  # optional density sweep on Tier 1 before the loop: pick the fill with the
     #   lowest Tier 1 spectrogram loss (window_loss; never a judge). None: use target_fill as is.
     status: str | None = None  # None: "final" with Tier 1, "tier0_only" without; "intermediate" for provisional runs
+    realization: str = "sampling"  # "sampling" (inverse-CDF + range polish) or "phase_locked" (posts on carrier rings)
+    posts_per_period: int = 1  # phase_locked: K rings per carrier period at raised-cosine quantiles (1 = pure comb)
+    design_study_files: tuple = ()  # JSON files (relative to runs/<stage>/) copied into metrics.design_study
 
 
 @dataclass
@@ -115,9 +118,11 @@ def stage_scene(cfg: StageConfig, posts=None, c=C0) -> Scene:
 def build_design(cfg: StageConfig, profile, claps, band, n_out, seed=None) -> Design:
     """Realize a physical-scale profile and evaluate Tier 0 (2D post echo, 3D post echo, 2D profile echo)."""
     sc = stage_scene(cfg)
+    pl = cfg.realization == "phase_locked"
     posts, st = realize(profile, sc, cfg.seed if seed is None else seed, r0=cfg.r0, dr=cfg.dr, a_ref=cfg.a_ref,
                         radii=tuple(cfg.catalog), band=band, shadow_depth=cfg.shadow_depth, claps=claps,
-                        refine_steps=cfg.refine_steps)
+                        refine_steps=0 if pl else cfg.refine_steps, mode=cfg.realization,
+                        posts_per_period=cfg.posts_per_period)
     sc = stage_scene(cfg, posts)
     cl = torch.as_tensor(claps)
     e2 = post_echo(posts, cl, sc, mode="2d", n_out=n_out, band=band).numpy()
@@ -259,6 +264,18 @@ def _spec_corr_mean(e, target, t0, band):
     return float(np.mean([spec_corr(s, target.audio, FS, band) for s in echo_segment(e, t0, len(target.audio))]))
 
 
+def stage_listeners(cfg: StageConfig, target):
+    """The 7 Tier 1 sensors of a stage: [nominal, 1 m sideways, 1 m back] + 4 passive anchors at the corners of the
+    wedge's bounding rectangle (they fix the domain, so the cached empty-scene run is reused by every design)."""
+    from echo.robustness import robustness_listeners
+
+    r_hi = cfg.r0 + C0 * len(target.audio) / FS / 2.0 + 0.1
+    th = np.radians(cfg.half_angle_deg)
+    x_lo, y_hi = stage_scene(cfg).r_min * np.cos(th), r_hi * np.sin(th)  # bounding rectangle of the wedge
+    anchors = np.array([[x, y] for x in (x_lo, r_hi) for y in (-y_hi, y_hi)])
+    return np.vstack([robustness_listeners(stage_scene(cfg)), anchors])
+
+
 def tier1_engine():
     from echo import tier1
 
@@ -324,11 +341,7 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
         # bounding rectangle. Tier 1's domain
         # is the bounding box of posts and sensors (snapped to 0.25 m), so the anchors fix the domain for every design
         # of the stage and the cached empty-scene run is reused across correction rounds (sensors only record).
-        r_hi = cfg.r0 + C0 * len(target.audio) / FS / 2.0 + 0.1
-        th = np.radians(cfg.half_angle_deg)
-        x_lo, y_hi = stage_scene(cfg).r_min * np.cos(th), r_hi * np.sin(th)  # bounding rectangle of the wedge
-        anchors = np.array([[x, y] for x in (x_lo, r_hi) for y in (-y_hi, y_hi)])
-        lis = np.vstack([robustness_listeners(stage_scene(cfg)), anchors])
+        lis = stage_listeners(cfg, target)
 
         def t1(scene, c=C0, record_field=False):
             return hooks.run(scene, cfg.f_max, cfg.duration_s, listeners=lis, c=c, record_field=record_field,
@@ -476,6 +489,21 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
         metrics["fragile_reason"] = fragile_why
         metrics["tier1_correction"] = t1_info
         metrics["failure_cause"] = failure_cause_text(metrics)
+    if cfg.design_study_files:
+        study = {}
+        for name in cfg.design_study_files:
+            fp = Path(runs_root or export.RUNS) / cfg.stage / name
+            study[Path(name).stem] = json.loads(fp.read_text()) if fp.exists() else {"missing": str(fp)}
+        metrics["design_study"] = study
+        for name, st_ in study.items():  # one history phase per study: its rows' losses (Tier 0 or Tier 1)
+            rows = [dict(r, loss=r.get("loss", r.get("loss_tier1", r.get("loss_tier0")))) for r in (st_.get("rows") or [])]
+            rows = [r for r in rows if r["loss"] is not None]
+            if not rows:
+                continue
+            history["phases"].insert(1, {"name": f"design_study:{name}", "x_label": "design", "iters":
+                                      list(range(len(rows))), "loss": [float(r["loss"]) for r in rows],
+                                      "score": None, "saved": [], "labels": [r.get("label") or f"{r.get('mode')} K={r.get('posts_per_period')} N={r.get('n_posts')}" for r in rows],
+                                      "selection": st_.get("selection"), "data": st_})
     des.metrics = metrics
     lvl0 = float(echo_level_db(des.echo_t0_3d)[0]) + gap
     notes = (f"{cfg.notes} Exported audio uses clap variant 0; metrics average {cfg.n_claps} clap variants. "
