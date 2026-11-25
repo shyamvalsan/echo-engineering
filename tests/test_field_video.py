@@ -35,3 +35,10 @@ def test_limit_ignores_direct_pulse(tmp_path):
     lim = blk["colour"]["limit"]
     assert 0.5 < lim < 1.5  # set by the weak field, not by the 100x direct ring
     json.dumps(blk)
+
+
+def test_size_cap_reencodes(tmp_path):
+    f = np.random.default_rng(0).standard_normal((20, 120, 200)).astype(np.float16)  # noise: worst case for VP9
+    b = render_field_video(f, [0, 3, -1, 1], tmp_path / "s.webm", dt_frame=1e-3, max_bytes=150e3)
+    assert (tmp_path / "s.webm").stat().st_size <= 150e3 or b["colour"]["crf"] == 63
+    assert b["colour"]["crf"] > 34

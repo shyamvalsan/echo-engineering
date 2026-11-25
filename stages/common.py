@@ -273,12 +273,14 @@ def run_stage(cfg: StageConfig, tier1: Tier1Hooks | None = None, command=None, v
 
         hooks = tier1.resolve()
         ppw = cfg.ppw or PPW_DEFAULT
-        # sensors: [nominal, 1 m sideways, 1 m back] + 4 passive anchor sensors at the wedge corners. Tier 1's domain
+        # sensors: [nominal, 1 m sideways, 1 m back] + 4 passive anchor sensors at the corners of the wedge's
+        # bounding rectangle. Tier 1's domain
         # is the bounding box of posts and sensors (snapped to 0.25 m), so the anchors fix the domain for every design
         # of the stage and the cached empty-scene run is reused across correction rounds (sensors only record).
         r_hi = cfg.r0 + C0 * len(target.audio) / FS / 2.0 + 0.1
         th = np.radians(cfg.half_angle_deg)
-        anchors = np.array([[r * np.cos(a), r * np.sin(a)] for r in (stage_scene(cfg).r_min, r_hi) for a in (-th, th)])
+        x_lo, y_hi = stage_scene(cfg).r_min * np.cos(th), r_hi * np.sin(th)  # bounding rectangle of the wedge
+        anchors = np.array([[x, y] for x in (x_lo, r_hi) for y in (-y_hi, y_hi)])
         lis = np.vstack([robustness_listeners(stage_scene(cfg)), anchors])
 
         def t1(scene, c=C0, record_field=False):

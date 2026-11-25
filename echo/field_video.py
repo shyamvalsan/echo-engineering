@@ -43,13 +43,14 @@ def color_index(v):
 
 def render_field_video(frames, extent, path, fps=30, max_width=1280, t0=0.0, dt_frame=None, gain_exponent=0.6,
                        crf=34, scene=None, c=None, direct_halfwidth_m=1.2, percentile=99.97, compress=2.0,
-                       keyint=5):
+                       keyint=5, max_bytes=14e6):
     """Encode `frames` [T, H, W] (pressure, row 0 = ymax) as a VP9 WebM with a keyframe every `keyint` frames.
 
     t0: emission-relative sim time of frame 0; dt_frame: sim seconds per frame. scene (optional): its source and c
     locate the direct pulse to exclude from the colour limit (default source (0, 0), c 343).
     Returns the manifest `field` block: {file, fps, n_frames, t0_s, sim_seconds_per_frame, extent_m, width, height}
-    plus `colour` (the mapping parameters, informational).
+    plus `colour` (the mapping parameters, informational). If the file exceeds `max_bytes` it is re-encoded at CRF + 5
+    until it fits (or CRF 63).
     """
     frames = np.asarray(frames)
     T, H, W = frames.shape
@@ -102,22 +103,29 @@ def render_field_video(frames, extent, path, fps=30, max_width=1280, t0=0.0, dt_
     lut = _lut()
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    writer = imageio_ffmpeg.write_frames(
-        str(path), (Wp, Hp), fps=fps, codec="libvpx-vp9", pix_fmt_in="rgb24", pix_fmt_out="yuv420p",
-        macro_block_size=1, quality=None,
-        output_params=["-g", str(int(keyint)), "-keyint_min", "1", "-crf", str(crf), "-b:v", "0", "-deadline",
-                       "realtime", "-cpu-used", "8", "-row-mt", "1"])
-    writer.send(None)
-    for i in range(T):
-        v = np.arcsinh(frames[i].astype(np.float32) * (gain[i] * compress / lim)) / norm
-        idx = color_index(np.clip(v, -1.0, 1.0))
-        if Wp != W or Hp != H:
-            idx = np.pad(idx, ((0, Hp - H), (0, Wp - W)), mode="edge")
-        writer.send(np.ascontiguousarray(lut[idx]))
-    writer.close()
+    def encode(q):
+        writer = imageio_ffmpeg.write_frames(
+            str(path), (Wp, Hp), fps=fps, codec="libvpx-vp9", pix_fmt_in="rgb24", pix_fmt_out="yuv420p",
+            macro_block_size=1, quality=None,
+            output_params=["-g", str(int(keyint)), "-keyint_min", "1", "-crf", str(q), "-b:v", "0", "-deadline",
+                           "realtime", "-cpu-used", "8", "-row-mt", "1"])
+        writer.send(None)
+        for i in range(T):
+            v = np.arcsinh(frames[i].astype(np.float32) * (gain[i] * compress / lim)) / norm
+            idx = color_index(np.clip(v, -1.0, 1.0))
+            if Wp != W or Hp != H:
+                idx = np.pad(idx, ((0, Hp - H), (0, Wp - W)), mode="edge")
+            writer.send(np.ascontiguousarray(lut[idx]))
+        writer.close()
+
+    q = int(crf)
+    encode(q)
+    while max_bytes and path.stat().st_size > max_bytes and q < 63:  # size cap: re-encode at a higher CRF
+        q = min(63, q + 5)
+        encode(q)
     return {"file": path.name, "fps": int(fps), "n_frames": int(T), "t0_s": float(t0),
             "sim_seconds_per_frame": dtf, "extent_m": [float(v) for v in ext], "width": int(Wp), "height": int(Hp),
             "colour": {"limit": lim, "percentile": percentile, "direct_excluded_halfwidth_m": direct_halfwidth_m,
                        "compress": "asinh", "compress_k": compress, "level_decay_exponent": b,
                        "time_gain_exponent": expo,
-                       "t_ref_s": t_ref, "zero_rgb": BACKGROUND}}
+                       "t_ref_s": t_ref, "zero_rgb": BACKGROUND, "crf": q, "bytes": path.stat().st_size}}
