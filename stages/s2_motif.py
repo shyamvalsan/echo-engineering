@@ -313,7 +313,7 @@ CONFIG = replace(
     fill_candidates=None,
     correction_rounds=2,  # round 0 + at most one correction round
     correction_clip=(0.25, 4.0),  # widened from (0.5, 2): v1's round-0 gains hit both clip ends
-    threads=8,
+    threads=3,  # torch threads for the Tier 0 solve on a shared CPU; Tier 1 takes 8 while it holds the lock
     robustness_c_cases=(),  # not run (cost): c alone shifts pitch by -61 / +30 cents (331 / 349 m/s)
     design_study_files=("_studies/design_study_tier0.json", "_studies/design_study_v2_tier0.json"),
 )

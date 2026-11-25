@@ -1,0 +1,26 @@
+{
+ "what": "v1 (2 cm, 10 deg, 1.6 % fill) extinction: predicted two-way coherent loss at each note (Tier 0 cylinder sigma, profile.json, stages.s2_motif.optical_depth) vs measured Tier 1 - Tier 0 in-note energy (echo wavs of clap 0, manifest gains undone)",
+ "run": "20261125-122003-s2",
+ "rows": [
+  {
+   "note_hz": 1047.0,
+   "predicted_two_way_extinction_db": -4.26,
+   "measured_tier1_minus_tier0_db_clap0": -9.49
+  },
+  {
+   "note_hz": 1319.0,
+   "predicted_two_way_extinction_db": -22.04,
+   "measured_tier1_minus_tier0_db_clap0": -18.29
+  },
+  {
+   "note_hz": 1568.0,
+   "predicted_two_way_extinction_db": -50.96,
+   "measured_tier1_minus_tier0_db_clap0": -33.04
+  },
+  {
+   "note_hz": 2093.0,
+   "predicted_two_way_extinction_db": -106.56,
+   "measured_tier1_minus_tier0_db_clap0": -48.16
+  }
+ ]
+}
