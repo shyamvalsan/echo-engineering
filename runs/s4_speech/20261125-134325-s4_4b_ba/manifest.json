@@ -179,5 +179,45 @@
  ],
  "substage": "4b",
  "judge_stage": "s4b_syllables",
- "target_name": "ba"
+ "target_name": "ba",
+ "ir": {
+  "tier0": "ir_tier0.wav",
+  "tier1": "ir_tier1.wav",
+  "fs": 16000,
+  "band_hz": [
+   500.0,
+   2500.0
+  ],
+  "t0_s": 0.0,
+  "units": "pressure re direct sound at listener",
+  "model_level": "2d",
+  "source": {
+   "tier0": "computed from scene.json",
+   "tier1": "deconvolved from echo_tier1.wav (clap 0), in-band, regularized"
+  },
+  "peak": {
+   "tier0": 0.0010154674371741419,
+   "tier1": 0.0007899278492218373
+  },
+  "gain_to_true_level": {
+   "tier0": 0.15850616840501752,
+   "tier1": 0.18240929260783756
+  },
+  "level_db": {
+   "as_stored": {
+    "tier0": -47.40851313807751,
+    "tier1": -48.62852896414093
+   },
+   "true_3d": -63.407589781496156
+  },
+  "level_convention": "IRs are stored at the 2D (line-source) model level as computed; source (*) ir * gain_to_true_level[tier] is the echo at the run's true 3D-corrected level re the direct sound (level_db.true_3d = manifest.audio.as_heard_echo_level_db, clap 0; level_db.as_stored = peak dB of clap_0 (*) ir)",
+  "check": {
+   "tier0_reconstruction_error_db": -100.1909446221323,
+   "tier1_reconstruction_error_db": -36.92370739830455,
+   "tier0_deconv_vs_direct_db": -20.462846712464998,
+   "deconv_lambda": 0.001,
+   "definition": "error_db = 10 log10(|clap_0 (*) ir - echo|^2 / |echo|^2) over the echo file; tier0_deconv_vs_direct_db = 10 log10(|ir_deconv - ir_direct|^2 / |ir_direct|^2) for Tier 0",
+   "written_by": "stages.backfill_ir"
+  }
+ }
 }

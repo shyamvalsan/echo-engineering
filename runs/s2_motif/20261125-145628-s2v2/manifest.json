@@ -1712,5 +1712,45 @@
   "1 cm posts fail backscatter at the 2 kHz grid: not validated there",
   "the 1 cm backscatter match depends on an area factor fitted to backscatter (area factor 0.908; held-out offsets confirm backscatter only)",
   "radii [0.01] used by this design are validated for backscatter but not at all angles at this grid (metrics.json:checks.cylinder.stage2_grid (f_max 2500.0 Hz, ppw 10.0))"
- ]
+ ],
+ "ir": {
+  "tier0": "ir_tier0.wav",
+  "tier1": "ir_tier1.wav",
+  "fs": 16000,
+  "band_hz": [
+   898.4375,
+   2500.0
+  ],
+  "t0_s": 0.0,
+  "units": "pressure re direct sound at listener",
+  "model_level": "2d",
+  "source": {
+   "tier0": "computed from scene.json",
+   "tier1": "deconvolved from echo_tier1.wav (clap 0), in-band, regularized"
+  },
+  "peak": {
+   "tier0": 0.0014827709996695054,
+   "tier1": 0.0010888869357756688
+  },
+  "gain_to_true_level": {
+   "tier0": 0.08713361400882504,
+   "tier1": 0.1390380271065512
+  },
+  "level_db": {
+   "as_stored": {
+    "tier0": -39.73691156785103,
+    "tier1": -43.79586895195221
+   },
+   "true_3d": -60.933197018251796
+  },
+  "level_convention": "IRs are stored at the 2D (line-source) model level as computed; source (*) ir * gain_to_true_level[tier] is the echo at the run's true 3D-corrected level re the direct sound (level_db.true_3d = manifest.audio.as_heard_echo_level_db, clap 0; level_db.as_stored = peak dB of clap_0 (*) ir)",
+  "check": {
+   "tier0_reconstruction_error_db": -123.74887264581935,
+   "tier1_reconstruction_error_db": -44.35424930056837,
+   "tier0_deconv_vs_direct_db": -33.37720884258475,
+   "deconv_lambda": 0.001,
+   "definition": "error_db = 10 log10(|clap_0 (*) ir - echo|^2 / |echo|^2) over the echo file; tier0_deconv_vs_direct_db = 10 log10(|ir_deconv - ir_direct|^2 / |ir_direct|^2) for Tier 0",
+   "written_by": "stages.backfill_ir"
+  }
+ }
 }

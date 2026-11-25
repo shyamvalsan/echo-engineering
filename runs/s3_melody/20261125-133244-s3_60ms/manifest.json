@@ -3708,5 +3708,45 @@
   "the 1 cm backscatter match depends on an area factor fitted to backscatter (area factor 0.908; held-out offsets confirm backscatter only)",
   "radii [0.01] used by this design are validated for backscatter but not at all angles at this grid (metrics.json:checks.cylinder.stage2_grid (f_max 2500.0 Hz, ppw 10.0))",
   "1 cm posts on the 2.5 kHz grid: forward scattering is 2.6 dB off the exact cylinder, and forward scattering sets extinction, so the referee's extinction (and the multiple-scattering residue) for this design is uncertain by roughly that much"
- ]
+ ],
+ "ir": {
+  "tier0": "ir_tier0.wav",
+  "tier1": "ir_tier1.wav",
+  "fs": 16000,
+  "band_hz": [
+   898.4375,
+   2500.0
+  ],
+  "t0_s": 0.0,
+  "units": "pressure re direct sound at listener",
+  "model_level": "2d",
+  "source": {
+   "tier0": "computed from scene.json",
+   "tier1": "deconvolved from echo_tier1.wav (clap 0), in-band, regularized"
+  },
+  "peak": {
+   "tier0": 0.0007311115139950504,
+   "tier1": 0.000614251854990693
+  },
+  "gain_to_true_level": {
+   "tier0": 0.14873275678341027,
+   "tier1": 0.17674944714467847
+  },
+  "level_db": {
+   "as_stored": {
+    "tier0": -51.39758137360953,
+    "tier1": -52.896610099887354
+   },
+   "true_3d": -67.94944881909599
+  },
+  "level_convention": "IRs are stored at the 2D (line-source) model level as computed; source (*) ir * gain_to_true_level[tier] is the echo at the run's true 3D-corrected level re the direct sound (level_db.true_3d = manifest.audio.as_heard_echo_level_db, clap 0; level_db.as_stored = peak dB of clap_0 (*) ir)",
+  "check": {
+   "tier0_reconstruction_error_db": -117.13962739080077,
+   "tier1_reconstruction_error_db": -34.95657251924732,
+   "tier0_deconv_vs_direct_db": -28.07825669488792,
+   "deconv_lambda": 0.001,
+   "definition": "error_db = 10 log10(|clap_0 (*) ir - echo|^2 / |echo|^2) over the echo file; tier0_deconv_vs_direct_db = 10 log10(|ir_deconv - ir_direct|^2 / |ir_direct|^2) for Tier 0",
+   "written_by": "stages.backfill_ir"
+  }
+ }
 }
