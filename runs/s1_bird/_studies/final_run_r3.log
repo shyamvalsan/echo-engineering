@@ -20,7 +20,7 @@ robustness c=349: {'pitch_err_pct': 4.520129911034658, 'pitch_err_mean_pct': 1.9
 robustness jitter: {'pitch_err_pct': 3.531994634187459, 'pitch_err_mean_pct': 1.3162016138762893, 'pitch_err_median_pct': 1.1052737591542061, 'spec_corr': 0.6801087641889083} pass False (516 s)
 
 === s1_bird  FAILED  verified=True  fragile=False ===
-run: /home/shyam/projects/echo/runs/s1_bird/20261125-104529-s1
+run: runs/s1_bird/20261125-104529-s1
   [tier1*] pitch_err_pct          3.3572541063274857     thr <=3.0  pass False
   [tier1 ] pitch_err_mean_pct     1.1706968321324625     thr None  pass None
   [tier1 ] pitch_err_median_pct   0.9621863237347238     thr None  pass None

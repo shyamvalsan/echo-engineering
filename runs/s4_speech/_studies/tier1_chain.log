@@ -56,19 +56,19 @@ correction round 0: loss 5.4032 score -inf gains [0.5, 0.56, 0.81, 1.39, 1.23, 1
 Traceback (most recent call last):
   File "<frozen runpy>", line 198, in _run_module_as_main
   File "<frozen runpy>", line 88, in _run_code
-  File "/home/shyam/projects/echo/stages/s4_speech.py", line 818, in <module>
+  File "stages/s4_speech.py", line 818, in <module>
     met["ablations"] = abl
     ^^^^^^
-  File "/home/shyam/projects/echo/stages/s4_speech.py", line 812, in main
+  File "stages/s4_speech.py", line 812, in main
     sdir.mkdir(parents=True, exist_ok=True)
                           ^^^^^^^^^^^^^^^^^^
-  File "/home/shyam/projects/echo/stages/s4_speech.py", line 646, in run_one
+  File "stages/s4_speech.py", line 646, in run_one
     cnt, _ = np.histogram(rho, edges)
                         ^^^^^^^^^^^^^^
-  File "/home/shyam/projects/echo/stages/common.py", line 663, in run_stage
+  File "stages/common.py", line 663, in run_stage
     metrics["passed"] = bool(metrics["passed"] and verified)
                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/shyam/projects/echo/stages/common.py", line 283, in failure_cause_text
+  File "stages/common.py", line 283, in failure_cause_text
     parts = []
               
 TypeError: unsupported format string passed to NoneType.__format__

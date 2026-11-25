@@ -1,4 +1,4 @@
-/home/shyam/projects/echo/echo/inverse.py:66: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
+echo/inverse.py:66: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
   fb = librosa.filters.mel(sr=fs, n_fft=MEL_N_FFT, n_mels=MEL_N, fmin=band[0], fmax=band[1])
 step    0 loss 2.6061 (stft 1.5812 mel 1.0250) 15.9s
 step   25 loss 3.1845 (stft 1.6802 mel 1.5043) 19.6s
@@ -50,48 +50,48 @@ step 1150 loss 2.3154 (stft 1.2355 mel 1.0799) 103.4s
 step 1175 loss 2.2280 (stft 1.2057 mel 1.0223) 104.5s
 step 1200 loss 2.2155 (stft 1.2066 mel 1.0089) 106.1s
   realized 1543 posts, range scale 1-0.00083 (1 s)
-waiting for Tier 1 lock… (0 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
-waiting for Tier 1 lock… (60 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (0 s so far, .cache/tier1.lock)
+waiting for Tier 1 lock… (60 s so far, .cache/tier1.lock)
 Tier 1 lock acquired after 113 s
   stretch: applied -0.00083, measured (medium) -0.00080 (corr 0.971), timing residual +0.00003
   tier1 845 s (empty cached: False)
-/home/shyam/projects/echo/.venv/lib/python3.11/site-packages/librosa/feature/spectral.py:2148: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
+.venv/lib/python3.11/site-packages/librosa/feature/spectral.py:2148: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
   mel_basis = filters.mel(sr=sr, n_fft=n_fft, **kwargs)
-/home/shyam/projects/echo/echo/inverse.py:66: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
+echo/inverse.py:66: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
   fb = librosa.filters.mel(sr=fs, n_fft=MEL_N_FFT, n_mels=MEL_N, fmin=band[0], fmax=band[1])
 correction round 0: loss 4.2609 score -31.1612 gains [0.25, 0.25, 0.25, 0.25, 0.25, 0.99, 1.09, 1.18, 1.02, 1.09, 1.1, 1.16, 1.21, 1.68, 1.88, 2.01, 1.99, 2.14, 1.0] (965 s)
   realized 1543 posts, range scale 1-0.00080 (1 s)
-waiting for Tier 1 lock… (0 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
-waiting for Tier 1 lock… (60 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
-waiting for Tier 1 lock… (120 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
-waiting for Tier 1 lock… (180 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
-waiting for Tier 1 lock… (240 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
-waiting for Tier 1 lock… (301 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
-waiting for Tier 1 lock… (361 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
-waiting for Tier 1 lock… (421 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
-waiting for Tier 1 lock… (481 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
-waiting for Tier 1 lock… (541 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
-waiting for Tier 1 lock… (601 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
-waiting for Tier 1 lock… (661 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
-waiting for Tier 1 lock… (721 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (0 s so far, .cache/tier1.lock)
+waiting for Tier 1 lock… (60 s so far, .cache/tier1.lock)
+waiting for Tier 1 lock… (120 s so far, .cache/tier1.lock)
+waiting for Tier 1 lock… (180 s so far, .cache/tier1.lock)
+waiting for Tier 1 lock… (240 s so far, .cache/tier1.lock)
+waiting for Tier 1 lock… (301 s so far, .cache/tier1.lock)
+waiting for Tier 1 lock… (361 s so far, .cache/tier1.lock)
+waiting for Tier 1 lock… (421 s so far, .cache/tier1.lock)
+waiting for Tier 1 lock… (481 s so far, .cache/tier1.lock)
+waiting for Tier 1 lock… (541 s so far, .cache/tier1.lock)
+waiting for Tier 1 lock… (601 s so far, .cache/tier1.lock)
+waiting for Tier 1 lock… (661 s so far, .cache/tier1.lock)
+waiting for Tier 1 lock… (721 s so far, .cache/tier1.lock)
 Tier 1 lock acquired after 738 s
   stretch: applied -0.00080, measured (medium) -0.00066 (corr 0.978), timing residual +0.00014
   tier1 388 s (empty cached: True)
 correction round 1: loss 4.1831 score -23.2042 gains [0.33, 0.25, 0.25, 0.37, 0.77, 1.19, 1.18, 1.16, 1.05, 1.11, 1.15, 1.12, 1.08, 1.17, 1.11, 1.06, 1.05, 1.13, 1.0] (1130 s)
-waiting for Tier 1 lock… (0 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
-waiting for Tier 1 lock… (60 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
-waiting for Tier 1 lock… (120 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
-waiting for Tier 1 lock… (180 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
-waiting for Tier 1 lock… (240 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
-waiting for Tier 1 lock… (301 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
-waiting for Tier 1 lock… (361 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
-waiting for Tier 1 lock… (421 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
-waiting for Tier 1 lock… (481 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (0 s so far, .cache/tier1.lock)
+waiting for Tier 1 lock… (60 s so far, .cache/tier1.lock)
+waiting for Tier 1 lock… (120 s so far, .cache/tier1.lock)
+waiting for Tier 1 lock… (180 s so far, .cache/tier1.lock)
+waiting for Tier 1 lock… (240 s so far, .cache/tier1.lock)
+waiting for Tier 1 lock… (301 s so far, .cache/tier1.lock)
+waiting for Tier 1 lock… (361 s so far, .cache/tier1.lock)
+waiting for Tier 1 lock… (421 s so far, .cache/tier1.lock)
+waiting for Tier 1 lock… (481 s so far, .cache/tier1.lock)
 Tier 1 lock acquired after 531 s
 robustness jitter: {'notes_in_order': 0.0, 'note_cents_max': 1200.0, 'n_notes_detected': 4.2, 'spec_corr': 0.41124259843186756} pass False (1057 s)
 
 === s2_motif  FAILED  verified=True  fragile=False ===
-run: /home/shyam/projects/echo/runs/s2_motif/20261125-145628-s2v2
+run: runs/s2_motif/20261125-145628-s2v2
   [tier1*] notes_in_order         0.4                    thr >=1.0  pass False
   [tier1*] note_cents_max         726.1245612327208      thr <=30.0  pass False
   [tier1 ] n_notes_detected       4.2                    thr None  pass None

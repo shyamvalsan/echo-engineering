@@ -14,9 +14,9 @@ step  275 loss 2.9854 (stft 1.8787 mel 1.1067) 21.9s
 step  300 loss 2.8490 (stft 1.7671 mel 1.0819) 22.8s
 
 === s4a_vowel  FAILED  verified=False  fragile=False ===
-run: /home/shyam/projects/echo/.cache/s4_yitsng5a/s4a_vowel/20261125-140115-s4_4a_ah
+run: .cache/s4_yitsng5a/s4a_vowel/20261125-140115-s4_4a_ah
   [tier0 ] formant_err_pct        None                   thr <=10.0  pass False
   judge floor (perfect echo): {'formant_err_pct': 10.339, 'f1_err_pct': 10.339, 'f2_err_pct': 3.392, 'f1_hz': 820.742, 'f2_hz': 1242.549, 'f1_target_hz': 743.839, 'f2_target_hz': 1201.779}
   echo level -51.2 dB re direct (raw 3D -51.2, 2.0 m posts -50.8), SPL 59.2 dB, tier gap None, depth 25.50 m, 1499 posts, fill 0.0029
   wall: {'profile_solve_s': 24.4, 'realize_s': 29.4, 'total_s': 54.1}
-[4a ah] wrote /home/shyam/projects/echo/runs/s4_speech/20261125-140115-s4_4a_ah: passed False verified False
+[4a ah] wrote runs/s4_speech/20261125-140115-s4_4a_ah: passed False verified False

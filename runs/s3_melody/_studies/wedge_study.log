@@ -1,9 +1,9 @@
-/home/shyam/projects/echo/echo/inverse.py:66: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
+echo/inverse.py:66: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
   fb = librosa.filters.mel(sr=fs, n_fft=MEL_N_FFT, n_mels=MEL_N, fmin=band[0], fmax=band[1])
-/home/shyam/projects/echo/.venv/lib/python3.11/site-packages/librosa/feature/spectral.py:2148: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
+.venv/lib/python3.11/site-packages/librosa/feature/spectral.py:2148: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
   mel_basis = filters.mel(sr=sr, n_fft=n_fft, **kwargs)
 +-1 deg fill=0.80% phase_locked K=1      N= 2185 rings=955 drop=0 loss 2.376 ext~107.0 dB L2d/note [-63.1, -75.4, -71.6, -66.4, -66.7, -72.3, -77.3, -85.6] [info: order 0.00 n [9, 7, 7, 8, 8]] (24.3 s)
-/home/shyam/projects/echo/echo/inverse.py:66: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
+echo/inverse.py:66: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
   fb = librosa.filters.mel(sr=fs, n_fft=MEL_N_FFT, n_mels=MEL_N, fmin=band[0], fmax=band[1])
 +-1 deg fill=1.60% phase_locked K=1      N= 4371 rings=1049 drop=0 loss 1.690 ext~218.1 dB L2d/note [-63.7, -68.1, -63.4, -58.2, -58.5, -64.1, -69.1, -77.5] [info: order 0.40 n [7, 8, 7, 8, 6]] (24.7 s)
 +-20 deg fill=0.02% phase_locked K=1     N= 1093 rings=634 drop=0 loss 3.615 ext~2.0 dB L2d/note [-67.4, -71.7, -74.8, -74.7, -75.1, -80.9, -85.9, -94.3] [info: order 0.00 n [5, 6, 8, 8, 7]] (22.5 s)

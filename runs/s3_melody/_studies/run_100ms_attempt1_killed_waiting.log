@@ -1,10 +1,10 @@
-/home/shyam/projects/echo/echo/inverse.py:66: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
+echo/inverse.py:66: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
   fb = librosa.filters.mel(sr=fs, n_fft=MEL_N_FFT, n_mels=MEL_N, fmin=band[0], fmax=band[1])
 step    0 loss 1.8329 (stft 1.0913 mel 0.7416) 128.8s
   realized 2500 posts, range scale 1-0.00195 (4 s)
-waiting for Tier 1 lock… (0 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
-waiting for Tier 1 lock… (60 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
-waiting for Tier 1 lock… (120 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
-waiting for Tier 1 lock… (180 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
-waiting for Tier 1 lock… (240 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
-waiting for Tier 1 lock… (300 s so far, /home/shyam/projects/echo/.cache/tier1.lock)
+waiting for Tier 1 lock… (0 s so far, .cache/tier1.lock)
+waiting for Tier 1 lock… (60 s so far, .cache/tier1.lock)
+waiting for Tier 1 lock… (120 s so far, .cache/tier1.lock)
+waiting for Tier 1 lock… (180 s so far, .cache/tier1.lock)
+waiting for Tier 1 lock… (240 s so far, .cache/tier1.lock)
+waiting for Tier 1 lock… (300 s so far, .cache/tier1.lock)

@@ -1,4 +1,4 @@
-/home/shyam/projects/echo/echo/inverse.py:66: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
+echo/inverse.py:66: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
   fb = librosa.filters.mel(sr=fs, n_fft=MEL_N_FFT, n_mels=MEL_N, fmin=band[0], fmax=band[1])
 step    0 loss 2.4219 (stft 1.4611 mel 0.9609) 11.5s
 step   25 loss 3.0970 (stft 1.5699 mel 1.5270) 13.0s
@@ -52,13 +52,13 @@ step 1200 loss 2.1809 (stft 1.1379 mel 1.0430) 77.2s
   realized 1269 posts, range scale 1-0.00544 (0 s)
   stretch: applied -0.00544, measured (medium) -0.00648 (corr 0.572), timing residual -0.00105
   tier1 749 s (empty cached: False)
-/home/shyam/projects/echo/.venv/lib/python3.11/site-packages/librosa/feature/spectral.py:2148: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
+.venv/lib/python3.11/site-packages/librosa/feature/spectral.py:2148: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
   mel_basis = filters.mel(sr=sr, n_fft=n_fft, **kwargs)
   density sweep fill 0.008: 1269 posts, Tier 1 loss 5.6366
   realized 2538 posts, range scale 1-0.01088 (1 s)
   stretch: applied -0.01088, measured (medium) -0.00732 (corr 0.374), timing residual +0.00360
   tier1 354 s (empty cached: True)
-/home/shyam/projects/echo/echo/inverse.py:66: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
+echo/inverse.py:66: UserWarning: Empty filters detected in mel frequency basis. Some channels will produce empty responses. Try increasing your sampling rate (and fmax) or reducing n_mels.
   fb = librosa.filters.mel(sr=fs, n_fft=MEL_N_FFT, n_mels=MEL_N, fmin=band[0], fmax=band[1])
   density sweep fill 0.016: 2538 posts, Tier 1 loss 5.5676
 correction round 0: loss 5.5676 score -39.0000 gains [0.5, 0.5, 0.5, 0.63, 0.6, 1.24, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1.0] (2 s)

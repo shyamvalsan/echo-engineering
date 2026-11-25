@@ -31,4 +31,4 @@ half  5.0 offset (0.0, 0.5) posts 1060 drop 0 loss 6.001 wave 0.606 [info corr 0
 half  5.0 offset (0.0, 1.0) posts 1060 drop 0 loss 6.937 wave -0.214 [info corr 0.397 pitch 43.19]
 half  5.0 offset (-0.5, 0.0) posts 1060 drop 0 loss 3.054 wave 0.958 [info corr 0.880 pitch 2.50]
 half  5.0 offset (-1.0, 0.0) posts 1060 drop 0 loss 3.289 wave 0.890 [info corr 0.853 pitch 2.56]
-wrote /home/shyam/projects/echo/runs/s1_bird/design_study_tier0.json 119 s
+wrote runs/s1_bird/design_study_tier0.json 119 s
