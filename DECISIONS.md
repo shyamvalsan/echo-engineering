@@ -95,3 +95,4 @@ Format: `- [task N] <choice> — <reason>`. Append only (`cat >> DECISIONS.md`);
   - 2 cm (uncalibrated): forward +1.3 to +1.5 dB.
   - The dense-field check passes (level -0.2 to -0.36 dB, time-scale error -0.005 %).
   - Next fix: separate monopole (K-node coverage) and dipole (face coverage) calibrations, fitted on the backscatter and 90-degree angles.
+- [task 3] Validation verdict follows the spec's check 1 (backscatter); forward/90° results reported as an extended check with a caveat; separate monopole/dipole calibration left as future work — controller ruling, spec wording.

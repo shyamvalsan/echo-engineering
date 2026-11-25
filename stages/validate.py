@@ -1,6 +1,7 @@
 """Tier 1 solver validation: the four checks of the spec, written to runs/validation/metrics.json.
 
-  uv run python -m stages.validate            (about 10 minutes on 8 cores)
+  uv run python -m stages.validate            (about 40 minutes on a shared 8-core CPU)
+  uv run python -m stages.validate --reassemble   (rebuild the verdict from the saved numbers, no solves)
 
 1. Single rigid cylinder: Tier 1 backscatter vs the exact 2D line-source series (Hankel functions) within 1 dB in
    every 1/6-octave band of 500-4000 Hz, per catalog radius, at two or more sub-cell offsets of the post centre.
@@ -347,8 +348,102 @@ def check_tier0(claps, sample=True):
     return out
 
 
+GRIDS = {"stage1_grid": 4000.0, "stage3_grid": 2000.0}
+
+
+def assemble_cylinder(rows_by_grid, held):
+    """Check 1 (spec: backscatter within 1 dB across the design band) plus the extended angular results.
+
+    Returns (checks.cylinder block, extended_checks.angular_scattering block, caveats). Per grid,
+    per_radius[r].pass is the spec (backscatter) criterion; it is what stages/common.py reads.
+    """
+    cyl = {"threshold_db": 1.0, "band_hz": [500, 4000], "criterion": "backscatter (spec check 1)",
+           "heldout_1cm_4khz": held}
+    ang = {"threshold_db": 1.0, "note": "forward (listener behind the post) and 90-degree bistatic scattering; "
+                                        "an extension beyond the spec, not part of `passed`"}
+    caveats = []
+    for gkey, f_max in GRIDS.items():
+        rows = rows_by_grid[gkey]
+        per, aper = {}, {}
+        for a in RADII:
+            rr = [r for r in rows if r["radius_m"] == a]
+            back = [r["max_abs_err_db"] for r in rr if r.get("angle", "back") == "back"]
+            if gkey == "stage1_grid" and a == held["radius_m"]:
+                back = back + list(held["max_abs_err_db"])
+            other = {r["angle"]: r["max_abs_err_db"] for r in rr if r.get("angle", "back") != "back"}
+            worst_all = max(back + list(other.values()))
+            per[str(a)] = {"max_abs_err_db": max(back), "pass": max(back) <= 1.0,
+                           "max_abs_err_db_all_angles": worst_all, "pass_all_angles": worst_all <= 1.0,
+                           "n_backscatter_offsets": len(back)}
+            if other:
+                aper[str(a)] = {**other, "worst_db": max(other.values()), "pass": max(other.values()) <= 1.0}
+        vb = [float(a) for a in RADII if per[str(a)]["pass"]]
+        va = [float(a) for a in RADII if per[str(a)]["pass_all_angles"]]
+        cyl[gkey] = {"f_max": f_max, "per_radius": per, "rows": rows,
+                     "validated_radii_backscatter": vb, "validated_radii_all_angles": va}
+        ang[gkey] = {"f_max": f_max, "per_radius": aper}
+        bad = [a for a in RADII if not per[str(a)]["pass"]]
+        if bad:
+            caveats.append(f"{', '.join(f'{100 * a:g} cm' for a in bad)} posts fail backscatter at the "
+                           f"{f_max / 1000:g} kHz grid: not validated there")
+        weak = {a: v for a, v in aper.items() if not v["pass"] and float(a) in vb}
+        if weak:
+            det = "; ".join(f"{100 * float(a):g} cm forward {v['forward']:.2f} dB, 90-degree {v['bistatic_90']:.2f} dB"
+                            for a, v in weak.items())
+            caveats.append(f"{' and '.join(f'{100 * float(a):g} cm' for a in weak)} posts: forward/side scattering "
+                           f"off the analytic cylinder at the {f_max / 1000:g} kHz grid ({det}) "
+                           "(dipole part ~10 % strong for sub-cell posts; backscatter within 1 dB); its effect on "
+                           "dense-field echoes is bounded by the dense convergence check (checks.grid_convergence"
+                           ".dense)")
+    # spec pass: every catalog radius validated (backscatter) at the stage-1 grid; the stage-3 grid is per radius
+    cyl["pass"] = all(cyl["stage1_grid"]["per_radius"][str(a)]["pass"] for a in RADII)
+    cyl["note"] = ("pass = every catalog radius within 1 dB in backscatter at the stage-1 grid (f_max 4 kHz); "
+                   "per grid, per_radius[r].pass and validated_radii_backscatter give the spec criterion, "
+                   "validated_radii_all_angles the extended one")
+    return cyl, ang, caveats
+
+
+def finish(m):
+    """Top-level verdict, extended checks and caveats from the check blocks already in m."""
+    cyl = m["checks"]["cylinder"]
+    rows = {g: cyl[g]["rows"] for g in GRIDS}
+    cyl, ang, caveats = assemble_cylinder(rows, cyl["heldout_1cm_4khz"])
+    m["checks"]["cylinder"] = cyl
+    dense = m["checks"]["grid_convergence"].get("dense")
+    m["extended_checks"] = {"angular_scattering": ang}
+    if dense:
+        m["extended_checks"]["dense_field_convergence"] = {
+            "level_delta_db_per_clap": dense["level_delta_db_per_clap"],
+            "max_abs_level_delta_db": dense["max_abs_level_delta_db"],
+            "max_abs_timing_pitch_error_pct": dense["max_abs_timing_pitch_error_pct"],
+            "timing_meets_target": dense["timing_meets_target"], "pass": dense["pass"],
+            "note": "mirror of checks.grid_convergence.dense"}
+        caveats = [c.replace("bounded by the dense convergence check",
+                             f"bounded at {dense['max_abs_level_delta_db']:.2f} dB by the dense convergence check")
+                   for c in caveats]
+    m["passed"] = all(c["pass"] for c in m["checks"].values())
+    m["caveats"] = caveats
+    return m
+
+
+def reassemble(path=None):
+    """Rebuild the verdict of an existing metrics.json without new solves."""
+    path = Path(path) if path else OUT / "metrics.json"
+    m = json.loads(path.read_text())
+    m = finish(m)
+    path.write_text(json.dumps(m, indent=1))
+    return m
+
+
 def main(argv=None):
+    """Full validation; `--reassemble` rebuilds the verdict of the existing metrics.json without solving."""
     argv = sys.argv[1:] if argv is None else argv
+    if "--reassemble" in argv:
+        m = reassemble()
+        print("validation passed:", m["passed"])
+        for c in m["caveats"]:
+            print("caveat:", c)
+        return m
     T0 = time.time()
     claps = clap_family(5)
     OUT.mkdir(parents=True, exist_ok=True)
@@ -362,28 +457,19 @@ def main(argv=None):
     rows4, pr4 = check_cylinder(4000.0, offs)
     rows2, pr2 = check_cylinder(2000.0, offs)
     held = check_heldout()
-    pr4["0.01"]["pass"] = pr4["0.01"]["pass"] and held["pass"]
-    pr4["0.01"]["heldout_max_abs_err_db"] = max(held["max_abs_err_db"])
-    validated = [float(a) for a in RADII if pr4[str(a)]["pass"]]
-    m["checks"]["cylinder"] = {"threshold_db": 1.0, "band_hz": [500, 4000], "stage1_grid": {"f_max": 4000,
-                               "per_radius": pr4, "rows": rows4},
-                               "stage3_grid": {"f_max": 2000, "per_radius": pr2, "rows": rows2},
-                               "heldout_1cm_4khz": held,
-                               "validated_radii_stage1": validated,
-                               "validated_radii_stage3": [float(a) for a in RADII if pr2[str(a)]["pass"]],
-                               "pass": all(pr4[str(a)]["pass"] for a in (0.01, 0.02)),
-                               "note": "pass = the radii the designs use (1 cm, 2 cm) meet 1 dB at the stage-1 "
-                                       "grid; other radii are listed with their own pass flag"}
+    m["checks"]["cylinder"] = assemble_cylinder({"stage1_grid": rows4, "stage3_grid": rows2}, held)[0]
     print("check 2: grid convergence", flush=True)
     m["checks"]["grid_convergence"] = check_convergence(claps)
     print("check 4: tier0 vs tier1 sparse design (+ sample field video)", flush=True)
     m["checks"]["tier0_vs_tier1"] = check_tier0(claps)
-    m["passed"] = all(c["pass"] for c in m["checks"].values())
+    finish(m)
     m["wall_s"] = round(time.time() - T0, 1)
     (OUT / "metrics.json").write_text(json.dumps(m, indent=1))
     for k, c in m["checks"].items():
         print(f"{k}: pass={c['pass']}")
     print("validation passed:", m["passed"], f"({m['wall_s']} s)")
+    for c in m["caveats"]:
+        print("caveat:", c)
     return m
 
 
